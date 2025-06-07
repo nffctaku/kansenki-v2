@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
@@ -103,6 +104,8 @@ const teamList = [
 
 
 export default function CloudinaryPostForm() {
+  const router = useRouter(); // ✅ useRouterの初期化
+
   // ✅ 費用項目の型と定義
   type CostKey = 'flight' | 'hotel' | 'ticket' | 'transport' | 'food' | 'goods' | 'other';
 
@@ -161,7 +164,6 @@ export default function CloudinaryPostForm() {
   const [firstAdvice, setFirstAdvice] = useState('');
   const [allowComments, setAllowComments] = useState(false); // 初期値は「許可」
   const [category, setCategory] = useState('');
-
 
   // ✅ Firestore から nickname を取得（ログインユーザー）
   useEffect(() => {

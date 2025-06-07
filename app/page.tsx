@@ -40,6 +40,7 @@ export default function HomePage() {
           imageUrls: d.imageUrls || [],
           category: d.category || '',
           matches: d.matches || [],
+          season: d.season || '',
         };
       });
       setPosts(data.reverse());

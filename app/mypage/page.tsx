@@ -206,19 +206,24 @@ const handleSave = async () => {
 
               {/* 投稿情報 */}
               <div className="p-2 text-sm">
-                <p className="font-semibold truncate">
-                  {post.matches?.[0]?.nickname || '試合名未入力'}
-                </p>
-                <p className="text-gray-600 text-xs">
-                  {post.matches?.[0]?.teamA} vs {post.matches?.[0]?.teamB}
-                </p>
-                <a
-                  href={`/posts/${post.id}`}
-                  className="text-xs text-blue-600 underline mt-1 inline-block"
-                >
-                  投稿を表示
-                </a>
-              </div>
+  <p className="font-semibold truncate">
+    {post.matches?.[0]?.nickname || '試合名未入力'}
+  </p>
+  <p className="text-gray-600 text-xs">
+    {post.matches?.[0]?.teamA} vs {post.matches?.[0]?.teamB}
+  </p>
+  {/* ✅ season 表示を追加 */}
+  <p className="text-gray-500 text-xs mt-1">
+    {post.season || 'シーズン未設定'}
+  </p>
+  <a
+    href={`/posts/${post.id}`}
+    className="text-xs text-blue-600 underline mt-1 inline-block"
+  >
+    投稿を表示
+  </a>
+</div>
+
 
               {/* ✅ 削除ボタン（カードの下） */}
               <div className="px-2 pb-3">
