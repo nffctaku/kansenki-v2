@@ -29,15 +29,15 @@ const customStyles = {
     transition: 'all 0.2s ease',
   }),
 
-  menu: (provided: CSSObjectWithLabel, _state: MenuProps<any, false, GroupBase<any>>): CSSObjectWithLabel => ({
-    ...provided,
-    borderRadius: '1rem',
-    zIndex: 20,
-  }),
+  menu: (provided: CSSObjectWithLabel): CSSObjectWithLabel => ({
+  ...provided,
+  borderRadius: '1rem',
+  zIndex: 20,
+}),
 
-  placeholder: (
-    provided: CSSObjectWithLabel,
-    _state: PlaceholderProps<any, false, GroupBase<any>>
+
+   placeholder: (
+    provided: CSSObjectWithLabel
   ): CSSObjectWithLabel => ({
     ...provided,
     color: '#9ca3af',
@@ -45,8 +45,7 @@ const customStyles = {
   }),
 
   input: (
-    provided: CSSObjectWithLabel,
-    _state: InputProps<any, false, GroupBase<any>>
+    provided: CSSObjectWithLabel
   ): CSSObjectWithLabel => ({
     ...provided,
     fontSize: '0.875rem',
