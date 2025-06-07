@@ -7,9 +7,6 @@ import { getAuth } from 'firebase/auth';
 import Select, {
   CSSObjectWithLabel,
   ControlProps,
-  MenuProps,
-  PlaceholderProps,
-  InputProps,
   GroupBase,
 } from 'react-select';
 
