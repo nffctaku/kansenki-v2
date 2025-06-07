@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { collection, getDocs } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, getRedirectResult } from 'firebase/auth';
-import { MagnifyingGlassIcon } from '@heroicons/react/24/solid';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css'
 
