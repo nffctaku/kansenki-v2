@@ -74,31 +74,32 @@ export default function MyPage() {
   }, [router]);
 
   const handleDelete = async (postId: string) => {
-    const confirmed = confirm('本当に削除しますか？');
-    if (!confirmed) return;
-    try {
-      await deleteDoc(doc(db, 'simple-posts', postId));
-      setPosts((prev) => prev.filter((p) => p.id !== postId));
-    } catch (err) {
-      alert('削除に失敗しました');
-    }
-  };
+  const confirmed = confirm('本当に削除しますか？');
+  if (!confirmed) return;
+  try {
+    await deleteDoc(doc(db, 'simple-posts', postId));
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
+  } catch {
+    alert('削除に失敗しました');
+  }
+};
 
-  const handleSave = async () => {
-    if (!uid) return;
-    try {
-      const userRef = doc(db, 'users', uid);
-      await updateDoc(userRef, {
-        nickname,
-        xLink,
-        noteLink,
-      });
-      setMessage('✅ プロフィールを更新しました');
-    } catch (err) {
-      console.error('❌ 更新エラー:', err);
-      setMessage('❌ 更新に失敗しました');
-    }
-  };
+const handleSave = async () => {
+  if (!uid) return;
+  try {
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+      nickname,
+      xLink,
+      noteLink,
+    });
+    setMessage('✅ プロフィールを更新しました');
+  } catch (err) {
+    console.error('❌ 更新エラー:', err);
+    setMessage('❌ 更新に失敗しました');
+  }
+};
+
 
   if (loading) return <div className="p-6">読み込み中...</div>;
 
