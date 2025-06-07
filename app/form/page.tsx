@@ -4,32 +4,50 @@ import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import Select from 'react-select';
-
+import Select, {
+  CSSObjectWithLabel,
+  ControlProps,
+  MenuProps,
+  PlaceholderProps,
+  InputProps,
+  GroupBase,
+} from 'react-select';
 
 const customStyles = {
-  control: (provided, state) => ({
+  control: (
+    provided: CSSObjectWithLabel,
+    state: ControlProps<any, false, GroupBase<any>>
+  ): CSSObjectWithLabel => ({
     ...provided,
     borderRadius: '1rem', // rounded-2xl
     border: '1px solid',
-    borderColor: state.isFocused ? '#60a5fa' : '#d1d5db', // 青 or グレー
+    borderColor: state.isFocused ? '#60a5fa' : '#d1d5db',
     boxShadow: state.isFocused ? '0 0 0 2px #bfdbfe' : 'none',
-    padding: '6px 12px', // py-2 px-3相当
+    padding: '6px 12px',
     minHeight: '44px',
     backgroundColor: '#fff',
     transition: 'all 0.2s ease',
   }),
-  menu: (provided) => ({
+
+  menu: (provided: CSSObjectWithLabel, _state: MenuProps<any, false, GroupBase<any>>): CSSObjectWithLabel => ({
     ...provided,
     borderRadius: '1rem',
     zIndex: 20,
   }),
-  placeholder: (provided) => ({
+
+  placeholder: (
+    provided: CSSObjectWithLabel,
+    _state: PlaceholderProps<any, false, GroupBase<any>>
+  ): CSSObjectWithLabel => ({
     ...provided,
     color: '#9ca3af',
     fontSize: '0.875rem',
   }),
-  input: (provided) => ({
+
+  input: (
+    provided: CSSObjectWithLabel,
+    _state: InputProps<any, false, GroupBase<any>>
+  ): CSSObjectWithLabel => ({
     ...provided,
     fontSize: '0.875rem',
   }),
