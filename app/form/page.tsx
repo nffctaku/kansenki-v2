@@ -131,15 +131,18 @@ export default function CloudinaryPostForm() {
   const [spots, setSpots] = useState([
     { url: '', comment: '', rating: 0, autoName: '', address: '' },
   ]);
-  const [cost, setCost] = useState({
-    flight: 0,
-    hotel: 0,
-    ticket: 0,
-    transport: 0,
-    food: 0,
-    goods: 0,
-    other: 0,
-  });
+  type CostKey = 'flight' | 'hotel' | 'ticket' | 'transport' | 'food' | 'goods' | 'other';
+
+const [cost, setCost] = useState<Record<CostKey, number>>({
+  flight: 0,
+  hotel: 0,
+  ticket: 0,
+  transport: 0,
+  food: 0,
+  goods: 0,
+  other: 0,
+});
+
   const [items, setItems] = useState('');
   const [goods, setGoods] = useState('');
   const [episode, setEpisode] = useState('');
@@ -757,15 +760,7 @@ return (
 <h2 className="text-lg font-bold text-blue-700 mt-10 mb-4">費用内訳（円単位）</h2>
 
 <div className="space-y-5 bg-blue-50 p-5 rounded-2xl shadow-sm">
-  {[
-    { key: 'flight', label: '航空券' },
-    { key: 'hotel', label: '宿泊費' },
-    { key: 'ticket', label: 'チケット代' },
-    { key: 'transport', label: '交通費' },
-    { key: 'food', label: '食費' },
-    { key: 'goods', label: 'グッズ' },
-    { key: 'other', label: 'その他' },
-  ].map(({ key, label }) => (
+  {costItems.map(({ key, label }) => (
     <div key={key}>
       <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
       <input
@@ -778,9 +773,9 @@ return (
             [key]: Number(e.target.value),
           })
         }
-         placeholder="円単位で入力"
-  className="appearance-none w-full border border-gray-300 px-4 py-2 rounded-2xl bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
-/>
+        placeholder="円単位で入力"
+        className="appearance-none w-full border border-gray-300 px-4 py-2 rounded-2xl bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
+      />
     </div>
   ))}
 
@@ -791,8 +786,6 @@ return (
     )} 万円
   </div>
 </div>
-
-
 
 
 <h2 className="font-bold text-lg mt-6">その他の情報</h2>
