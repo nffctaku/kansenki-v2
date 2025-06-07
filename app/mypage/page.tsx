@@ -18,6 +18,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 type Post = {
   id: string;
   imageUrls: string[];
+  season: string;
   matches: {
     teamA: string;
     teamB: string;
