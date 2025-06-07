@@ -92,7 +92,7 @@ return (
       <div className="flex items-center justify-between max-w-screen-xl mx-auto">
         {/* 左：タイトル */}
         <h1 className="text-2xl font-bold text-gray-900 whitespace-nowrap">
-          現地観戦
+          現地観戦記
         </h1>
 
         {/* 右：マイページ・投稿する（アイコン＋ラベル） */}
@@ -195,15 +195,15 @@ return (
                           </div>
                         </Link>
                         <div className="pt-3">
-                          <h3 className="text-sm font-semibold truncate text-gray-800">
-                            {hasMatch
-                              ? `${hasMatch.teamA} vs ${hasMatch.teamB}`
-                              : '試合情報なし'}
-                          </h3>
-                          <p className="text-xs text-gray-500">
-                            {hasMatch?.season || 'シーズン未設定'}
-                          </p>
-                        </div>
+  <h3 className="text-sm font-semibold truncate text-gray-800">
+    {hasMatch
+      ? `${hasMatch.teamA} vs ${hasMatch.teamB}`
+      : '試合情報なし'}
+  </h3>
+  <p className="text-xs text-gray-500">
+    {post.season || 'シーズン未設定'}
+  </p>
+</div>
                       </div>
                     </SwiperSlide>
                   );
@@ -241,9 +241,9 @@ return (
                           ? `${hasMatch.teamA} vs ${hasMatch.teamB}`
                           : '試合情報なし'}
                       </h3>
-                      <p className="text-sm text-gray-500">
-                        {hasMatch?.season || 'シーズン未設定'}
-                      </p>
+                      <p className="text-xs text-gray-500">
+  {post.season || 'シーズン未設定'}
+</p>
                     </div>
                   </div>
                 );
