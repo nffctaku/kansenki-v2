@@ -62,23 +62,23 @@ export default function CategoryPage() {
 
           return (
             <div key={post.id} className="bg-white rounded-lg shadow p-2">
-              <div className="relative aspect-square w-full bg-gray-200 rounded overflow-hidden">
-                {hasImage ? (
-                  <Image
-                    src={post.imageUrls[0]}
-                    alt="投稿画像"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 20vw"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
-                    No Image
-                  </div>
-                )}
-              </div>
+    <div className="relative aspect-square w-full bg-gray-200 rounded overflow-hidden">
+      {post.imageUrls?.[0] ? (
+        <Image
+          src={post.imageUrls[0]}
+          alt="投稿画像"
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, 20vw"
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+          No Image
+        </div>
+      )}
+    </div>
 
-              {hasMatch && (
+    {post.matches?.[0] && (
                 <div className="mt-2 px-1 text-sm text-gray-700 font-semibold truncate">
                   {post.matches[0].teamA} vs {post.matches[0].teamB}
                 </div>
