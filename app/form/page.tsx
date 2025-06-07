@@ -103,6 +103,19 @@ const teamList = [
 
 
 export default function CloudinaryPostForm() {
+  // ✅ 費用項目の型と定義
+  type CostKey = 'flight' | 'hotel' | 'ticket' | 'transport' | 'food' | 'goods' | 'other';
+
+  const costItems: { key: CostKey; label: string }[] = [
+    { key: 'flight', label: '航空券' },
+    { key: 'hotel', label: '宿泊費' },
+    { key: 'ticket', label: 'チケット代' },
+    { key: 'transport', label: '交通費' },
+    { key: 'food', label: '食費' },
+    { key: 'goods', label: 'グッズ' },
+    { key: 'other', label: 'その他' },
+  ];
+
   const [nickname, setNickname] = useState('');
   const [season, setSeason] = useState('');
   const [matches, setMatches] = useState([
@@ -131,17 +144,16 @@ export default function CloudinaryPostForm() {
   const [spots, setSpots] = useState([
     { url: '', comment: '', rating: 0, autoName: '', address: '' },
   ]);
-  type CostKey = 'flight' | 'hotel' | 'ticket' | 'transport' | 'food' | 'goods' | 'other';
 
-const [cost, setCost] = useState<Record<CostKey, number>>({
-  flight: 0,
-  hotel: 0,
-  ticket: 0,
-  transport: 0,
-  food: 0,
-  goods: 0,
-  other: 0,
-});
+  const [cost, setCost] = useState<Record<CostKey, number>>({
+    flight: 0,
+    hotel: 0,
+    ticket: 0,
+    transport: 0,
+    food: 0,
+    goods: 0,
+    other: 0,
+  });
 
   const [items, setItems] = useState('');
   const [goods, setGoods] = useState('');
@@ -149,6 +161,7 @@ const [cost, setCost] = useState<Record<CostKey, number>>({
   const [firstAdvice, setFirstAdvice] = useState('');
   const [allowComments, setAllowComments] = useState(false); // 初期値は「許可」
   const [category, setCategory] = useState('');
+
 
   // ✅ Firestore から nickname を取得（ログインユーザー）
   useEffect(() => {
