@@ -182,7 +182,7 @@ return (
                           <div className="relative aspect-square w-full bg-gray-200 overflow-hidden rounded-xl">
                             {hasImage ? (
                               <Image
-                                src={post.imageUrls[0]}
+                                src={post.imageUrls?.[0] ?? '/no-image.png'}
                                 alt="投稿画像"
                                 fill
                                 className="object-cover rounded-xl"
@@ -223,7 +223,7 @@ return (
                       <div className="relative aspect-square w-full bg-gray-200 overflow-hidden rounded-xl">
                         {hasImage ? (
                           <Image
-                            src={post.imageUrls[0]}
+                            src={post.imageUrls?.[0] ?? '/no-image.png'}
                             alt="投稿画像"
                             fill
                             className="object-cover rounded-xl"
