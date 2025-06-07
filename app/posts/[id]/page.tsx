@@ -129,7 +129,7 @@ export default function PostDetailPage() {
 {/* 観戦試合リスト */}
 <div className="w-full text-left !text-left ml-0 px-0">
   <ul className="list-none p-0 m-0 space-y-3 w-full text-left">
-    {post.matches.map((match, index) => (
+    {post.matches.map((match: { teamA: string; teamB: string; competition: string; season: string }, index) => (
       <li
         key={index}
         className="w-full flex flex-col items-start text-left"
