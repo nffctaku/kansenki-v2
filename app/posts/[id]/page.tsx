@@ -30,10 +30,14 @@ export default function PostDetailPage() {
   if (!post) return <p className="text-center py-10">読み込み中...</p>;
 
   const totalCost = post.cost
-    ? Math.round(
-        Object.values(post.cost).reduce((sum, v) => sum + Number(v), 0) / 10000
-      )
-    : 0;
+  ? Math.round(
+      Object.values(post.cost as Record<string, number>).reduce(
+        (sum, v) => sum + Number(v),
+        0
+      ) / 10000
+    )
+  : 0;
+
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
