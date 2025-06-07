@@ -22,6 +22,7 @@ type Travel = {
     season: string;
     nickname: string;
   }[];
+   season?: string;
 };
 
 export default function HomePage() {
