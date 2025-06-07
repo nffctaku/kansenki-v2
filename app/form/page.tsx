@@ -271,6 +271,9 @@ export default function CloudinaryPostForm() {
 
   setMessage('✅ 投稿完了！');
 
+  // ✅ Firestore保存が完了したらマイページに遷移
+router.push('/mypage');
+
 
 // ✅ カテゴリーも含めてリセット
 setNickname('');
