@@ -8,14 +8,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 type Travel = {
-  id: string;
-  nickname: string;
-  imageUrls?: string[];
-  category?: string;
-  season?: string;
-  likeCount?: number;
-  matches?: { teamA: string; teamB: string }[];
-};
+  id: `placeholder-${i}`,
+  imageUrls: [],
+  matches: [],
+  nickname: '',
+  season: '',               // ← 追加！
+  likeCount: 0,             // ← 追加！（これも安全）
+}));
 
 export default function CategoryPage() {
   const { category } = useParams();
