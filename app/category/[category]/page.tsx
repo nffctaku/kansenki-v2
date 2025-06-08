@@ -18,7 +18,6 @@ type Travel = {
 };
 
 export default function CategoryPage() {
-
   const { category } = useParams();
   const [posts, setPosts] = useState<Travel[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,7 +45,7 @@ export default function CategoryPage() {
 
   const title = categoryLabelMap[category as string] || category;
 
-  const filteredPosts = posts.filter((post) => {
+  const displayedPosts = posts.filter((post) => {
     const matchText = post.matches?.[0]
       ? `${post.matches[0].teamA} vs ${post.matches[0].teamB}`.toLowerCase()
       : '';
@@ -56,15 +55,6 @@ export default function CategoryPage() {
       seasonText.includes(searchTerm.toLowerCase())
     );
   });
-
-  const displayedPosts = filteredPosts;
-  const placeholders = Array.from({ length: 10 - displayedPosts.length }, (_, i) => ({
-    id: `placeholder-${i}`,
-    imageUrls: [],
-    matches: [],
-    nickname: '',
-  }));
-  const filledPosts = [...displayedPosts, ...placeholders];
 
   return (
     <div className="mb-12 px-4 w-full max-w-screen-xl mx-auto">
@@ -81,7 +71,7 @@ export default function CategoryPage() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[6px] w-full max-w-full">
-        {filledPosts.map((post) => (
+        {displayedPosts.map((post) => (
           <div key={post.id} className="bg-white rounded-lg shadow p-2">
             <div className="relative aspect-square w-full bg-gray-200 rounded overflow-hidden">
               {post.imageUrls?.[0] ? (
