@@ -7,17 +7,18 @@ import { db } from '@/lib/firebase';
 import Image from 'next/image';
 import Link from 'next/link';
 
-const placeholders: Travel[] = Array.from({ length: 10 - displayedPosts.length }, (_, i) => ({
-  id: `placeholder-${i}`,
-  imageUrls: [],
-  matches: [],
-  nickname: '',
-  season: '',
-  likeCount: 0,
-}));
-
+type Travel = {
+  id: string;
+  nickname: string;
+  imageUrls?: string[];
+  category?: string;
+  season?: string;
+  likeCount?: number;
+  matches?: { teamA: string; teamB: string }[];
+};
 
 export default function CategoryPage() {
+
   const { category } = useParams();
   const [posts, setPosts] = useState<Travel[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
