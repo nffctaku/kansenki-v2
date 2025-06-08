@@ -12,12 +12,15 @@ type Travel = {
   nickname: string;
   imageUrls?: string[];
   category?: string;
+  season?: string;
+  likeCount?: number;
   matches?: { teamA: string; teamB: string }[];
 };
 
 export default function CategoryPage() {
   const { category } = useParams();
   const [posts, setPosts] = useState<Travel[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -29,7 +32,7 @@ export default function CategoryPage() {
       })) as Travel[];
       setPosts(data);
     };
-    fetchData();
+    if (category) fetchData();
   }, [category]);
 
   const categoryLabelMap: Record<string, string> = {
@@ -42,7 +45,18 @@ export default function CategoryPage() {
 
   const title = categoryLabelMap[category as string] || category;
 
-  const displayedPosts = posts;
+  const filteredPosts = posts.filter((post) => {
+    const matchText = post.matches?.[0]
+      ? `${post.matches[0].teamA} vs ${post.matches[0].teamB}`.toLowerCase()
+      : '';
+    const seasonText = post.season?.toLowerCase() || '';
+    return (
+      matchText.includes(searchTerm.toLowerCase()) ||
+      seasonText.includes(searchTerm.toLowerCase())
+    );
+  });
+
+  const displayedPosts = filteredPosts;
   const placeholders = Array.from({ length: 10 - displayedPosts.length }, (_, i) => ({
     id: `placeholder-${i}`,
     imageUrls: [],
@@ -53,9 +67,19 @@ export default function CategoryPage() {
 
   return (
     <div className="mb-12 px-4 w-full max-w-screen-xl mx-auto">
-      <h1 className="text-2xl font-bold mt-6 mb-6 text-gray-800">{title}の観戦記一覧</h1>
+      <h1 className="text-2xl font-bold mt-6 mb-4 text-gray-800">{title}の観戦記一覧</h1>
 
-      <div className="grid grid-cols-5 gap-[6px] w-full max-w-full">
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="試合名やシーズンで検索"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring focus:border-blue-400"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[6px] w-full max-w-full">
         {filledPosts.map((post) => (
           <div key={post.id} className="bg-white rounded-lg shadow p-2">
             <div className="relative aspect-square w-full bg-gray-200 rounded overflow-hidden">
@@ -79,6 +103,14 @@ export default function CategoryPage() {
                 {post.matches[0].teamA} vs {post.matches[0].teamB}
               </div>
             )}
+
+            <div className="text-xs text-gray-500 px-1">
+              {post.season || 'シーズン未設定'}
+            </div>
+
+            <div className="text-xs text-red-500 px-1 mt-1">
+              ♡ {post.likeCount || 0}
+            </div>
           </div>
         ))}
       </div>
