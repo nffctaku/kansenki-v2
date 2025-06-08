@@ -187,23 +187,28 @@ return (
 </div>
 
     <div className="px-4 py-12 text-gray-500 w-full max-w-screen-md mx-auto">
-      {Object.entries(groupedByCategory).map(([category, posts]) => {
-        const categoryLabelMap: Record<string, string> = {
-          england: 'イングランド',
-          italy: 'イタリア',
-          spain: 'スペイン',
-          germany: 'ドイツ',
-          france: 'フランス',
-          other: 'その他',
-        };
+  {Object.entries(groupedByCategory).map(([category, posts]) => {
+    const categoryLabelMap: Record<string, string> = {
+      england: 'イングランド',
+      italy: 'イタリア',
+      spain: 'スペイン',
+      germany: 'ドイツ',
+      france: 'フランス',
+      other: 'その他',
+    };
 
-        const japaneseCategory = categoryLabelMap[category] || category;
-        const displayedPosts = posts.slice(0, 5);
+    const japaneseCategory = categoryLabelMap[category] || category;
+    const displayedPosts = posts.slice(0, 5);
 
-        return (
-          <div key={category} className="mb-10 bg-gray-100 px-2 py-6 rounded-lg">
-            <h2 className="text-lg font-bold mb-4 px-2">{japaneseCategory}</h2>
-
+    return (
+      <div key={category} className="mb-10 bg-gray-100 px-2 py-6 rounded-lg">
+        <h2 className="text-lg font-bold mb-4 px-2 text-gray-800">
+  <Link href={`/category/${category}`}>
+    <span className="inline-block hover:text-blue-600 transition duration-200">
+      {japaneseCategory}
+    </span>
+  </Link>
+</h2>
             {/* ✅ スマホ表示（Swiper） */}
             <div className="block md:hidden">
               <Swiper spaceBetween={12} slidesPerView={'auto'} className="!px-4">
