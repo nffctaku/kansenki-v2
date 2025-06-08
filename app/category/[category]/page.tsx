@@ -13,9 +13,8 @@ type Travel = {
   matches: [],
   nickname: '',
   season: '',               // ← 追加！
-  likeCount: 0,             // ← 追加！（これも安全）
- };
-});
+  likeCount: 0,
+}));
 
 export default function CategoryPage() {
   const { category } = useParams();
