@@ -4,25 +4,28 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, increment } from 'firebase/firestore'; // ★ increment 追加
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, getRedirectResult } from 'firebase/auth';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css'
+import 'swiper/css';
+
+type MatchInfo = {
+  teamA: string;
+  teamB: string;
+  competition: string;
+  season: string;
+  nickname: string;
+};
 
 type Travel = {
   id: string;
   nickname: string;
   imageUrls?: string[];
   category?: string;
-  matches?: {
-    teamA: string;
-    teamB: string;
-    competition: string;
-    season: string;
-    nickname: string;
-  }[];
-   season?: string;
+  matches?: MatchInfo[];
+  season?: string;
+  likeCount?: number; // ★ 追加
 };
 
 export default function HomePage() {
@@ -30,33 +33,43 @@ export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const router = useRouter();
 
+  // ✅ Firestore から投稿データ取得
   useEffect(() => {
     const fetchPosts = async () => {
-      const snapshot = await getDocs(collection(db, 'simple-posts'));
-      const data = snapshot.docs.map((doc) => {
-        const d = doc.data();
-        return {
-          id: doc.id,
-          nickname: d.nickname || '',
-          imageUrls: d.imageUrls || [],
-          category: d.category || '',
-          matches: d.matches || [],
-          season: d.season || '',
-        };
-      });
-      setPosts(data.reverse());
+      try {
+        const snapshot = await getDocs(collection(db, 'simple-posts'));
+        const data: Travel[] = snapshot.docs.map((doc) => {
+          const d = doc.data();
+          return {
+            id: doc.id,
+            nickname: d.nickname ?? '',
+            imageUrls: d.imageUrls ?? [],
+            category: d.category ?? 'other',
+            matches: Array.isArray(d.matches) ? d.matches : [],
+            season: d.season ?? '',
+            likeCount: d.likeCount ?? 0, // ★
+          };
+        });
+        setPosts(data.reverse());
+      } catch (error) {
+        console.error('投稿取得エラー:', error);
+      }
     };
 
     fetchPosts();
 
+    // ✅ スマホリダイレクト後のログイン検知
     getRedirectResult(auth).then((result) => {
       if (result?.user) {
         setIsLoggedIn(true);
         console.log('スマホログイン完了:', result.user);
       }
+    }).catch((err) => {
+      console.error('ログインエラー:', err); // ★ エラーハンドリング追加
     });
   }, []);
 
+  // ✅ 通常ログイン検知
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setIsLoggedIn(!!user);
@@ -64,28 +77,42 @@ export default function HomePage() {
     return () => unsubscribe();
   }, []);
 
+  // ✅ 投稿ボタン
   const handlePostClick = () => {
-    if (isLoggedIn) {
-      router.push('/form');
-    } else {
-      router.push('/login');
-    }
+    router.push(isLoggedIn ? '/form' : '/login');
   };
 
+  // ✅ マイページボタン
   const handleMyPageClick = () => {
-    if (isLoggedIn) {
-      router.push('/mypage');
-    } else {
-      router.push('/login');
-    }
+    router.push(isLoggedIn ? '/mypage' : '/login');
   };
 
+  // ✅ 投稿をカテゴリごとにまとめる
   const groupedByCategory = posts.reduce((acc, post) => {
     const category = post.category || 'other';
     if (!acc[category]) acc[category] = [];
     acc[category].push(post);
     return acc;
   }, {} as Record<string, Travel[]>);
+
+  // ✅ いいね処理（匿名）
+  const handleLike = async (postId: string) => {
+    const likedKey = `liked_${postId}`;
+    if (typeof window !== 'undefined' && localStorage.getItem(likedKey)) return;
+
+    try {
+      const postRef = doc(db, 'simple-posts', postId);
+      await updateDoc(postRef, {
+        likeCount: increment(1),
+      });
+      localStorage.setItem(likedKey, 'true');
+    } catch (error) {
+      console.error('いいねエラー:', error);
+    }
+  };
+
+  // 🔻 この下に return JSX が続く（ここには手を入れなくてOK）
+
 
 
 return (
@@ -141,16 +168,23 @@ return (
       </div>
     </header>
 
-    {/* 🔽 バナー画像差し込み */}
-    <div className="w-full flex justify-center bg-white py-6">
-      <Image
-        src="/グリーン　イエロー　シンプル　クーポン　バナー.png"
-        alt="バナー"
-        width={800}
-        height={200}
-        className="rounded-lg shadow-md max-w-full h-auto"
-      />
-    </div>
+   {/* 🔽 バナー画像差し込み */}
+<div className="w-full flex justify-center bg-white py-6">
+  <a
+    href="https://note.com/football_top/n/n111e239d79a9?sub_rt=share_pw"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="block"
+  >
+    <Image
+      src="/グリーン　イエロー　シンプル　クーポン　バナー.png"
+      alt="クーポンバナー"
+      width={800}
+      height={200}
+      className="rounded-lg shadow-md max-w-full h-auto transition hover:opacity-90"
+    />
+  </a>
+</div>
 
     <div className="px-4 py-12 text-gray-500 w-full max-w-screen-md mx-auto">
       {Object.entries(groupedByCategory).map(([category, posts]) => {
@@ -205,6 +239,14 @@ return (
   <p className="text-xs text-gray-500">
     {post.season || 'シーズン未設定'}
   </p>
+   {/* ♡ いいねボタン */}
+  <button
+  onClick={() => handleLike(post.id)}
+  className="mt-2 text-xs text-red-500 hover:opacity-80 transition bg-transparent border-none outline-none appearance-none"
+>
+  ♡ {post.likeCount || 0}
+</button>
+
 </div>
                       </div>
                     </SwiperSlide>
@@ -246,6 +288,13 @@ return (
                       <p className="text-xs text-gray-500">
   {post.season || 'シーズン未設定'}
 </p>
+ {/* ♡ いいねボタン */}
+  <button
+  onClick={() => handleLike(post.id)}
+  className="mt-2 text-xs text-red-500 hover:opacity-80 transition bg-transparent border-none outline-none appearance-none"
+>
+  ♡ {post.likeCount || 0}
+</button>
                     </div>
                   </div>
                 );
@@ -256,37 +305,50 @@ return (
       })}
 
       {/* ✅ map の外に置いたフッター（1回だけ表示される） */}
-      <footer className="mt-12 py-8 text-center space-y-4 text-sm text-gray-600">
-        <Image
-          src="/footballtop-logo-12.png"
-          alt="FOOTBALLTOP ロゴ"
-          width={180}
-          height={60}
-          unoptimized
-          className="mx-auto"
-        />
-        <div className="flex justify-center space-x-6">
-          <a
-            href="https://x.com/footballtop_jp"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:underline"
-          >
-            X
-          </a>
-          <a
-            href="https://note.com/football_top"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:underline"
-          >
-            Note
-          </a>
-        </div>
-        <p className="text-xs text-gray-400">
-          © 2025 FOOTBALLTOP. All rights reserved.
-        </p>
-      </footer>
+<footer className="mt-12 py-8 text-center space-y-4 text-sm text-gray-600">
+  <Image
+    src="/footballtop-logo-12.png"
+    alt="FOOTBALLTOP ロゴ"
+    width={180}
+    height={60}
+    unoptimized
+    className="mx-auto"
+  />
+
+  {/* ✅ XとNoteのアイコンリンク表示（アイコン間隔を広めに） */}
+  <div className="flex justify-center space-x-10">
+    <a
+      href="https://x.com/FOOTBALLTOP2024"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <Image
+        src="/X.png"
+        alt="Xリンク"
+        width={32}
+        height={32}
+        className="hover:opacity-80 transition"
+      />
+    </a>
+    <a
+      href="https://note.com/football_top"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <Image
+         src="/note.png"
+  alt="Noteリンク"
+  width={80}
+  height={40}
+        className="hover:opacity-80 transition"
+      />
+    </a>
+  </div>
+
+  <p className="text-xs text-gray-400">
+    © 2025 FOOTBALLTOP. All rights reserved.
+  </p>
+</footer>
     </div>
   </div>
 );
