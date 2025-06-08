@@ -79,58 +79,86 @@ export default function UserPostsPage() {
         )}
       </div>
 
-
-      <div className="px-4 pt-2 pb-6">
-        <h1 className="text-xl font-bold">{userInfo.nickname}</h1>
-        <p className="text-sm text-gray-500">@{id}</p>
+      <div className="px-4 pt-4 pb-6">
+        <h1 className="text-2xl font-bold text-gray-900">{userInfo.nickname}</h1>
+        <p className="text-sm text-gray-500 mb-3">@{id}</p>
 
         {/* XリンクとNoteリンク */}
-        <div className="flex gap-4 mt-3">
+        <div className="flex items-center gap-4">
           {userInfo.xLink && (
-            <Link href={userInfo.xLink} target="_blank" className="text-blue-500 hover:underline text-sm">
-              🐦 Xを見る
+            <Link href={userInfo.xLink} target="_blank" rel="noopener noreferrer">
+              <Image
+                src="/X.png"
+                alt="Xリンク"
+                width={32}
+                height={32}
+                className="hover:opacity-80 rounded"
+              />
             </Link>
           )}
           {userInfo.noteLink && (
-            <Link href={userInfo.noteLink} target="_blank" className="text-green-600 hover:underline text-sm">
-              ✍️ Noteを見る
+            <Link href={userInfo.noteLink} target="_blank" rel="noopener noreferrer">
+              <Image
+                src="/note.png"
+                alt="Noteリンク"
+                width={32}
+                height={32}
+                className="hover:opacity-80 rounded"
+              />
             </Link>
           )}
         </div>
       </div>
 
       {/* 投稿一覧 */}
-      <div className="px-4 pb-10">
-        {posts.length === 0 ? (
-          <p className="text-gray-500">投稿がありません。</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {posts.map((post) => (
-              <div
-                key={post.id}
-                className="bg-white rounded-xl shadow-md overflow-hidden"
-              >
-                {post.imageUrls?.[0] && (
-                  <Link href={`/posts/${post.id}`}>
-                    <div className="w-full aspect-square bg-gray-100 relative hover:opacity-90 transition">
-                      <img
-                        src={post.imageUrls[0]}
-                        alt="観戦写真"
-                        className="object-cover w-full h-full"
-                      />
-                    </div>
-                  </Link>
-                )}
-                <div className="p-4">
-                  <p className="text-sm text-gray-500 mb-1">
-                    {post.matches?.[0]?.teamA} vs {post.matches?.[0]?.teamB}
-                  </p>
-                </div>
-              </div>
-            ))}
+<div className="px-4 pb-10 mt-4 border-t pt-6">
+  {posts.length === 0 ? (
+    <p className="text-gray-500">投稿がありません。</p>
+  ) : (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      {posts.map((post) => (
+        <div
+          key={post.id}
+          className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition"
+        >
+          <Link href={`/posts/${post.id}`}>
+            <div className="w-full aspect-square bg-gray-100 relative">
+              <Image
+                src={post.imageUrls?.[0] || '/no-image.png'}
+                alt="観戦写真"
+                fill
+                className="object-cover"
+              />
+            </div>
+          </Link>
+          <div className="p-4">
+            <h3 className="text-sm font-semibold text-gray-800 truncate">
+              {post.matches?.[0]
+                ? `${post.matches[0].teamA} vs ${post.matches[0].teamB}`
+                : '試合情報なし'}
+            </h3>
+            <p className="text-xs text-gray-500 mt-1">
+                {post.season || 'シーズン未設定'}
+            </p>
+            <p className="text-xs text-red-500 mt-1">
+              ♡ {post.likeCount || 0}
+            </p>
           </div>
-        )}
-      </div>
+        </div>
+      ))}
     </div>
+  )}
+
+  {/* トップページに戻るボタン */}
+  <div className="mt-8 text-center">
+    <Link
+      href="/"
+      className="inline-block bg-blue-600 text-white text-sm font-semibold px-6 py-2 rounded hover:bg-blue-700 transition"
+    >
+      トップページに戻る
+    </Link>
+  </div>
+</div>
+</div>
   );
 }
