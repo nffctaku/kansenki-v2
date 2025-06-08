@@ -101,8 +101,8 @@ export default function UserPostsPage() {
               <Image
                 src="/note.png"
                 alt="Noteリンク"
-                width={32}
-                height={32}
+                width={80}
+                height={40}
                 className="hover:opacity-80 rounded"
               />
             </Link>
