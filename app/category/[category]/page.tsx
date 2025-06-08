@@ -14,7 +14,8 @@ type Travel = {
   nickname: '',
   season: '',               // ← 追加！
   likeCount: 0,             // ← 追加！（これも安全）
-}));
+ };
+});
 
 export default function CategoryPage() {
   const { category } = useParams();
