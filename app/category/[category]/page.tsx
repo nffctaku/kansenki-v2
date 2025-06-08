@@ -7,14 +7,15 @@ import { db } from '@/lib/firebase';
 import Image from 'next/image';
 import Link from 'next/link';
 
-type Travel = {
+const placeholders: Travel[] = Array.from({ length: 10 - displayedPosts.length }, (_, i) => ({
   id: `placeholder-${i}`,
   imageUrls: [],
   matches: [],
   nickname: '',
-  season: '',               // ← 追加！
+  season: '',
   likeCount: 0,
 }));
+
 
 export default function CategoryPage() {
   const { category } = useParams();
