@@ -76,14 +76,6 @@ export default function HomePage() {
     return () => unsubscribe();
   }, []);
 
-  const handlePostClick = () => {
-    router.push(isLoggedIn ? '/form' : '/login');
-  };
-
-  const handleMyPageClick = () => {
-    router.push(isLoggedIn ? '/mypage' : '/login');
-  };
-
   const groupedByCategory = posts.reduce((acc, post) => {
     const category = post.category || 'other';
     if (!acc[category]) acc[category] = [];
