@@ -148,10 +148,6 @@ export default function PostDetailPage() {
   </ul>
 </div>
 
-
-
-
-
   <p><strong>ライフスタイル:</strong> {post.lifestyle}</p>
   <p><strong>観戦時期:</strong> {post.watchYear}年 {post.watchMonth}月</p>
   <p><strong>滞在期間:</strong> {post.stayDuration}</p>

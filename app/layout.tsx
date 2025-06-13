@@ -1,13 +1,14 @@
-import './globals.css'; // ✅ Tailwind＋共通スタイルを読み込む
-import BottomNav from '@/components/BottomNav'; // ✅ フッタータブを読み込み
+import './globals.css';
+import BottomTabBar from './components/BottomTabBar';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">
-      <body className="bg-white text-black min-h-screen pb-20"> {/* ✅ ナビ分の余白 */}
+      <body className="min-h-screen pb-32 bg-white text-black">
         {children}
-        <BottomNav /> {/* ✅ フッタータブを常に表示 */}
+        <BottomTabBar />
       </body>
     </html>
   );
 }
+
