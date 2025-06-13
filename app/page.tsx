@@ -31,12 +31,9 @@ type Travel = {
 export default function HomePage() {
   const [posts, setPosts] = useState<Travel[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
-  const [isClient, setIsClient] = useState(false); // 👈 クライアント判定用
   const router = useRouter();
 
   useEffect(() => {
-    setIsClient(true); // 👈 マウント後にクライアントと判定
-
     const fetchPosts = async () => {
       try {
         const snapshot = await getDocs(collection(db, 'simple-posts'));
@@ -108,6 +105,7 @@ export default function HomePage() {
       console.error('いいねエラー:', error);
     }
   };
+
 
 
   return (
