@@ -29,7 +29,7 @@ type Travel = {
 
 export default function HomePage() {
   const [posts, setPosts] = useState<Travel[]>([]);
-
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); // 👈 これを復活
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -95,6 +95,7 @@ export default function HomePage() {
       console.error('いいねエラー:', error);
     }
   };
+
 
 
 
