@@ -31,9 +31,12 @@ type Travel = {
 export default function HomePage() {
   const [posts, setPosts] = useState<Travel[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [isClient, setIsClient] = useState(false); // 👈 クライアント判定用
   const router = useRouter();
 
   useEffect(() => {
+    setIsClient(true); // 👈 マウント後にクライアントと判定
+
     const fetchPosts = async () => {
       try {
         const snapshot = await getDocs(collection(db, 'simple-posts'));
@@ -106,49 +109,18 @@ export default function HomePage() {
     }
   };
 
-   return (
-  <div className="bg-white min-h-screen">
-    <header className="bg-white px-4 py-4 font-sans border-b border-gray-200">
-      <div className="flex items-center justify-between max-w-screen-xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 whitespace-nowrap">現地観戦記</h1>
-        <div className="flex items-center gap-6">
-          <button
-            onClick={handleMyPageClick}
-            className="flex flex-col items-center bg-transparent hover:opacity-80 border-none"
-          >
-            <Image
-              src="/ノートパソコンのアイコン素材3.png"
-              alt="マイページ"
-              width={28}
-              height={28}
-            />
-            <span className="text-xs text-gray-500 mt-1">マイページ</span>
-          </button>
-          <button
-            onClick={handlePostClick}
-            className="flex flex-col items-center bg-transparent hover:opacity-80 border-none"
-          >
-            <Image
-              src="/枠つきの羽根ペンのアイコン素材.png"
-              alt="投稿する"
-              width={28}
-              height={28}
-            />
-            <span className="text-xs text-gray-500 mt-1">投稿する</span>
-          </button>
-        </div>
-      </div>
 
-      <div className="mt-4 max-w-screen-xl mx-auto px-2">
-        <div className="w-full max-w-[600px] bg-gray-100 rounded-full px-4 py-2 shadow-sm">
-          <input
-            type="text"
-            placeholder="クラブ名を検索"
-            className="w-full h-10 bg-transparent text-base"
-          />
+  return (
+   <div className="bg-white min-h-screen pb-[72px]">
+      <header className="bg-white font-sans border-b border-gray-200 relative h-14">
+        <div className="max-w-screen-xl mx-auto relative h-full flex items-center justify-center">
+         
+          {/* タイトル（常に中央） */}
+          <h1 className="text-[12px] font-bold text-gray-900 whitespace-nowrap">
+            現地観戦記
+          </h1>
         </div>
-      </div>
-    </header>
+      </header>
 
     <div className="w-full flex justify-center bg-white py-6">
       <a
@@ -166,157 +138,111 @@ export default function HomePage() {
       </a>
     </div>
 
+    <div className="px-4 py-12 text-gray-500 w-full max-w-screen-md mx-auto pb-20">
+      {Object.entries(groupedByCategory).map(([category, posts]) => {
+        const categoryLabelMap: Record<string, string> = {
+          england: 'イングランド',
+          italy: 'イタリア',
+          spain: 'スペイン',
+          germany: 'ドイツ',
+          france: 'フランス',
+          other: 'その他',
+        };
 
-      <div className="px-4 py-12 text-gray-500 w-full max-w-screen-md mx-auto pb-20">
-        {Object.entries(groupedByCategory).map(([category, posts]) => {
-          const categoryLabelMap: Record<string, string> = {
-            england: 'イングランド',
-            italy: 'イタリア',
-            spain: 'スペイン',
-            germany: 'ドイツ',
-            france: 'フランス',
-            other: 'その他',
-          };
+        const japaneseCategory = categoryLabelMap[category] || category;
+        const displayedPosts = posts.slice(0, 5);
 
-          const japaneseCategory = categoryLabelMap[category] || category;
-          const displayedPosts = posts.slice(0, 5);
+        return (
+          <div key={category} className="mb-10 bg-gray-100 px-2 py-6 rounded-lg">
+            <h2 className="text-lg font-bold mb-4 px-2 text-gray-800">
+              <Link href={`/category/${category}`}>
+                <span className="inline-block hover:text-blue-600 transition duration-200">
+                  {japaneseCategory}
+                </span>
+              </Link>
+            </h2>
 
-          return (
-            <div key={category} className="mb-10 bg-gray-100 px-2 py-6 rounded-lg">
-              <h2 className="text-lg font-bold mb-4 px-2 text-gray-800">
-                <Link href={`/category/${category}`}>
-                  <span className="inline-block hover:text-blue-600 transition duration-200">{japaneseCategory}</span>
-                </Link>
-              </h2>
-
-              <div className="block md:hidden">
-                <Swiper spaceBetween={12} slidesPerView={'auto'} className="!px-4">
-                  {displayedPosts.map((post) => {
-                    const hasImage = post.imageUrls?.[0];
-                    const hasMatch = post.matches?.[0];
-                    return (
-                      <SwiperSlide key={post.id} className="!w-[220px] !max-w-[220px]">
-                        <div className="bg-gray-100 rounded-3xl p-3">
-                          <Link href={`/posts/${post.id}`}>
-                            <div className="relative aspect-square w-full bg-gray-200 overflow-hidden rounded-xl">
-                              {hasImage ? (
-                                <Image src={hasImage} alt="投稿画像" fill className="object-cover rounded-xl" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">No Image</div>
-                              )}
-                            </div>
-                          </Link>
-                          <div className="pt-3">
-                            <h3 className="text-sm font-semibold truncate text-gray-800">
-                              {hasMatch ? `${hasMatch.teamA} vs ${hasMatch.teamB}` : '試合情報なし'}
-                            </h3>
-                            <p className="text-xs text-gray-500">{post.season || 'シーズン未設定'}</p>
-                            <button onClick={() => handleLike(post.id)} className="mt-2 text-xs text-red-500">♡ {post.likeCount || 0}</button>
-                          </div>
-                        </div>
-                      </SwiperSlide>
-                    );
-                  })}
-                </Swiper>
-              </div>
-
-              <div className="hidden md:grid grid-cols-5 gap-4">
+            <div className="block md:hidden">
+              <Swiper spaceBetween={12} slidesPerView={'auto'} className="!px-4">
                 {displayedPosts.map((post) => {
                   const hasImage = post.imageUrls?.[0];
                   const hasMatch = post.matches?.[0];
                   return (
-                    <div key={post.id} className="bg-gray-100 rounded-3xl p-3">
-                      <Link href={`/posts/${post.id}`}>
-                        <div className="relative aspect-square w-full bg-gray-200 overflow-hidden rounded-xl">
-                          {hasImage ? (
-                            <Image src={hasImage} alt="投稿画像" fill className="object-cover rounded-xl" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">No Image</div>
-                          )}
+                    <SwiperSlide key={post.id} className="!w-[220px] !max-w-[220px]">
+                      <div className="bg-gray-100 rounded-3xl p-3">
+                        <Link href={`/posts/${post.id}`}>
+                          <div className="relative aspect-square w-full bg-gray-200 overflow-hidden rounded-xl">
+                            {hasImage ? (
+                              <Image src={hasImage} alt="投稿画像" fill className="object-cover rounded-xl" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">No Image</div>
+                            )}
+                          </div>
+                        </Link>
+                        <div className="pt-3">
+                          <h3 className="text-sm font-semibold truncate text-gray-800">
+                            {hasMatch ? `${hasMatch.teamA} vs ${hasMatch.teamB}` : '試合情報なし'}
+                          </h3>
+                          <p className="text-xs text-gray-500">{post.season || 'シーズン未設定'}</p>
+                          <button onClick={() => handleLike(post.id)} className="mt-2 text-xs text-red-500">♡ {post.likeCount || 0}</button>
                         </div>
-                      </Link>
-                      <div className="pt-4">
-                        <h3 className="text-base font-bold text-gray-800 truncate">
-                          {hasMatch ? `${hasMatch.teamA} vs ${hasMatch.teamB}` : '試合情報なし'}
-                        </h3>
-                        <p className="text-xs text-gray-500">{post.season || 'シーズン未設定'}</p>
-                        <button onClick={() => handleLike(post.id)} className="mt-2 text-xs text-red-500">♡ {post.likeCount || 0}</button>
                       </div>
-                    </div>
+                    </SwiperSlide>
                   );
                 })}
-              </div>
+              </Swiper>
             </div>
-          );
-        })}
-      </div>
 
-       <footer className="mt-12 py-8 text-center space-y-4 text-sm text-gray-600">
-      <Image
-        src="/footballtop-logo-12.png"
-        alt="FOOTBALLTOP ロゴ"
-        width={180}
-        height={60}
-        unoptimized
-        className="mx-auto"
-      />
-      <div className="flex justify-center space-x-10">
-        <a
-          href="https://x.com/FOOTBALLTOP2024"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            src="/X.png"
-            alt="Xリンク"
-            width={32}
-            height={32}
-            className="hover:opacity-80 transition"
-          />
-        </a>
-        <a
-          href="https://note.com/football_top"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            src="/note.png"
-            alt="Noteリンク"
-            width={80}
-            height={40}
-            className="hover:opacity-80 transition"
-          />
-        </a>
-      </div>
-      <p className="text-xs text-gray-400">
-        © 2025 FOOTBALLTOP. All rights reserved.
-      </p>
-    </footer>
-
-    {/* 👇 固定フッター追加（スマホボトムナビ） */}
-    <div className="fixed bottom-0 left-0 right-0 border-t bg-white flex justify-around py-2 z-50 md:hidden">
-      <button
-        onClick={() => router.push('/')}
-        className="flex flex-col items-center text-xs text-gray-500 hover:text-blue-600"
-      >
-        <div className="text-lg">🏠</div>
-        ホーム
-      </button>
-      <button
-        onClick={() => router.push('/form')}
-        className="flex flex-col items-center text-xs text-gray-500 hover:text-blue-600"
-      >
-        <div className="text-lg">✏️</div>
-        投稿
-      </button>
-      <button
-        onClick={() => router.push('/mypage')}
-        className="flex flex-col items-center text-xs text-gray-500 hover:text-blue-600"
-      >
-        <div className="text-lg">🟡</div>
-        マイページ
-      </button>
+            <div className="hidden md:grid grid-cols-5 gap-4">
+              {displayedPosts.map((post) => {
+                const hasImage = post.imageUrls?.[0];
+                const hasMatch = post.matches?.[0];
+                return (
+                  <div key={post.id} className="bg-gray-100 rounded-3xl p-3">
+                    <Link href={`/posts/${post.id}`}>
+                      <div className="relative aspect-square w-full bg-gray-200 overflow-hidden rounded-xl">
+                        {hasImage ? (
+                          <Image src={hasImage} alt="投稿画像" fill className="object-cover rounded-xl" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">No Image</div>
+                        )}
+                      </div>
+                    </Link>
+                    <div className="pt-4">
+                      <h3 className="text-base font-bold text-gray-800 truncate">
+                        {hasMatch ? `${hasMatch.teamA} vs ${hasMatch.teamB}` : '試合情報なし'}
+                      </h3>
+                      <p className="text-xs text-gray-500">{post.season || 'シーズン未設定'}</p>
+                      <button onClick={() => handleLike(post.id)} className="mt-2 text-xs text-red-500">♡ {post.likeCount || 0}</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
+
+   <footer className="mt-12 py-8 text-center space-y-4 text-sm text-gray-600">
+  <Image
+    src="/footballtop-logo-12.png"
+    alt="FOOTBALLTOP ロゴ"
+    width={180}
+    height={60}
+    unoptimized
+    className="mx-auto"
+  />
+  <div className="flex justify-center space-x-10">
+    <a href="https://x.com/FOOTBALLTOP2024" target="_blank" rel="noopener noreferrer">
+      <Image src="/X.png" alt="Xリンク" width={32} height={32} className="hover:opacity-80 transition" />
+    </a>
+    <a href="https://note.com/football_top" target="_blank" rel="noopener noreferrer">
+      <Image src="/note.png" alt="Noteリンク" width={80} height={40} className="hover:opacity-80 transition" />
+    </a>
   </div>
+  <p className="text-xs text-gray-400">© 2025 FOOTBALLTOP. All rights reserved.</p>
+</footer>
+</div> // ← ここは return 最上位の div（min-h-screen pb-[72px]）の閉じタグ
 );
 }
