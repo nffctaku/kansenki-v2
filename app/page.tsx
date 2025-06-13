@@ -30,8 +30,7 @@ type Travel = {
 
 export default function HomePage() {
   const [posts, setPosts] = useState<Travel[]>([]);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
-  const router = useRouter();
+
 
   useEffect(() => {
     const fetchPosts = async () => {
