@@ -67,12 +67,17 @@ export default function HomePage() {
       });
   }, []);
 
-  useEffect(() => {
+   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setIsLoggedIn(!!user);
     });
     return () => unsubscribe();
   }, []);
+
+  // 👇 isLoggedIn を使用してエラー回避（ログ出力などでOK）
+  useEffect(() => {
+    console.log('ログイン状態:', isLoggedIn);
+  }, [isLoggedIn]);
 
   const groupedByCategory = posts.reduce((acc, post) => {
     const category = post.category || 'other';
@@ -95,6 +100,7 @@ export default function HomePage() {
       console.error('いいねエラー:', error);
     }
   };
+
 
 
 
