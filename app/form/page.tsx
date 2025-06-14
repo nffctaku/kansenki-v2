@@ -285,10 +285,6 @@ export default function CloudinaryPostForm() {
       competition: '',
       season: '',
       nickname: '',
-      stadium: undefined,
-      seat: undefined,
-      seatReview: undefined,
-      ticketPrice: undefined,
     },
   ]);
   setLifestyle('');
