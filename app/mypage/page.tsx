@@ -192,70 +192,76 @@ const handleSave = async () => {
   {message && <p className="text-sm text-green-600">{message}</p>}
 </div>
 
-    {/* あなたの投稿一覧 */}
-    <div className="p-4">
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-sm font-semibold">あなたの投稿</h2>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          {posts.map((post) => (
-            <div
-              key={post.id}
-              className="bg-white rounded-xl shadow overflow-hidden"
-            >
-              {/* 投稿画像 */}
-              <img
-                src={post.imageUrls?.[0] || '/no-image.png'}
-                alt="投稿画像"
-                className="w-full aspect-square object-cover"
-              />
-
-              {/* 投稿情報 */}
-              <div className="p-2 text-sm">
-  <p className="font-semibold truncate">
-    {post.matches?.[0]?.nickname || '試合名未入力'}
-  </p>
-  <p className="text-gray-600 text-xs">
-    {post.matches?.[0]?.teamA} vs {post.matches?.[0]?.teamB}
-  </p>
-  {/* ✅ season 表示を追加 */}
-  <p className="text-gray-500 text-xs mt-1">
-    {post.season || 'シーズン未設定'}
-  </p>
-  <a
-    href={`/posts/${post.id}`}
-    className="text-xs text-blue-600 underline mt-1 inline-block"
-  >
-    投稿を表示
-  </a>
-</div>
-
-
-              {/* ✅ 削除ボタン（カードの下） */}
-              <div className="px-2 pb-3">
-                <button
-                  onClick={() => handleDelete(post.id)}
-                  className="text-xs text-red-600 border border-red-300 px-3 py-1 rounded hover:bg-red-50 transition"
-                >
-                  この投稿を削除
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="text-center mt-8">
-        <button
-          onClick={() => router.push('/')}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          トップページに戻る
-        </button>
-      </div>
+  {/* あなたの投稿一覧 */}
+<div className="p-4">
+  <div className="mb-6">
+    <div className="flex justify-between items-center mb-2">
+      <h2 className="text-sm font-semibold">あなたの投稿</h2>
     </div>
+
+    <div className="grid grid-cols-2 gap-4">
+      {posts.map((post) => (
+        <div
+          key={post.id}
+          className="bg-white rounded-xl shadow overflow-hidden"
+        >
+          {/* 投稿画像 */}
+          <img
+            src={post.imageUrls?.[0] || '/no-image.png'}
+            alt="投稿画像"
+            className="w-full aspect-square object-cover"
+          />
+
+          {/* 投稿情報 */}
+          <div className="p-2 text-sm">
+            <p className="font-semibold truncate">
+              {post.matches?.[0]?.competition || '大会名未入力'}
+            </p>
+            <p className="text-gray-600 text-xs">
+              {post.matches?.[0]?.teamA} vs {post.matches?.[0]?.teamB}
+            </p>
+            <p className="text-gray-500 text-xs mt-1">
+              {post.season || 'シーズン未設定'}
+            </p>
+            <div className="flex gap-3 mt-1">
+              <a
+                href={`/posts/${post.id}`}
+                className="text-xs text-blue-600 underline"
+              >
+                投稿を表示
+              </a>
+              <a
+                href={`/edit/${post.id}`}
+                className="text-xs text-green-600 underline"
+              >
+                編集
+              </a>
+            </div>
+          </div>
+
+          {/* 削除ボタン */}
+          <div className="px-2 pb-3">
+            <button
+              onClick={() => handleDelete(post.id)}
+              className="text-xs text-red-600 border border-red-300 px-3 py-1 rounded hover:bg-red-50 transition"
+            >
+              この投稿を削除
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <div className="text-center mt-8">
+    <button
+      onClick={() => router.push('/')}
+      className="text-sm text-blue-600 hover:underline"
+    >
+      トップページに戻る
+    </button>
+  </div>
+</div>
   </div>
 );
 }
