@@ -25,7 +25,6 @@ export default function EditPage() {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
-        setPost(data);
         setCompetition(data.matches?.[0]?.competition || '');
         setTeamA(data.matches?.[0]?.teamA || '');
         setTeamB(data.matches?.[0]?.teamB || '');
