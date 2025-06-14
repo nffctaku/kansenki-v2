@@ -11,7 +11,7 @@ export default function EditPage() {
   const [loading, setLoading] = useState(true);
   const [post, setPost] = useState<any>(null);
 
-  // 編集するフィールドのステート
+  // 編集フィールド用ステート
   const [competition, setCompetition] = useState('');
   const [teamA, setTeamA] = useState('');
   const [teamB, setTeamB] = useState('');
@@ -20,93 +20,96 @@ export default function EditPage() {
 
   useEffect(() => {
     if (!id) return;
+
     const fetchPost = async () => {
-      const ref = doc(db, 'simple-posts', id as string);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        const data = snap.data();
+      const docRef = doc(db, 'simple-posts', id as string);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
         setPost(data);
-        const match = data.matches?.[0] || {};
-        setCompetition(match.competition || '');
-        setTeamA(match.teamA || '');
-        setTeamB(match.teamB || '');
-        setNickname(match.nickname || '');
+        setCompetition(data.matches?.[0]?.competition || '');
+        setTeamA(data.matches?.[0]?.teamA || '');
+        setTeamB(data.matches?.[0]?.teamB || '');
+        setNickname(data.matches?.[0]?.nickname || '');
         setSeason(data.season || '');
       }
       setLoading(false);
     };
+
     fetchPost();
   }, [id]);
 
   const handleSave = async () => {
     if (!id) return;
-    const ref = doc(db, 'simple-posts', id as string);
-    await updateDoc(ref, {
-      season,
-      matches: [
-        {
-          competition,
-          teamA,
-          teamB,
-          nickname,
-          season,
-        },
-      ],
-    });
-    router.push('/mypage');
+
+    try {
+      const docRef = doc(db, 'simple-posts', id as string);
+      await updateDoc(docRef, {
+        season,
+        matches: [
+          {
+            competition,
+            teamA,
+            teamB,
+            nickname,
+            season,
+          },
+        ],
+      });
+      alert('更新しました');
+      router.push('/mypage');
+    } catch (err) {
+      console.error('更新エラー:', err);
+      alert('更新に失敗しました');
+    }
   };
 
-  if (loading) return <p className="p-6">読み込み中...</p>;
+  if (loading) return <div className="p-4">読み込み中...</div>;
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
+    <div className="p-4 max-w-xl mx-auto">
       <h1 className="text-lg font-bold mb-4">投稿を編集</h1>
 
-      <label className="block text-sm font-semibold mb-1">大会名</label>
+      <label className="block mb-2 text-sm font-semibold">大会名</label>
       <input
-        type="text"
+        className="w-full mb-4 p-2 border rounded"
         value={competition}
         onChange={(e) => setCompetition(e.target.value)}
-        className="w-full mb-4 p-2 border rounded"
       />
 
-      <label className="block text-sm font-semibold mb-1">チームA</label>
+      <label className="block mb-2 text-sm font-semibold">チームA</label>
       <input
-        type="text"
+        className="w-full mb-4 p-2 border rounded"
         value={teamA}
         onChange={(e) => setTeamA(e.target.value)}
-        className="w-full mb-4 p-2 border rounded"
       />
 
-      <label className="block text-sm font-semibold mb-1">チームB</label>
+      <label className="block mb-2 text-sm font-semibold">チームB</label>
       <input
-        type="text"
+        className="w-full mb-4 p-2 border rounded"
         value={teamB}
         onChange={(e) => setTeamB(e.target.value)}
-        className="w-full mb-4 p-2 border rounded"
       />
 
-      <label className="block text-sm font-semibold mb-1">表示名（ニックネーム）</label>
+      <label className="block mb-2 text-sm font-semibold">投稿タイトル（ニックネーム）</label>
       <input
-        type="text"
+        className="w-full mb-4 p-2 border rounded"
         value={nickname}
         onChange={(e) => setNickname(e.target.value)}
-        className="w-full mb-4 p-2 border rounded"
       />
 
-      <label className="block text-sm font-semibold mb-1">シーズン</label>
+      <label className="block mb-2 text-sm font-semibold">シーズン</label>
       <input
-        type="text"
+        className="w-full mb-4 p-2 border rounded"
         value={season}
         onChange={(e) => setSeason(e.target.value)}
-        className="w-full mb-6 p-2 border rounded"
       />
 
       <button
         onClick={handleSave}
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
       >
-        保存する
+        保存してマイページへ戻る
       </button>
     </div>
   );
