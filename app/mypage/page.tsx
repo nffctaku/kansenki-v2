@@ -38,8 +38,9 @@ export default function MyPage() {
   const [noteLink, setNoteLink] = useState('');
   const [message, setMessage] = useState('');
   const router = useRouter();
-  const [showXInput, setShowXInput] = useState(false);
-  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [showXInput, setShowXInput] = useState(true); // ← true にする
+const [showNoteInput, setShowNoteInput] = useState(true); // ← true にする
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -112,77 +113,84 @@ const handleSave = async () => {
 
     {/* 編集フォーム */}
     <div className="mb-10 p-6 bg-white rounded-xl shadow space-y-5">
-      <div>
-        <label className="block text-sm font-semibold mb-1">ニックネーム</label>
-        <input
-          type="text"
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          className="w-full rounded-lg px-4 py-2 bg-gray-100 focus:outline-none focus:ring focus:border-blue-400"
-        />
-      </div>
+  {/* ニックネーム */}
+  <div className="flex justify-between items-center">
+    <label className="text-sm font-semibold">ニックネーム</label>
+   <input
+  type="text"
+  value={nickname}
+  onChange={(e) => setNickname(e.target.value)}
+  className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 focus:outline-none border-none"
+/>
+  </div>
 
-      <div>
-        <label className="block text-sm font-semibold mb-1">ユーザーID（@ID）</label>
-        <input
-          type="text"
-          value={userId}
-          disabled
-          className="w-full bg-gray-100 rounded-lg px-4 py-2 text-gray-500"
-        />
-      </div>
+  {/* ユーザーID */}
+  <div className="flex justify-between items-center">
+    <label className="text-sm font-semibold">ユーザーID（@ID）</label>
+    <input
+  type="text"
+  value={userId}
+  disabled
+  className="w-2/3 text-right bg-gray-100 rounded-lg px-3 py-1 text-gray-500 border-none"
+/>
+  </div>
 
-      <div>
-        <label className="block text-sm font-semibold mb-1">X</label>
-        {!showXInput ? (
-          <button
-            type="button"
-            onClick={() => setShowXInput(true)}
-            className="text-blue-600 hover:underline text-sm flex items-center gap-1"
-          >
-            リンクを設定
-          </button>
-        ) : (
-          <input
-            type="url"
-            placeholder="https://x.com/..."
-            value={xLink}
-            onChange={(e) => setXLink(e.target.value)}
-            className="w-full rounded-lg px-4 py-2 bg-gray-100"
-          />
-        )}
-      </div>
-
-      <div>
-        <label className="block text-sm font-semibold mb-1">Note</label>
-        {!showNoteInput ? (
-          <button
-            type="button"
-            onClick={() => setShowNoteInput(true)}
-            className="text-green-600 hover:underline text-sm flex items-center gap-1"
-          >
-            リンクを設定
-          </button>
-        ) : (
-          <input
-            type="url"
-            placeholder="https://note.com/..."
-            value={noteLink}
-            onChange={(e) => setNoteLink(e.target.value)}
-            className="w-full rounded-lg px-4 py-2 bg-gray-100"
-          />
-        )}
-      </div>
-
+  {/* Xリンク */}
+  <div className="flex justify-between items-center">
+    <label className="text-sm font-semibold">X</label>
+    {showXInput ? (
+      <input
+  type="url"
+  placeholder="https://x.com/..."
+  value={xLink}
+  onChange={(e) => setXLink(e.target.value)}
+  className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 border-none"
+/>
+    ) : (
       <button
-        onClick={handleSave}
-        className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition"
+        type="button"
+        onClick={() => setShowXInput(true)}
+        className="text-blue-600 hover:underline text-sm"
       >
-        保存する
+        リンクを設定
       </button>
+    )}
+  </div>
 
-      {message && <p className="text-sm text-green-600">{message}</p>}
-    </div>
+  {/* Noteリンク */}
+  <div className="flex justify-between items-center">
+    <label className="text-sm font-semibold">Note</label>
+    {showNoteInput ? (
+     <input
+  type="url"
+  placeholder="https://note.com/..."
+  value={noteLink}
+  onChange={(e) => setNoteLink(e.target.value)}
+  className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 border-none"
+/>
+    ) : (
+      <button
+        type="button"
+        onClick={() => setShowNoteInput(true)}
+        className="text-green-600 hover:underline text-sm"
+      >
+        リンクを設定
+      </button>
+    )}
+  </div>
+
+  {/* 保存ボタン */}
+  <div className="text-right">
+    <button
+      onClick={handleSave}
+      className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition"
+    >
+      保存する
+    </button>
+  </div>
+
+  {message && <p className="text-sm text-green-600">{message}</p>}
+</div>
 
     {/* あなたの投稿一覧 */}
     <div className="p-4">

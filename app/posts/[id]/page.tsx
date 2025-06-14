@@ -113,19 +113,45 @@ export default function PostDetailPage() {
           {post.matches?.[0]?.competition || '未入力'}
         </td>
       </tr>
-     <tr className="bg-gray-100">
-  <th className="px-4 py-1 text-left text-gray-700 font-normal">対戦カード</th>
-  <td className="px-4 py-1 text-right break-words">
-    <div className="leading-tight">
-      <div>{post.matches?.[0]?.teamA}</div>
-      <div>{post.matches?.[0]?.teamB}</div>
-    </div>
-  </td>
-</tr>
-
+      <tr className="bg-gray-100">
+        <th className="px-4 py-1 text-left text-gray-700 font-normal">対戦カード</th>
+        <td className="px-4 py-1 text-right break-words">
+          <div className="leading-tight">
+            <div>{post.matches?.[0]?.teamA}</div>
+            <div>{post.matches?.[0]?.teamB}</div>
+          </div>
+        </td>
+      </tr>
+      <tr className="bg-white">
+        <th className="px-4 py-1 text-left text-gray-700 font-normal">スタジアム</th>
+        <td className="px-4 py-1 text-right break-words">
+          {post.matches?.[0]?.stadium || '未入力'}
+        </td>
+      </tr>
+      <tr className="bg-gray-100">
+        <th className="px-4 py-1 text-left text-gray-700 font-normal">座席</th>
+        <td className="px-4 py-1 text-right break-words">
+          {post.matches?.[0]?.seat || '未入力'}
+        </td>
+      </tr>
+      <tr className="bg-white">
+        <th className="px-4 py-1 text-left text-gray-700 font-normal">席の感想</th>
+        <td className="px-4 py-1 text-right break-words whitespace-pre-wrap">
+          {post.matches?.[0]?.seatReview || '未入力'}
+        </td>
+      </tr>
+      <tr className="bg-gray-100">
+        <th className="px-4 py-1 text-left text-gray-700 font-normal">チケット代</th>
+        <td className="px-4 py-1 text-right break-words">
+          {post.matches?.[0]?.ticketPrice
+            ? `¥${Number(post.matches[0].ticketPrice).toLocaleString()}`
+            : '未入力'}
+        </td>
+      </tr>
     </tbody>
   </table>
 </div>
+
 
 
 {/* 渡航・観戦情報 */}
