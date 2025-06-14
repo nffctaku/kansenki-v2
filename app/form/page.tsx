@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
+import { MatchInfo } from '@/types/match';
 import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import Select, {
@@ -120,16 +121,26 @@ export default function CloudinaryPostForm() {
   ];
 
   const [nickname, setNickname] = useState('');
-  const [season, setSeason] = useState('');
-  const [matches, setMatches] = useState([
-    { teamA: '', teamB: '', competition: '', season: '', nickname: '' },
-  ]);
-  const [lifestyle, setLifestyle] = useState('');
-  const [watchYear, setWatchYear] = useState('');
-  const [watchMonth, setWatchMonth] = useState('');
-  const [stayDuration, setStayDuration] = useState('');
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [message, setMessage] = useState('');
+const [season, setSeason] = useState('');
+const [matches, setMatches] = useState<MatchInfo[]>([
+  {
+    teamA: '',
+    teamB: '',
+    competition: '',
+    season: '',
+    nickname: '',
+    stadium: '',
+    seat: '',
+    seatReview: '',
+    ticketPrice: 0,
+  },
+]);
+const [lifestyle, setLifestyle] = useState('');
+const [watchYear, setWatchYear] = useState('');
+const [watchMonth, setWatchMonth] = useState('');
+const [stayDuration, setStayDuration] = useState('');
+const [imageFiles, setImageFiles] = useState<File[]>([]);
+const [message, setMessage] = useState('');
 
   // ✅ 行き／帰りを個別に管理
   const [goFlights, setGoFlights] = useState([{ name: '', seat: '' }]);
