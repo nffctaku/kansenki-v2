@@ -170,11 +170,13 @@ export default function PostDetailPage() {
       <tr className="bg-white">
   <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">帰りの航空会社</th>
   <td className="px-4 py-1 text-right">
-    {post.returnFlights?.length ? (
-      [...new Set(post.returnFlights.map((f: any) => `${f.name}（${f.seat}）`))].map((text, i) => (
-        <div key={i}>{text}</div>
-      ))
-    ) : '未入力'}
+   {post.returnFlights?.length ? (
+  (Array.from(new Set(post.returnFlights.map((f: any) => `${f.name}（${f.seat}）`))) as string[]).map((text, i) => (
+    <div key={i}>{text}</div>
+  ))
+) : '未入力'}
+
+
   </td>
 </tr>
 
