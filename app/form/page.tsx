@@ -529,7 +529,7 @@ return (
           stadium: '',
           seat: '',
           seatReview: '',
-          ticketPrice: '',
+          ticketPrice: 0,
         },
       ])
     }
