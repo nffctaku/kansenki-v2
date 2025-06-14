@@ -9,7 +9,6 @@ export default function EditPage() {
   const { id } = useParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [post, setPost] = useState<any>(null);
 
   // 編集フィールド用ステート
   const [competition, setCompetition] = useState('');
