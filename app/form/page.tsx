@@ -238,48 +238,59 @@ export default function CloudinaryPostForm() {
     }
   }
 
-  await addDoc(collection(db, 'simple-posts'), {
-    uid: user.uid,
-    userId: userData.id, // ← 投稿者の公開ID（@◯◯）
-    nickname: userData.nickname, // ← 表示名
-    createdAt: new Date(),
-    season,
-    imageUrls: uploadedUrls,
-    category,
-    matches,
-    lifestyle,
-    watchYear,
-    watchMonth,
-    stayDuration,
-    goFlights,
-    goTime,
-    goType,
-    goVia,
-    returnFlights,
-    returnTime,
-    returnType,
-    returnVia,
-    hotels,
-    spots,
-    cost,
-    items,
-    goods,
-    episode,
-    firstAdvice,
-    allowComments,
-  });
+ await addDoc(collection(db, 'simple-posts'), {
+  uid: user.uid,
+  userId: userData.id, // ← 投稿者の公開ID（@◯◯）
+  nickname: userData.nickname, // ← 表示名
+  createdAt: new Date(),
+  season,
+  imageUrls: uploadedUrls,
+  category,
+  matches,
+  lifestyle,
+  watchYear,
+  watchMonth,
+  stayDuration,
+  goFlights,
+  goTime,
+  goType,
+  goVia,
+  returnFlights,
+  returnTime,
+  returnType,
+  returnVia,
+  hotels,
+  spots,
+  cost,
+  items,
+  goods,
+  episode,
+  firstAdvice,
+  allowComments,
+});
 
-  setMessage('✅ 投稿完了！');
+setMessage('✅ 投稿完了！');
 
-  // ✅ Firestore保存が完了したらマイページに遷移
+// ✅ Firestore保存が完了したらマイページに遷移
 router.push('/mypage');
 
-
-// ✅ カテゴリーも含めてリセット
+// ✅ フォームの内容をリセット
 setNickname('');
 setSeason('');
-setCategory(''); // ← これもちゃんとクリア
-setMatches([{ teamA: '', teamB: '', competition: '', season: '', nickname: '' }]);
+setCategory('');
+setMatches([
+  {
+    teamA: '',
+    teamB: '',
+    competition: '',
+    season: '',
+    nickname: '',
+    stadium: '',
+    seat: '',
+    seatReview: '',
+    ticketPrice: '',
+  }
+]);
 setLifestyle('');
 setWatchYear('');
 setWatchMonth('');
@@ -318,8 +329,8 @@ setImageFiles([]);
 
 return (
   <div className="min-h-screen flex justify-center items-start py-10 bg-gray-50 px-8">
-    <div className="w-full max-w-[700px] bg-white p-6 rounded shadow-md">
-      <h1 className="text-2xl font-bold mb-6 text-center">画像付き投稿フォーム</h1>
+    <div className="w-full max-w-[700px] bg-white p-6 rounded shadow-md pb-[100px]">
+      <h1 className="text-2xl font-bold mb-6 text-center">#みんなの現地観戦記</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* ニックネーム（Firestoreから取得して表示のみ） */}
@@ -382,9 +393,7 @@ return (
           { label: 'UEFAチャンピオンズリーグ', value: 'UEFAチャンピオンズリーグ' },
           { label: 'その他', value: 'その他' },
         ]}
-        value={
-          match.competition ? { label: match.competition, value: match.competition } : null
-        }
+        value={match.competition ? { label: match.competition, value: match.competition } : null}
         onChange={(e) => {
           const newMatches = [...matches];
           newMatches[index].competition = e?.value || '';
@@ -426,6 +435,71 @@ return (
         />
       </div>
     </div>
+
+    {/* スタジアム名 */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">スタジアム名</label>
+      <input
+        type="text"
+        placeholder="例：エティハド・スタジアム"
+        value={match.stadium}
+        onChange={(e) => {
+          const newMatches = [...matches];
+          newMatches[index].stadium = e.target.value;
+          setMatches(newMatches);
+        }}
+        className="w-full border px-4 py-2 rounded bg-white"
+      />
+    </div>
+
+    {/* 座席 */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">座席</label>
+      <input
+        type="text"
+        placeholder="例：バックスタンド2階Cブロック"
+        value={match.seat}
+        onChange={(e) => {
+          const newMatches = [...matches];
+          newMatches[index].seat = e.target.value;
+          setMatches(newMatches);
+        }}
+        className="w-full border px-4 py-2 rounded bg-white"
+      />
+    </div>
+
+    {/* 席の感想 */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">席の感想</label>
+      <textarea
+        placeholder="例：選手の動きが見やすかった！ただ少し遠かった"
+        value={match.seatReview}
+        onChange={(e) => {
+          const newMatches = [...matches];
+          newMatches[index].seatReview = e.target.value;
+          setMatches(newMatches);
+        }}
+        className="w-full border px-4 py-2 rounded bg-white"
+        rows={3}
+      />
+    </div>
+
+    {/* チケット代 */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">チケット代（円）</label>
+      <input
+        type="number"
+        min={0}
+        placeholder="例：8500"
+        value={match.ticketPrice}
+        onChange={(e) => {
+          const newMatches = [...matches];
+          newMatches[index].ticketPrice = e.target.value;
+          setMatches(newMatches);
+        }}
+        className="w-full border px-4 py-2 rounded bg-white"
+      />
+    </div>
   </div>
 ))}
 
@@ -436,7 +510,17 @@ return (
     onClick={() =>
       setMatches([
         ...matches,
-        { teamA: '', teamB: '', competition: '', season: '', nickname: '' },
+        {
+          teamA: '',
+          teamB: '',
+          competition: '',
+          season: '',
+          nickname: '',
+          stadium: '',
+          seat: '',
+          seatReview: '',
+          ticketPrice: '',
+        },
       ])
     }
     className="text-blue-600 font-medium hover:underline transition"
