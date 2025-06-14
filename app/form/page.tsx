@@ -504,7 +504,7 @@ return (
         value={match.ticketPrice}
         onChange={(e) => {
           const newMatches = [...matches];
-          newMatches[index].ticketPrice = e.target.value;
+          newMatches[index].ticketPrice = Number(e.target.value);
           setMatches(newMatches);
         }}
         className="w-full border px-4 py-2 rounded bg-white"
