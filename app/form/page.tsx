@@ -324,8 +324,7 @@ export default function CloudinaryPostForm() {
   console.error('❌ 投稿エラー:', err.message);
   setMessage('❌ 投稿に失敗しました: ' + err.message);
 }
-}; 
-
+};
 
 return (
   <div className="min-h-screen flex justify-center items-start py-10 bg-gray-50 px-8">
