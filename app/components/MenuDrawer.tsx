@@ -10,16 +10,28 @@ return (
   <>
     {/* ヘッダー */}
     <header className="bg-white border-b h-14 flex items-center px-4 z-0 relative">
-      <button
-        onClick={toggleMenu}
-        className="text-xl bg-transparent border-none outline-none z-50"
-      >
-        ☰
-      </button>
-      <h1 className="absolute left-1/2 transform -translate-x-1/2 text-[10px] font-bold text-black">
-        現地観戦記
-      </h1>
-    </header>
+ <button
+  onClick={toggleMenu}
+  className="bg-transparent border-none outline-none z-50"
+>
+  <span
+    style={{
+      fontSize: '32px',
+      lineHeight: '1',
+      display: 'inline-block',
+      color: 'black',
+    }}
+  >
+    ☰
+  </span>
+</button>
+
+
+  <h1 className="absolute left-1/2 transform -translate-x-1/2 text-[16px] font-bold text-black">
+    現地観戦記
+  </h1>
+</header>
+
 
     {/* オーバーレイ */}
     {isOpen && (
@@ -37,66 +49,66 @@ return (
       style={{ backgroundColor: 'white' }}
     >
       <div className="h-full overflow-y-auto pb-[72px] text-black text-sm font-sans">
-        {/* ヘッダー */}
-        <div className="px-4 py-4 font-bold text-base border-b border-gray-200">
-    
-        </div>
-
-        {/* === マイメニュー === */}
-        <div className="bg-[#f1f1f1] px-4 py-2 text-xs font-bold text-gray-500 tracking-wide">
+        {/* 各カテゴリー */}
+        <div className="bg-[#f1f1f1] px-6 py-4 text-xs font-bold text-gray-500 tracking-wide">
           各カテゴリー
         </div>
-        <div className="border-b border-gray-200 px-4 py-4">
-          <span className="block w-full">マイページ</span>
-        </div>
-        <div className="border-b border-gray-200 px-4 py-4">
-          <span className="block w-full">クーポン</span>
-        </div>
-        <div className="border-b border-gray-200 px-4 py-4 flex items-center justify-between">
-          <span className="block w-full">お知らせ</span>
-          <span className="text-white bg-red-500 text-xs rounded-full px-2 py-0.5">3</span>
-        </div>
-
-        {/* === 店舗 === */}
-        <div className="bg-[#f1f1f1] px-4 py-2 text-xs font-bold text-gray-500 tracking-wide">
-          店舗
-        </div>
-        <div className="border-b border-gray-200 px-4 py-4">
-          <span className="block w-full">店舗検索</span>
-        </div>
-        <div className="border-b border-gray-200 px-4 py-4">
-          <span className="block w-full">お気に入り店舗の設定</span>
-        </div>
-
-        {/* === SNS === */}
-        <div className="bg-[#f1f1f1] px-4 py-2 text-xs font-bold text-gray-500 tracking-wide">
-          SNS
-        </div>
         {[
-          { label: 'Instagram', href: '#' },
-          { label: 'twitter', href: '#' },
-          { label: 'LINE', href: '#' },
-          { label: 'Youtube', href: '#' },
-          { label: 'Facebook', href: '#' },
+          { label: 'イングランド', href: '/category/england' },
+          { label: 'スペイン', href: '/category/spain' },
+          { label: 'イタリア', href: '/category/italy' },
+          { label: 'フランス', href: '/category/france' },
+          { label: 'ドイツ', href: '/category/germany' },
+          { label: 'その他', href: '/category/other' },
         ].map(({ label, href }) => (
-          <div key={label} className="border-b border-gray-200 px-4 py-4">
-            <a href={href} className="block w-full text-black hover:opacity-80">
+          <div key={href} className="border-b border-gray-200 px-6 py-8">
+            <a
+              href={href}
+              className="block w-full no-underline hover:opacity-80"
+              style={{ color: 'black' }}
+            >
               {label}
             </a>
           </div>
         ))}
 
-        {/* === その他 === */}
-        <div className="bg-[#f1f1f1] px-4 py-2 text-xs font-bold text-gray-500 tracking-wide">
-          その他
+        {/* 現地観戦情報 */}
+        <div className="bg-[#f1f1f1] px-6 py-4 text-xs font-bold text-gray-500 tracking-wide">
+          現地観戦情報
+        </div>
+        <div className="border-b border-gray-200 px-6 py-8">
+          <span className="block w-full">試合チケット情報</span>
+        </div>
+        <div className="border-b border-gray-200 px-6 py-8">
+          <span className="block w-full">おススメスポット</span>
+        </div>
+
+        {/* SNS */}
+        <div className="bg-[#f1f1f1] px-6 py-4 text-xs font-bold text-gray-500 tracking-wide">
+          SNS
         </div>
         {[
-          '会社概要',
-          '利用規約',
-          '個人情報の取り扱いについて',
-          'ご利用ガイド',
-        ].map((item) => (
-          <div key={item} className="border-b border-gray-200 px-4 py-4">
+          { label: 'Note', href: '#' },
+          { label: 'X', href: '#' },
+          { label: 'Youtube', href: '#' },
+        ].map(({ label, href }) => (
+          <div key={label} className="border-b border-gray-200 px-6 py-8">
+            <a
+              href={href}
+              className="block w-full no-underline hover:opacity-80"
+              style={{ color: 'black' }}
+            >
+              {label}
+            </a>
+          </div>
+        ))}
+
+        {/* その他 */}
+        <div className="bg-[#f1f1f1] px-6 py-6 text-xs font-bold text-gray-500 tracking-wide">
+          その他
+        </div>
+        {['FOOTBALL TOP', '利用規約', 'ご利用ガイド'].map((item) => (
+          <div key={item} className="border-b border-gray-200 px-6 py-8">
             <span className="block w-full">{item}</span>
           </div>
         ))}
