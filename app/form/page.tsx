@@ -289,7 +289,7 @@ setMatches([
     seat: '',
     seatReview: '',
     ticketPrice: '',
-  }
+  },
 ]);
 setLifestyle('');
 setWatchYear('');
@@ -320,10 +320,12 @@ setEpisode('');
 setFirstAdvice('');
 setImageFiles([]);
 
+
   } catch (err: any) {
-    console.error('❌ 投稿エラー:', err.message);
-    setMessage('❌ 投稿に失敗しました: ' + err.message);
-  }
+  console.error('❌ 投稿エラー:', err.message);
+  setMessage('❌ 投稿に失敗しました: ' + err.message);
+}
+
 }; 
 
 
