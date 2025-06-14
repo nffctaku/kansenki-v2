@@ -107,16 +107,6 @@ export default function HomePage() {
 
   return (
    <div className="bg-white min-h-screen pb-[72px]">
-      <header className="bg-white font-sans border-b border-gray-200 relative h-14">
-        <div className="max-w-screen-xl mx-auto relative h-full flex items-center justify-center">
-         
-          {/* タイトル（常に中央） */}
-          <h1 className="text-[12px] font-bold text-gray-900 whitespace-nowrap">
-            現地観戦記
-          </h1>
-        </div>
-      </header>
-
     <div className="w-full flex justify-center bg-white py-6">
       <a
         href="https://note.com/football_top/n/n111e239d79a9?sub_rt=share_pw"
