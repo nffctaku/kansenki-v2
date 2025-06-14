@@ -15,6 +15,10 @@ type MatchInfo = {
   competition: string;
   season: string;
   nickname: string;
+  stadium?: string;      // ← これを追加（任意なら ? を付ける）
+  seat?: string;
+  seatReview?: string;
+  ticketPrice?: string;
 };
 
 type Travel = {
