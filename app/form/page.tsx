@@ -238,95 +238,93 @@ export default function CloudinaryPostForm() {
     }
   }
 
- await addDoc(collection(db, 'simple-posts'), {
-  uid: user.uid,
-  userId: userData.id, // ← 投稿者の公開ID（@◯◯）
-  nickname: userData.nickname, // ← 表示名
-  createdAt: new Date(),
-  season,
-  imageUrls: uploadedUrls,
-  category,
-  matches,
-  lifestyle,
-  watchYear,
-  watchMonth,
-  stayDuration,
-  goFlights,
-  goTime,
-  goType,
-  goVia,
-  returnFlights,
-  returnTime,
-  returnType,
-  returnVia,
-  hotels,
-  spots,
-  cost,
-  items,
-  goods,
-  episode,
-  firstAdvice,
-  allowComments,
-});
+ try {
+  await addDoc(collection(db, 'simple-posts'), {
+    uid: user.uid,
+    userId: userData.id,
+    nickname: userData.nickname,
+    createdAt: new Date(),
+    season,
+    imageUrls: uploadedUrls,
+    category,
+    matches,
+    lifestyle,
+    watchYear,
+    watchMonth,
+    stayDuration,
+    goFlights,
+    goTime,
+    goType,
+    goVia,
+    returnFlights,
+    returnTime,
+    returnType,
+    returnVia,
+    hotels,
+    spots,
+    cost,
+    items,
+    goods,
+    episode,
+    firstAdvice,
+    allowComments,
+  });
 
-setMessage('✅ 投稿完了！');
+  setMessage('✅ 投稿完了！');
 
-// ✅ Firestore保存が完了したらマイページに遷移
-router.push('/mypage');
+  // ✅ Firestore保存が完了したらマイページに遷移
+  router.push('/mypage');
 
-// ✅ フォームの内容をリセット
-setNickname('');
-setSeason('');
-setCategory('');
-setMatches([
-  {
-    teamA: '',
-    teamB: '',
-    competition: '',
-    season: '',
-    nickname: '',
-    stadium: '',
-    seat: '',
-    seatReview: '',
-    ticketPrice: '',
-  },
-]);
-setLifestyle('');
-setWatchYear('');
-setWatchMonth('');
-setStayDuration('');
-setGoFlights([{ name: '', seat: '' }]);
-setReturnFlights([{ name: '', seat: '' }]);
-setGoTime('');
-setGoType('');
-setGoVia('');
-setReturnTime('');
-setReturnType('');
-setReturnVia('');
-setHotels([{ url: '', comment: '', rating: 0 }]);
-setSpots([{ url: '', comment: '', rating: 0, autoName: '', address: '' }]);
-setCost({
-  flight: 0,
-  hotel: 0,
-  ticket: 0,
-  transport: 0,
-  food: 0,
-  goods: 0,
-  other: 0,
-});
-setItems('');
-setGoods('');
-setEpisode('');
-setFirstAdvice('');
-setImageFiles([]);
-
-
-  } catch (err: any) {
+  // ✅ フォームの内容をリセット（型に合わせて修正済）
+  setNickname('');
+  setSeason('');
+  setCategory('');
+  setMatches([
+    {
+      teamA: '',
+      teamB: '',
+      competition: '',
+      season: '',
+      nickname: '',
+      stadium: undefined,
+      seat: undefined,
+      seatReview: undefined,
+      ticketPrice: undefined,
+    },
+  ]);
+  setLifestyle('');
+  setWatchYear('');
+  setWatchMonth('');
+  setStayDuration('');
+  setGoFlights([{ name: '', seat: '' }]);
+  setReturnFlights([{ name: '', seat: '' }]);
+  setGoTime('');
+  setGoType('');
+  setGoVia('');
+  setReturnTime('');
+  setReturnType('');
+  setReturnVia('');
+  setHotels([{ url: '', comment: '', rating: 0 }]);
+  setSpots([{ url: '', comment: '', rating: 0, autoName: '', address: '' }]);
+  setCost({
+    flight: 0,
+    hotel: 0,
+    ticket: 0,
+    transport: 0,
+    food: 0,
+    goods: 0,
+    other: 0,
+  });
+  setItems('');
+  setGoods('');
+  setEpisode('');
+  setFirstAdvice('');
+  setImageFiles([]);
+} catch (err: any) {
   console.error('❌ 投稿エラー:', err.message);
   setMessage('❌ 投稿に失敗しました: ' + err.message);
 }
 
-}; 
 
 
 return (
