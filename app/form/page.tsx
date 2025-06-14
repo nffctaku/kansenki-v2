@@ -278,15 +278,20 @@ export default function CloudinaryPostForm() {
   setNickname('');
   setSeason('');
   setCategory('');
-  setMatches([
-    {
-      teamA: '',
-      teamB: '',
-      competition: '',
-      season: '',
-      nickname: '',
-    },
-  ]);
+ setMatches([
+  {
+    teamA: '',
+    teamB: '',
+    competition: '',
+    season: '',
+    nickname: '',
+    stadium: '',
+    seat: '',
+    seatReview: '',
+    ticketPrice: 0,
+  },
+]);
+
   setLifestyle('');
   setWatchYear('');
   setWatchMonth('');
