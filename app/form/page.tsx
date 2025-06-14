@@ -238,7 +238,6 @@ export default function CloudinaryPostForm() {
     }
   }
 
- try {
   await addDoc(collection(db, 'simple-posts'), {
     uid: user.uid,
     userId: userData.id,
@@ -323,7 +322,7 @@ export default function CloudinaryPostForm() {
 } catch (err: any) {
   console.error('❌ 投稿エラー:', err.message);
   setMessage('❌ 投稿に失敗しました: ' + err.message);
-}
+ }
 };
 
 return (
