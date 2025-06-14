@@ -11,13 +11,10 @@ import { Pagination } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
 
-// 追加予定のアイコン or 共有用UIに備えて、ここに読み込み予定（未使用でもOK）
-import { Share2, ClipboardIcon, Twitter, Facebook, Line } from 'lucide-react';
 
 export default function PostDetailPage() {
   const { id } = useParams();
   const [post, setPost] = useState<any>(null);
-  const [open, setOpen] = useState(false); // ⭐ ここが必要！
 
   useEffect(() => {
     if (!id) return;
