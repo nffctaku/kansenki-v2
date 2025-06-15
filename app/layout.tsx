@@ -1,6 +1,7 @@
 import './globals.css';
-import MenuDrawer from './components/MenuDrawer';      // ✅ ここが正解！
-import BottomTabBar from './components/BottomTabBar';  // ✅ こちらも同様
+import MenuDrawer from './components/MenuDrawer';
+import BottomTabBar from './components/BottomTabBar';
+import { Analytics } from '@vercel/analytics/react'; // ← 追加！
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -13,6 +14,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <MenuDrawer />
         {children}
         <BottomTabBar />
+
+        {/* 👇 Vercel Analyticsをここに追加 */}
+        <Analytics />
       </body>
     </html>
   );
