@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 export default function MenuDrawer() {
   const [isOpen, setIsOpen] = useState(false);
@@ -103,15 +104,26 @@ return (
           </div>
         ))}
 
-        {/* その他 */}
-        <div className="bg-[#f1f1f1] px-6 py-6 text-xs font-bold text-gray-500 tracking-wide">
-          その他
-        </div>
-        {['FOOTBALL TOP', '利用規約', 'ご利用ガイド'].map((item) => (
-          <div key={item} className="border-b border-gray-200 px-6 py-8">
-            <span className="block w-full">{item}</span>
-          </div>
-        ))}
+       {/* その他 */}
+<div className="bg-[#f1f1f1] px-6 py-6 text-xs font-bold text-gray-500 tracking-wide">
+  その他
+</div>
+
+{[
+  { label: 'FOOTBALL TOP', href: '/about' },
+  { label: '利用規約', href: '/terms' },
+  { label: 'ご利用ガイド', href: '/guide' },
+].map((item) => (
+  <div key={item.label} className="border-b border-gray-200 px-6 py-8">
+   <Link
+  href={item.href}
+  className="block w-full text-sm !text-black !no-underline hover:!text-gray-600 visited:!text-black"
+>
+  {item.label}
+</Link>
+
+  </div>
+))}
       </div>
     </aside>
   </>
