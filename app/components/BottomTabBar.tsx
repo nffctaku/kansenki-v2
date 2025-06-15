@@ -18,7 +18,6 @@ export default function BottomTabBar() {
         padding: '10px 20px',
         zIndex: 9999,
         borderTop: '1px solid #e5e7eb',
-        pointerEvents: 'none',
 
       }}
     >
