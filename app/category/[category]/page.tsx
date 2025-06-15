@@ -56,23 +56,31 @@ export default function CategoryPage() {
     );
   });
 
-  return (
-    <div className="mb-12 px-4 w-full max-w-screen-xl mx-auto">
-      <h1 className="text-2xl font-bold mt-6 mb-4 text-gray-800">{title}の観戦記</h1>
+ return (
+  <div
+    className="mb-12 px-4 w-full max-w-screen-xl mx-auto"
+    style={{ paddingBottom: '200px' }}
+  >
+    <h1 className="text-2xl font-bold mt-6 mb-4 text-gray-800">{title}の観戦記</h1>
 
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="試合名やシーズンで検索"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring focus:border-blue-400"
-        />
-      </div>
+    <div className="mb-6">
+      <input
+        type="text"
+        placeholder="試合名やシーズンで検索"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring focus:border-blue-400"
+      />
+    </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[6px] w-full max-w-full">
-        {displayedPosts.map((post) => (
-          <div key={post.id} className="bg-white rounded-lg shadow p-2">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[6px] w-full max-w-full">
+      {displayedPosts.map((post) => (
+        <Link
+          key={post.id}
+          href={`/posts/${post.id}`}
+          className="block no-underline text-inherit"
+        >
+          <div className="bg-white rounded-lg shadow p-2 hover:opacity-90 transition">
             <div className="relative aspect-square w-full bg-gray-200 rounded overflow-hidden">
               {post.imageUrls?.[0] ? (
                 <Image
@@ -90,7 +98,7 @@ export default function CategoryPage() {
             </div>
 
             {post.matches?.[0] && (
-              <div className="mt-2 px-1 text-sm text-gray-700 font-semibold truncate">
+              <div className="mt-2 px-1 text-sm font-semibold truncate text-gray-800 no-underline">
                 {post.matches[0].teamA} vs {post.matches[0].teamB}
               </div>
             )}
@@ -103,17 +111,9 @@ export default function CategoryPage() {
               ♡ {post.likeCount || 0}
             </div>
           </div>
-        ))}
-      </div>
-
-      <div className="mt-12 text-center">
-        <Link
-          href="/"
-          className="inline-block px-6 py-2 bg-blue-600 text-white text-sm font-semibold rounded hover:bg-blue-700 transition"
-        >
-          トップページに戻る
         </Link>
-      </div>
+      ))}
     </div>
-  );
+  </div>
+);
 }

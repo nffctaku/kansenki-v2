@@ -117,10 +117,13 @@ return (
   <div key={item.label} className="border-b border-gray-200 px-6 py-8">
    <Link
   href={item.href}
-  className="block w-full text-sm !text-black !no-underline hover:!text-gray-600 visited:!text-black"
+  className="block w-full text-sm text-black no-underline hover:text-gray-600 visited:text-black"
+  style={{ color: 'black', textDecoration: 'none' }}
 >
   {item.label}
 </Link>
+
+
 
   </div>
 ))}
