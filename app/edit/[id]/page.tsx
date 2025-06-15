@@ -860,19 +860,20 @@ export default function EditPage() {
 
            {/* 既存画像（Cloudinary URL） */}
 <div className="flex flex-wrap gap-3">
- {existingImageUrls.map((url, index) => (
+ {existingImageUrls.map((imgUrl, index) => (
   <div
     key={`existing-${index}`}
     className="relative w-24 h-24 rounded border border-gray-300 overflow-hidden"
   >
     <Image
-      src={url}
+      src={imgUrl}
       alt={`existing-${index}`}
       fill
       className="object-cover"
     />
   </div>
-  ))}
+))}
+
               {/* 新しく追加した画像プレビュー */}
               {imageFiles.map((file, index) => (
                 <div
