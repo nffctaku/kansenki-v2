@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { MatchInfo } from '@/types/match';
+import Image from 'next/image';
 import Select, {
  
 } from 'react-select';
@@ -859,17 +860,18 @@ export default function EditPage() {
 
            {/* 既存画像（Cloudinary URL） */}
 <div className="flex flex-wrap gap-3">
-  {existingImageUrls.map((url, index) => (
-    <div
-      key={`existing-${index}`}
-      className="relative w-24 h-24 rounded border border-gray-300 overflow-hidden"
-    >
-      <img
-        src={url}
-        alt={`existing-${index}`}
-        className="w-full h-full object-cover"
-      />
-    </div>
+ {existingImageUrls.map((url, index) => (
+  <div
+    key={`existing-${index}`}
+    className="relative w-24 h-24 rounded border border-gray-300 overflow-hidden"
+  >
+    <Image
+      src={url}
+      alt={`existing-${index}`}
+      fill
+      className="object-cover"
+    />
+  </div>
   ))}
               {/* 新しく追加した画像プレビュー */}
               {imageFiles.map((file, index) => (
