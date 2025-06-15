@@ -106,7 +106,7 @@ const handleSave = async () => {
   if (loading) return <div className="p-6">読み込み中...</div>;
 
 return (
-  <div className="min-h-screen bg-[#f9f9f9] font-sans">
+  <div className="min-h-screen bg-[#f9f9f9] font-sans pb-48">
     <div className="flex justify-between items-center px-4 py-3 border-b bg-white">
       <h1 className="text-lg font-bold">マイページ</h1>
     </div>
