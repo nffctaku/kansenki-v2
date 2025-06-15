@@ -60,6 +60,9 @@ const teamList = [
 'シンシナティ', 'インテル・マイアミ', 'アトランタ・ユナイテッド'
 ].map((team) => ({ value: team, label: team }));
 
+// CostKey の型定義を追加（← 🔴これが必須）
+type CostKey = 'flight' | 'hotel' | 'ticket' | 'transport' | 'food' | 'goods' | 'other';
+
 export default function EditPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -100,7 +103,6 @@ export default function EditPage() {
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
   const [message, setMessage] = useState('');
 
-  // 🔽 react-select 用のカスタムスタイル
   const customStyles = {
     control: (provided: any, state: any) => ({
       ...provided,
@@ -249,6 +251,7 @@ export default function EditPage() {
       setMessage('❌ 更新に失敗しました: ' + err.message);
     }
   };
+
 
 
   return (
