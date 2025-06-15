@@ -390,27 +390,95 @@ return (
     className="space-y-5 bg-blue-50 p-5 rounded-2xl shadow-sm"
   >
     {/* 大会名 */}
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">大会名</label>
-      <Select
-        styles={customStyles}
-        options={[
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">大会名</label>
+  <Select
+    styles={customStyles}
+    options={[
+      {
+        label: 'イングランド',
+        options: [
           { label: 'プレミアリーグ', value: 'プレミアリーグ' },
-          { label: 'ラ・リーガ', value: 'ラ・リーガ' },
+          { label: 'EFLチャンピオンシップ', value: 'EFLチャンピオンシップ' },
+          { label: 'FA杯', value: 'FA杯' },
+          { label: 'EFLカラバオ杯', value: 'EFLカラバオ杯' },
+        ],
+      },
+      {
+        label: 'イタリア',
+        options: [
           { label: 'セリエA', value: 'セリエA' },
+          { label: 'セリエB', value: 'セリエB' },
+          { label: 'コッパ・イタリア', value: 'コッパ・イタリア' },
+          { label: 'スーペルコッパ・イタリアーナ', value: 'スーペルコッパ・イタリアーナ' },
+        ],
+      },
+      {
+        label: 'スペイン',
+        options: [
+          { label: 'ラ・リーガ', value: 'ラ・リーガ' },
+          { label: 'ラ・リーガ2', value: 'ラ・リーガ2' },
+          { label: 'コパ・デル・レイ', value: 'コパ・デル・レイ' },
+          { label: 'スーペルコパ・デ・エスパーニャ', value: 'スーペルコパ・デ・エスパーニャ' },
+        ],
+      },
+      {
+        label: 'ドイツ',
+        options: [
           { label: 'ブンデスリーガ', value: 'ブンデスリーガ' },
+          { label: '2.ブンデスリーガ', value: '2.ブンデスリーガ' },
+          { label: 'DFBポカール', value: 'DFBポカール' },
+        ],
+      },
+      {
+        label: 'フランス',
+        options: [
           { label: 'リーグ・アン', value: 'リーグ・アン' },
+          { label: 'リーグ・ドゥ', value: 'リーグ・ドゥ' },
+          { label: 'クープ・ドゥ・フランス', value: 'クープ・ドゥ・フランス' },
+        ],
+      },
+      {
+        label: '欧州大会',
+        options: [
           { label: 'UEFAチャンピオンズリーグ', value: 'UEFAチャンピオンズリーグ' },
+          { label: 'UEFAヨーロッパリーグ', value: 'UEFAヨーロッパリーグ' },
+          { label: 'UEFAカンファレンスリーグ', value: 'UEFAカンファレンスリーグ' },
+        ],
+      },
+      {
+        label: 'その他の国',
+        options: [
+          { label: 'クラブ・ワールドカップ', value: 'クラブ・ワールドカップ' },
+          { label: 'エールディヴィジ', value: 'エールディヴィジ' },
+          { label: 'MLS', value: 'MLS' },
+          { label: 'アルゼンチン プリメーラ・ディビシオン', value: 'アルゼンチン プリメーラ・ディビシオン' },
+          { label: 'カンピオナート・ブラジレイロ・セリエA', value: 'カンピオナート・ブラジレイロ・セリエA' },
+        ],
+      },
+      {
+        label: '分類なし',
+        options: [
+          { label: '国内リーグ戦(その他)', value: '国内リーグ戦(その他)' },
+          { label: '国内カップ戦(その他)', value: '国内カップ戦(その他)' },
+          { label: '親善試合', value: '親善試合' },
           { label: 'その他', value: 'その他' },
-        ]}
-        value={match.competition ? { label: match.competition, value: match.competition } : null}
-        onChange={(e) => {
-          const newMatches = [...matches];
-          newMatches[index].competition = e?.value || '';
-          setMatches(newMatches);
-        }}
-      />
-    </div>
+        ],
+      },
+    ]}
+    value={
+      match.competition
+        ? { label: match.competition, value: match.competition }
+        : null
+    }
+    onChange={(e) => {
+      const newMatches = [...matches];
+      newMatches[index].competition = e?.value || '';
+      setMatches(newMatches);
+    }}
+  />
+</div>
+
 
     {/* 対戦カード */}
     <div>
@@ -498,17 +566,18 @@ return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">チケット代（円）</label>
       <input
-        type="number"
-        min={0}
-        placeholder="例：8500"
-        value={match.ticketPrice}
-        onChange={(e) => {
-          const newMatches = [...matches];
-          newMatches[index].ticketPrice = Number(e.target.value);
-          setMatches(newMatches);
-        }}
-        className="w-full border px-4 py-2 rounded bg-white"
-      />
+  type="number"
+  min={0}
+  placeholder="例：8500"
+  value={match.ticketPrice === 0 ? '' : match.ticketPrice}
+  onChange={(e) => {
+    const newMatches = [...matches];
+    const value = e.target.value;
+    newMatches[index].ticketPrice = value === '' ? 0 : Number(value);
+    setMatches(newMatches);
+  }}
+  className="w-full border px-4 py-2 rounded bg-white"
+/>
     </div>
   </div>
 ))}
