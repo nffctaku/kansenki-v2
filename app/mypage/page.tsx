@@ -254,7 +254,7 @@ return (
     </div>
 
     {/* ✅ がっつり余白追加 */}
-    <div className="h-32" />
+    <div className="h-48" />
   </div> // ← これで全体を閉じる
 );
 }
