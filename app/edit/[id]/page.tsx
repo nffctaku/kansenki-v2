@@ -6,9 +6,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { MatchInfo } from '@/types/match';
 import Select, {
-  CSSObjectWithLabel,
-  ControlProps,
-  GroupBase,
+ 
 } from 'react-select';
 
 const teamList = [
