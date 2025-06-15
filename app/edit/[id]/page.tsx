@@ -853,81 +853,94 @@ export default function EditPage() {
   />
 </div>
           {/* 🔻画像アップロードUI（既存画像の表示付き） */}
-          <div className="bg-white p-4 rounded shadow-sm space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              画像アップロード（最大5枚）
-            </label>
+<div className="bg-white p-4 rounded shadow-sm space-y-2">
+  <label className="block text-sm font-semibold text-gray-700">
+    画像アップロード（最大5枚）
+  </label>
 
-           {/* 既存画像（Cloudinary URL） */}
-<div className="flex flex-wrap gap-3">
-  {existingImageUrls.map((imgUrl, index) => (
-    <div
-      key={`existing-${index}`}
-      className="relative w-24 h-24 rounded border border-gray-300 overflow-hidden"
-    >
-      <Image
-        src={imgUrl}
-        alt={`existing-${index}`}
-        fill
-        className="object-cover"
-      />
-    </div>
-  ))}
-
-  {/* 新しく追加した画像プレビュー */}
-  {imageFiles.map((file, index) => {
-    const previewUrl = URL.createObjectURL(file);
-    return (
+  {/* 画像プレビューエリア */}
+  <div className="flex flex-wrap gap-3">
+    {/* 既存画像（Cloudinary URL） */}
+    {existingImageUrls.map((imgUrl, index) => (
       <div
-        key={`new-${index}`}
-        className="relative w-24 h-24 rounded border border-gray-300 overflow-hidden bg-white shadow-sm"
+        key={`existing-${index}`}
+        className="relative w-24 h-24 rounded border border-gray-300 overflow-hidden"
       >
         <Image
-          src={previewUrl}
-          alt={`new-${index}`}
+          src={imgUrl}
+          alt={`existing-${index}`}
           fill
           className="object-cover"
         />
+        {/* 削除ボタン（既存画像） */}
+        <button
+          type="button"
+          onClick={() => {
+            const updated = [...existingImageUrls];
+            updated.splice(index, 1);
+            setExistingImageUrls(updated);
+          }}
+          className="absolute top-1 right-1 w-6 h-6 bg-red-600 text-white text-xs rounded-full flex items-center justify-center hover:bg-red-700"
+        >
+          ×
+        </button>
+      </div>
+    ))}
 
-  {/* 削除ボタン */}
-  <button
-    type="button"
-    onClick={() => {
-      const updated = [...existingImageUrls];
-      updated.splice(index, 1);
-      setExistingImageUrls(updated);
-    }}
-    className="absolute top-1 right-1 w-6 h-6 bg-red-600 text-white text-xs rounded-full flex items-center justify-center hover:bg-red-700"
-  >
-    ×
-  </button>
+    {/* 新しく追加した画像プレビュー */}
+    {imageFiles.map((file, index) => {
+      const previewUrl = URL.createObjectURL(file);
+      return (
+        <div
+          key={`new-${index}`}
+          className="relative w-24 h-24 rounded border border-gray-300 overflow-hidden bg-white shadow-sm"
+        >
+          <Image
+            src={previewUrl}
+            alt={`new-${index}`}
+            fill
+            className="object-cover"
+          />
+          {/* 削除ボタン（新規画像） */}
+          <button
+            type="button"
+            onClick={() => {
+              const updated = [...imageFiles];
+              updated.splice(index, 1);
+              setImageFiles(updated);
+            }}
+            className="absolute top-1 right-1 w-6 h-6 bg-red-600 text-white text-xs rounded-full flex items-center justify-center hover:bg-red-700"
+          >
+            ×
+          </button>
+        </div>
+      );
+    })}
+
+    {/* アップロード追加ラベル（上限未満のとき） */}
+    {imageFiles.length + existingImageUrls.length < 5 && (
+      <label className="border-2 border-dashed border-gray-300 rounded p-6 w-full text-center cursor-pointer hover:bg-gray-50">
+        <p className="text-sm text-gray-600">写真をドラッグして追加</p>
+        <p className="text-xs text-gray-400 my-1">- または -</p>
+        <div className="inline-block mt-2 px-4 py-2 border border-red-500 text-red-500 font-semibold rounded hover:bg-red-50">
+          <span className="mr-1">📷</span> 画像を選択する
+        </div>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              setImageFiles((prev) => [...prev, file].slice(0, 5));
+              e.target.value = '';
+            }
+          }}
+          className="hidden"
+        />
+      </label>
+    )}
+  </div>
 </div>
-              ))}
-
-              {/* 画像追加ラベル */}
-              {imageFiles.length + existingImageUrls.length < 5 && (
-                <label className="border-2 border-dashed border-gray-300 rounded p-6 w-full text-center cursor-pointer hover:bg-gray-50">
-                  <p className="text-sm text-gray-600">写真をドラッグして追加</p>
-                  <p className="text-xs text-gray-400 my-1">- または -</p>
-                  <div className="inline-block mt-2 px-4 py-2 border border-red-500 text-red-500 font-semibold rounded hover:bg-red-50">
-                    <span className="mr-1">📷</span> 画像を選択する
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setImageFiles((prev) => [...prev, file].slice(0, 5));
-                        e.target.value = '';
-                      }
-                    }}
-                    className="hidden"
-                  />
-                </label>
-              )}
-            </div>
-          </div>
 
           {/* 投稿ボタン */}
           <button
