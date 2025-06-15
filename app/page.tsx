@@ -127,17 +127,16 @@ export default function HomePage() {
       </a>
     </div>
 
-    <div className="px-4 py-12 text-gray-500 w-full max-w-screen-md mx-auto pb-20">
-      {Object.entries(groupedByCategory).map(([category, posts]) => {
-        const categoryLabelMap: Record<string, string> = {
-          england: 'イングランド',
-          italy: 'イタリア',
-          spain: 'スペイン',
-          germany: 'ドイツ',
-          france: 'フランス',
-          other: 'その他',
-        };
-
+   <div className="px-4 py-12 text-gray-500 w-full max-w-screen-md mx-auto pb-20">
+  {Object.entries(groupedByCategory).map(([category, posts]) => {
+    const categoryLabelMap: Record<string, string> = {
+      england: 'イングランド',
+      italy: 'イタリア',
+      spain: 'スペイン',
+      germany: 'ドイツ',
+      france: 'フランス',
+      other: 'その他',
+    };
         const japaneseCategory = categoryLabelMap[category] || category;
         const displayedPosts = posts.slice(0, 5);
 
