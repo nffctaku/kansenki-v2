@@ -860,31 +860,34 @@ export default function EditPage() {
 
            {/* 既存画像（Cloudinary URL） */}
 <div className="flex flex-wrap gap-3">
- {existingImageUrls.map((imgUrl, index) => (
-  <div
-    key={`existing-${index}`}
-    className="relative w-24 h-24 rounded border border-gray-300 overflow-hidden"
-  >
-    <Image
-      src={imgUrl}
-      alt={`existing-${index}`}
-      fill
-      className="object-cover"
-    />
-  </div>
-))}
+  {existingImageUrls.map((imgUrl, index) => (
+    <div
+      key={`existing-${index}`}
+      className="relative w-24 h-24 rounded border border-gray-300 overflow-hidden"
+    >
+      <Image
+        src={imgUrl}
+        alt={`existing-${index}`}
+        fill
+        className="object-cover"
+      />
+    </div>
+  ))}
 
-              {/* 新しく追加した画像プレビュー */}
-              {imageFiles.map((file, index) => (
-                <div
-  key={`existing-${index}`}
-  className="relative w-24 h-24 rounded border border-gray-300 overflow-hidden bg-white shadow-sm"
->
-  <img
-    src={url}
-    alt={`existing-${index}`}
-    className="w-full h-full object-cover"
-  />
+  {/* 新しく追加した画像プレビュー */}
+  {imageFiles.map((file, index) => {
+    const previewUrl = URL.createObjectURL(file);
+    return (
+      <div
+        key={`new-${index}`}
+        className="relative w-24 h-24 rounded border border-gray-300 overflow-hidden bg-white shadow-sm"
+      >
+        <Image
+          src={previewUrl}
+          alt={`new-${index}`}
+          fill
+          className="object-cover"
+        />
 
   {/* 削除ボタン */}
   <button
