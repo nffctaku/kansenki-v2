@@ -193,58 +193,58 @@ return (
     </div>
 
     {/* あなたの投稿一覧 */}
-    <div className="p-4">
-      <div className="mb-6">
-        <h2 className="text-lg font-bold mb-4">あなたの投稿</h2>
+<div className="p-4">
+  <div className="mb-6">
+    <h2 className="text-lg font-bold mb-4">あなたの投稿</h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {posts.map((post) => (
-            <div
-              key={post.id}
-              className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col"
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      {posts.map((post) => (
+        <div
+          key={post.id}
+          className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col"
+        >
+          <a href={`/posts/${post.id}`}>
+            <img
+              src={post.imageUrls?.[0] || '/no-image.png'}
+              alt="観戦画像"
+              className="w-full aspect-square object-cover hover:opacity-90 transition"
+            />
+          </a>
+
+          <div className="p-4 text-sm flex-grow leading-[1.1] space-y-[2px]">
+            <p className="text-[12px] text-gray-400 leading-[1.1] m-0">
+              {post.season || 'シーズン未設定'}
+            </p>
+            <p className="text-[13px] font-bold leading-[1.1] m-0">
+              {post.matches?.[0]?.competition || '大会名未入力'}
+            </p>
+            <p className="text-[13px] text-gray-800 leading-[1.1] m-0">
+              {post.matches?.[0]?.teamA || 'チームA'} vs {post.matches?.[0]?.teamB || 'チームB'}
+            </p>
+          </div>
+
+          <div className="flex justify-between items-center px-4 pb-4">
+            <a
+              href={`/edit/${post.id}`}
+              className="flex items-center gap-[4px] text-green-600 text-[12px] hover:underline"
             >
-              <a href={`/posts/${post.id}`}>
-                <img
-                  src={post.imageUrls?.[0] || '/no-image.png'}
-                  alt="観戦画像"
-                  className="w-full aspect-square object-cover hover:opacity-90 transition"
-                />
-              </a>
-
-              <div className="p-4 text-sm flex-grow leading-[1.1] space-y-[2px]">
-                <p className="text-[12px] text-gray-400 leading-[1.1] m-0">
-                  {post.season || 'シーズン未設定'}
-                </p>
-                <p className="text-[13px] font-bold leading-[1.1] m-0">
-                  {post.matches?.[0]?.competition || '大会名未入力'}
-                </p>
-                <p className="text-[13px] text-gray-800 leading-[1.1] m-0">
-                  {post.matches?.[0]?.teamA || 'チームA'} vs {post.matches?.[0]?.teamB || 'チームB'}
-                </p>
-              </div>
-
-              <div className="flex justify-between items-center px-4 pb-4">
-                <a
-                  href={`/edit/${post.id}`}
-                  className="flex items-center gap-[4px] text-green-600 text-[12px] hover:underline"
-                >
-                  <img
-                    src="/えんぴつのアイコン素材.png"
-                    alt="編集"
-                    className="w-[10px] h-[10px] object-contain"
-                  />
-                  編集
-                </a>
-                <button
-                  onClick={() => handleDelete(post.id)}
-                  className="flex items-center gap-[4px] text-red-600 text-[12px] hover:underline"
-                >
-                  <img
-                    src="/ゴミ箱の無料アイコン.png"
-                    alt="削除"
-                    className="w-[10px] h-[10px] object-contain"
-                  />
-                  削除
+              <img
+                src="/えんぴつのアイコン素材.png"
+                alt="編集"
+                className="w-[10px] h-[10px] object-contain"
+              />
+              編集
+            </a>
+            <button
+              onClick={() => handleDelete(post.id)}
+              className="flex items-center gap-[4px] text-red-600 text-[12px] hover:underline"
+            >
+              <img
+                src="/ゴミ箱の無料アイコン.png"
+                alt="削除"
+                className="w-[10px] h-[10px] object-contain"
+              />
+               削除
                 </button>
               </div>
             </div>
@@ -252,6 +252,9 @@ return (
         </div>
       </div>
     </div>
-  </div>
+
+    {/* ✅ がっつり余白追加 */}
+    <div className="h-32" />
+  </div> // ← これで全体を閉じる
 );
 }
