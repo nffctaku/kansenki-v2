@@ -105,7 +105,7 @@ const handleSave = async () => {
 
   if (loading) return <div className="p-6">読み込み中...</div>;
 
- return (
+return (
   <div className="min-h-screen bg-[#f9f9f9] font-sans">
     <div className="flex justify-between items-center px-4 py-3 border-b bg-white">
       <h1 className="text-lg font-bold">マイページ</h1>
@@ -113,155 +113,145 @@ const handleSave = async () => {
 
     {/* 編集フォーム */}
     <div className="mb-10 p-6 bg-white rounded-xl shadow space-y-5">
-  {/* ニックネーム */}
-  <div className="flex justify-between items-center">
-    <label className="text-sm font-semibold">ニックネーム</label>
-   <input
-  type="text"
-  value={nickname}
-  onChange={(e) => setNickname(e.target.value)}
-  className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 focus:outline-none border-none"
-/>
-  </div>
+      {/* ニックネーム */}
+      <div className="flex justify-between items-center">
+        <label className="text-sm font-semibold">ニックネーム</label>
+        <input
+          type="text"
+          value={nickname}
+          onChange={(e) => setNickname(e.target.value)}
+          className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 focus:outline-none border-none"
+        />
+      </div>
 
-  {/* ユーザーID */}
-  <div className="flex justify-between items-center">
-    <label className="text-sm font-semibold">ユーザーID（@ID）</label>
-    <input
-  type="text"
-  value={userId}
-  disabled
-  className="w-2/3 text-right bg-gray-100 rounded-lg px-3 py-1 text-gray-500 border-none"
-/>
-  </div>
+      {/* ユーザーID */}
+      <div className="flex justify-between items-center">
+        <label className="text-sm font-semibold">ユーザーID（@ID）</label>
+        <input
+          type="text"
+          value={userId}
+          disabled
+          className="w-2/3 text-right bg-gray-100 rounded-lg px-3 py-1 text-gray-500 border-none"
+        />
+      </div>
 
-  {/* Xリンク */}
-  <div className="flex justify-between items-center">
-    <label className="text-sm font-semibold">X</label>
-    {showXInput ? (
-      <input
-  type="url"
-  placeholder="https://x.com/..."
-  value={xLink}
-  onChange={(e) => setXLink(e.target.value)}
-  className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 border-none"
-/>
-    ) : (
-      <button
-        type="button"
-        onClick={() => setShowXInput(true)}
-        className="text-blue-600 hover:underline text-sm"
-      >
-        リンクを設定
-      </button>
-    )}
-  </div>
-
-  {/* Noteリンク */}
-  <div className="flex justify-between items-center">
-    <label className="text-sm font-semibold">Note</label>
-    {showNoteInput ? (
-     <input
-  type="url"
-  placeholder="https://note.com/..."
-  value={noteLink}
-  onChange={(e) => setNoteLink(e.target.value)}
-  className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 border-none"
-/>
-    ) : (
-      <button
-        type="button"
-        onClick={() => setShowNoteInput(true)}
-        className="text-green-600 hover:underline text-sm"
-      >
-        リンクを設定
-      </button>
-    )}
-  </div>
-
-  {/* 保存ボタン */}
-  <div className="text-right">
-    <button
-      onClick={handleSave}
-      className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition"
-    >
-      保存する
-    </button>
-  </div>
-
-  {message && <p className="text-sm text-green-600">{message}</p>}
-</div>
-
-  {/* あなたの投稿一覧 */}
-<div className="p-4">
-  <div className="mb-6">
-    <div className="flex justify-between items-center mb-2">
-      <h2 className="text-sm font-semibold">あなたの投稿</h2>
-    </div>
-
-    <div className="grid grid-cols-2 gap-4">
-      {posts.map((post) => (
-        <div
-          key={post.id}
-          className="bg-white rounded-xl shadow overflow-hidden"
-        >
-          {/* 投稿画像 */}
-          <img
-            src={post.imageUrls?.[0] || '/no-image.png'}
-            alt="投稿画像"
-            className="w-full aspect-square object-cover"
+      {/* Xリンク */}
+      <div className="flex justify-between items-center">
+        <label className="text-sm font-semibold">X</label>
+        {showXInput ? (
+          <input
+            type="url"
+            placeholder="https://x.com/..."
+            value={xLink}
+            onChange={(e) => setXLink(e.target.value)}
+            className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 border-none"
           />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowXInput(true)}
+            className="text-blue-600 hover:underline text-sm"
+          >
+            リンクを設定
+          </button>
+        )}
+      </div>
 
-          {/* 投稿情報 */}
-          <div className="p-2 text-sm">
-            <p className="font-semibold truncate">
-              {post.matches?.[0]?.competition || '大会名未入力'}
-            </p>
-            <p className="text-gray-600 text-xs">
-              {post.matches?.[0]?.teamA} vs {post.matches?.[0]?.teamB}
-            </p>
-            <p className="text-gray-500 text-xs mt-1">
-              {post.season || 'シーズン未設定'}
-            </p>
-            <div className="flex gap-3 mt-1">
-              <a
-                href={`/posts/${post.id}`}
-                className="text-xs text-blue-600 underline"
-              >
-                投稿を表示
-              </a>
-              <a
-                href={`/edit/${post.id}`}
-                className="text-xs text-green-600 underline"
-              >
-                編集
-              </a>
-            </div>
-          </div>
+      {/* Noteリンク */}
+      <div className="flex justify-between items-center">
+        <label className="text-sm font-semibold">Note</label>
+        {showNoteInput ? (
+          <input
+            type="url"
+            placeholder="https://note.com/..."
+            value={noteLink}
+            onChange={(e) => setNoteLink(e.target.value)}
+            className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 border-none"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowNoteInput(true)}
+            className="text-green-600 hover:underline text-sm"
+          >
+            リンクを設定
+          </button>
+        )}
+      </div>
 
-          {/* 削除ボタン */}
-          <div className="px-2 pb-3">
-            <button
-              onClick={() => handleDelete(post.id)}
-              className="text-xs text-red-600 border border-red-300 px-3 py-1 rounded hover:bg-red-50 transition"
-            >
-              この投稿を削除
-            </button>
-          </div>
-        </div>
-      ))}
+      {/* 保存ボタン */}
+      <div className="text-right">
+        <button
+          onClick={handleSave}
+          className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition"
+        >
+          保存する
+        </button>
+      </div>
+
+      {message && <p className="text-sm text-green-600">{message}</p>}
     </div>
-  </div>
 
-  <div className="text-center mt-8">
-    <button
-      onClick={() => router.push('/')}
-      className="text-sm text-blue-600 hover:underline"
-    >
-      トップページに戻る
-    </button>
-  </div>
-</div>
+    {/* あなたの投稿一覧 */}
+    <div className="p-4">
+      <div className="mb-6">
+        <h2 className="text-lg font-bold mb-4">あなたの投稿</h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {posts.map((post) => (
+            <div
+              key={post.id}
+              className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col"
+            >
+              <a href={`/posts/${post.id}`}>
+                <img
+                  src={post.imageUrls?.[0] || '/no-image.png'}
+                  alt="観戦画像"
+                  className="w-full aspect-square object-cover hover:opacity-90 transition"
+                />
+              </a>
+
+              <div className="p-4 text-sm flex-grow leading-[1.1] space-y-[2px]">
+                <p className="text-[12px] text-gray-400 leading-[1.1] m-0">
+                  {post.season || 'シーズン未設定'}
+                </p>
+                <p className="text-[13px] font-bold leading-[1.1] m-0">
+                  {post.matches?.[0]?.competition || '大会名未入力'}
+                </p>
+                <p className="text-[13px] text-gray-800 leading-[1.1] m-0">
+                  {post.matches?.[0]?.teamA || 'チームA'} vs {post.matches?.[0]?.teamB || 'チームB'}
+                </p>
+              </div>
+
+              <div className="flex justify-between items-center px-4 pb-4">
+                <a
+                  href={`/edit/${post.id}`}
+                  className="flex items-center gap-[4px] text-green-600 text-[12px] hover:underline"
+                >
+                  <img
+                    src="/えんぴつのアイコン素材.png"
+                    alt="編集"
+                    className="w-[10px] h-[10px] object-contain"
+                  />
+                  編集
+                </a>
+                <button
+                  onClick={() => handleDelete(post.id)}
+                  className="flex items-center gap-[4px] text-red-600 text-[12px] hover:underline"
+                >
+                  <img
+                    src="/ゴミ箱の無料アイコン.png"
+                    alt="削除"
+                    className="w-[10px] h-[10px] object-contain"
+                  />
+                  削除
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   </div>
 );
 }
