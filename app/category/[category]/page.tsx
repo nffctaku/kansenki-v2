@@ -61,7 +61,7 @@ export default function CategoryPage() {
     className="mb-12 px-4 w-full max-w-screen-xl mx-auto"
     style={{ paddingBottom: '200px' }}
   >
-    <h1 className="text-2xl font-bold mt-6 mb-4 text-gray-800">{title}の観戦記</h1>
+    <h1 className="text-2xl font-bold mb-4 text-gray-800">{title}の観戦記</h1>
 
     <div className="mb-6">
       <input

@@ -28,15 +28,15 @@ export default function PostDetailPage() {
 
   if (!post) return <p className="text-center py-10">読み込み中...</p>;
 
-  const totalCost = post.cost
-    ? Math.round(
-        Object.values(post.cost as Record<string, number>).reduce(
-          (sum, v) => sum + Number(v),
-          0
-        ) / 10000
-      )
+  const rawTotalCost = post.cost
+    ? Object.values(post.cost as Record<string, number>).reduce((sum, v) => sum + (Number(v) || 0), 0)
     : 0;
+  
+  const totalCost = Math.round(rawTotalCost / 10000);
 
+
+  const hasHotels = post.hotels?.some((h: any) => (h.url && h.url.startsWith('http')) || (h.rating && h.rating > 0) || h.comment);
+  const hasSpots = post.spots?.some((s: any) => (s.url && s.url.startsWith('http')) || (s.rating && s.rating > 0) || s.comment);
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10 min-h-screen pb-[100px]">
@@ -102,298 +102,330 @@ export default function PostDetailPage() {
   </table>
 </div>
 
-{/* 観戦した試合 */}
-<div className="bg-white rounded-xl shadow overflow-hidden mb-6">
-  <h2 className="text-base font-bold bg-gray-100 px-4 py-2 border-b">観戦した試合</h2>
-  <table className="w-full text-sm table-fixed">
-    <tbody>
-      <tr className="bg-white">
-        <th className="w-1/3 px-4 py-1 text-left text-gray-700 font-normal">大会名</th>
-        <td className="px-4 py-1 text-right break-words">
-          {post.matches?.[0]?.competition || '未入力'}
-        </td>
-      </tr>
-      <tr className="bg-gray-100">
-        <th className="px-4 py-1 text-left text-gray-700 font-normal">対戦カード</th>
-        <td className="px-4 py-1 text-right break-words">
-          <div className="leading-tight">
-            <div>{post.matches?.[0]?.teamA}</div>
-            <div>{post.matches?.[0]?.teamB}</div>
-          </div>
-        </td>
-      </tr>
-      <tr className="bg-white">
-        <th className="px-4 py-1 text-left text-gray-700 font-normal">スタジアム</th>
-        <td className="px-4 py-1 text-right break-words">
-          {post.matches?.[0]?.stadium || '未入力'}
-        </td>
-      </tr>
-      <tr className="bg-gray-100">
-        <th className="px-4 py-1 text-left text-gray-700 font-normal">座席</th>
-        <td className="px-4 py-1 text-right break-words">
-          {post.matches?.[0]?.seat || '未入力'}
-        </td>
-      </tr>
-      <tr className="bg-white">
-        <th className="px-4 py-1 text-left text-gray-700 font-normal">席の感想</th>
-        <td className="px-4 py-1 text-right break-words whitespace-pre-wrap">
-          {post.matches?.[0]?.seatReview || '未入力'}
-        </td>
-      </tr>
-      <tr className="bg-gray-100">
-        <th className="px-4 py-1 text-left text-gray-700 font-normal">チケット代</th>
-        <td className="px-4 py-1 text-right break-words">
-          {post.matches?.[0]?.ticketPrice
-            ? `¥${Number(post.matches[0].ticketPrice).toLocaleString()}`
-            : '未入力'}
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+      {/* 観戦した試合 */}
+      <div className="bg-white rounded-xl shadow overflow-hidden mb-6">
+        <h2 className="text-base font-bold bg-gray-100 px-4 py-2 border-b">観戦した試合</h2>
+        <table className="w-full text-sm table-fixed">
+          <tbody>
+            {post.matches?.[0]?.competition && (
+              <tr className="bg-white">
+                <th className="w-1/3 px-4 py-1 text-left text-gray-700 font-normal">大会名</th>
+                <td className="px-4 py-1 text-right break-words">
+                  {post.matches[0].competition}
+                </td>
+              </tr>
+            )}
+            {(post.matches?.[0]?.teamA || post.matches?.[0]?.teamB) && (
+              <tr className="bg-gray-100">
+                <th className="px-4 py-1 text-left text-gray-700 font-normal">対戦カード</th>
+                <td className="px-4 py-1 text-right break-words">
+                  <div className="leading-tight">
+                    {post.matches[0].teamA}
+                    <br />
+                    vs
+                    <br />
+                    {post.matches[0].teamB}
+                  </div>
+                </td>
+              </tr>
+            )}
+            {post.season && (
+              <tr className="bg-white">
+                <th className="px-4 py-1 text-left text-gray-700 font-normal">シーズン</th>
+                <td className="px-4 py-1 text-right break-words">{post.season}</td>
+              </tr>
+            )}
+            {post.matches?.[0]?.stadium && (
+              <tr className="bg-gray-100">
+                <th className="px-4 py-1 text-left text-gray-700 font-normal">スタジアム</th>
+                <td className="px-4 py-1 text-right break-words">
+                  {post.matches[0].stadium}
+                </td>
+              </tr>
+            )}
+            {post.matches?.[0]?.seat && (
+              <tr className="bg-white">
+                <th className="px-4 py-1 text-left text-gray-700 font-normal">座席</th>
+                <td className="px-4 py-1 text-right break-words">
+                  {post.matches[0].seat}
+                </td>
+              </tr>
+            )}
+            {post.matches?.[0]?.ticketPrice && (
+              <tr className="bg-gray-100">
+                <th className="px-4 py-1 text-left text-gray-700 font-normal">チケット価格</th>
+                <td className="px-4 py-1 text-right break-words">
+                  {`¥${Number(post.matches[0].ticketPrice).toLocaleString()}`}
+                </td>
+              </tr>
+            )}
+            {post.matches?.[0]?.seatReview && (
+              <tr className="bg-white">
+                <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">座席レビュー</th>
+                <td className="px-4 py-1 text-right whitespace-pre-wrap">
+                  {post.matches[0].seatReview}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
+      {/* 渡航・観戦情報 */}
+      <div className="bg-white rounded-xl shadow overflow-hidden mb-6">
+        <h2 className="text-base font-bold bg-gray-100 px-4 py-2 border-b">渡航・観戦情報</h2>
+        <table className="w-full text-sm table-fixed">
+          <tbody>
+            {post.category && (
+              <tr className="bg-white">
+                <th className="w-1/3 px-4 py-1 text-left text-gray-700 font-normal align-top">カテゴリー</th>
+                <td className="px-4 py-1 text-right break-words">{post.category}</td>
+              </tr>
+            )}
+            {post.season && (
+              <tr className="bg-gray-100">
+                <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">観戦シーズン</th>
+                <td className="px-4 py-1 text-right break-words">{post.season}</td>
+              </tr>
+            )}
+            {post.lifestyle && (
+              <tr className="bg-white">
+                <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">ライフスタイル</th>
+                <td className="px-4 py-1 text-right break-words">{post.lifestyle}</td>
+              </tr>
+            )}
+            {post.watchYear && post.watchMonth && (
+              <tr className="bg-gray-100">
+                <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">観戦時期</th>
+                <td className="px-4 py-1 text-right break-words">
+                  {post.watchYear}年 {post.watchMonth}月
+                </td>
+              </tr>
+            )}
+            {post.stayDuration && (
+              <tr className="bg-white">
+                <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">滞在期間</th>
+                <td className="px-4 py-1 text-right break-words">{post.stayDuration}</td>
+              </tr>
+            )}
+            {post.goFlights?.length > 0 && (
+              <tr className="bg-gray-100">
+                <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">行きの航空会社</th>
+                <td className="px-4 py-1 text-right">
+                  <div className="flex flex-col items-end gap-[2px]">
+                    {post.goFlights.map((f: any, i: number) => (
+                      <div key={i}>{f.name}（{f.seat}）</div>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            )}
+            {post.returnFlights?.length > 0 && (
+              <tr className="bg-white">
+                <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">帰りの航空会社</th>
+                <td className="px-4 py-1 text-right">
+                  {(Array.from(new Set(post.returnFlights.map((f: any) => `${f.name}（${f.seat}）`))) as string[]).map((text, i) => (
+                    <div key={i}>{text}</div>
+                  ))}
+                </td>
+              </tr>
+            )}
+            {(post.goTime || post.goType || post.goVia) && (
+              <tr className="bg-gray-100">
+                <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">行きの移動</th>
+                <td className="px-4 py-1 text-right break-words">
+                  {[post.goTime, post.goType, post.goVia].filter(Boolean).join(' / ')}
+                </td>
+              </tr>
+            )}
+            {(post.returnTime || post.returnType || post.returnVia) && (
+              <tr className="bg-white">
+                <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">帰りの移動</th>
+                <td className="px-4 py-1 text-right break-words">
+                  {[post.returnTime, post.returnType, post.returnVia].filter(Boolean).join(' / ')}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-
-{/* 渡航・観戦情報 */}
-<div className="bg-white rounded-xl shadow overflow-hidden mb-6">
-  <h2 className="text-base font-bold bg-gray-100 px-4 py-2 border-b">渡航・観戦情報</h2>
-  <table className="w-full text-sm table-fixed">
-    <tbody>
-      <tr className="bg-white">
-        <th className="w-1/3 px-4 py-1 text-left text-gray-700 font-normal align-top">カテゴリー</th>
-        <td className="px-4 py-1 text-right break-words">{post.category}</td>
-      </tr>
-      <tr className="bg-gray-100">
-        <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">観戦シーズン</th>
-        <td className="px-4 py-1 text-right break-words">{post.season}</td>
-      </tr>
-      <tr className="bg-white">
-        <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">ライフスタイル</th>
-        <td className="px-4 py-1 text-right break-words">{post.lifestyle}</td>
-      </tr>
-      <tr className="bg-gray-100">
-        <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">観戦時期</th>
-        <td className="px-4 py-1 text-right break-words">
-          {post.watchYear}年 {post.watchMonth}月
-        </td>
-      </tr>
-      <tr className="bg-white">
-        <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">滞在期間</th>
-        <td className="px-4 py-1 text-right break-words">{post.stayDuration}</td>
-      </tr>
-      <tr className="bg-gray-100">
-        <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">行きの航空会社</th>
-        <td className="px-4 py-1 text-right">
-          {post.goFlights?.length ? (
-            <div className="flex flex-col items-end gap-[2px]">
-              {post.goFlights.map((f: any, i: number) => (
-                <div key={i}>{f.name}（{f.seat}）</div>
+      {/* 宿泊先 */}
+      {hasHotels && (
+        <div className="bg-white rounded-xl shadow overflow-hidden mb-6">
+          <h2 className="text-base font-bold bg-gray-100 px-4 py-2 border-b">宿泊先</h2>
+          <table className="w-full text-sm table-fixed">
+            <tbody>
+              {post.hotels.map((h: any, i: number) => (
+                <>
+                  {h.url && h.url.startsWith('http') && (
+                    <tr key={`hotel-link-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                      <th className="w-1/3 px-4 py-1 text-left text-gray-700 font-normal align-top">ホテルリンク</th>
+                      <td className="px-4 py-1 text-right break-words">
+                        <a
+                          href={h.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 underline"
+                        >
+                          {new URL(h.url).hostname.replace('www.', '')}
+                        </a>
+                      </td>
+                    </tr>
+                  )}
+                  {h.rating > 0 && (
+                    <tr key={`hotel-rating-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                      <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">評価</th>
+                      <td className="px-4 py-1 text-right">{h.rating} ★</td>
+                    </tr>
+                  )}
+                  {h.comment && (
+                    <tr key={`hotel-comment-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                      <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">コメント</th>
+                      <td className="px-4 py-1 text-right whitespace-pre-wrap">{h.comment}</td>
+                    </tr>
+                  )}
+                </>
               ))}
-            </div>
-          ) : '未入力'}
-        </td>
-      </tr>
-      <tr className="bg-white">
-  <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">帰りの航空会社</th>
-  <td className="px-4 py-1 text-right">
-   {post.returnFlights?.length ? (
-  (Array.from(new Set(post.returnFlights.map((f: any) => `${f.name}（${f.seat}）`))) as string[]).map((text, i) => (
-    <div key={i}>{text}</div>
-  ))
-) : '未入力'}
-
-
-  </td>
-</tr>
-
-      <tr className="bg-gray-100">
-        <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">行きの移動</th>
-        <td className="px-4 py-1 text-right break-words">
-          {[post.goTime, post.goType, post.goVia].filter(Boolean).join(' / ')}
-        </td>
-      </tr>
-      <tr className="bg-white">
-        <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">帰りの移動</th>
-        <td className="px-4 py-1 text-right break-words">
-          {[post.returnTime, post.returnType, post.returnVia].filter(Boolean).join(' / ')}
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-
-
-
-{/* 宿泊先 */}
-<div className="bg-white rounded-xl shadow overflow-hidden mb-6">
-  <h2 className="text-base font-bold bg-gray-100 px-4 py-2 border-b">宿泊先</h2>
-  <table className="w-full text-sm table-fixed">
-    <tbody>
-      {post.hotels?.length ? post.hotels.map((h: any, i: number) => (
-        <>
-          <tr key={`hotel-link-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-            <th className="w-1/3 px-4 py-1 text-left text-gray-700 font-normal align-top">ホテルリンク</th>
-            <td className="px-4 py-1 text-right break-words">
-              {h.url && h.url.startsWith('http') ? (
-                <a
-                  href={h.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline"
-                >
-                  {new URL(h.url).hostname.replace('www.', '')}
-                </a>
-              ) : 'リンクなし'}
-            </td>
-          </tr>
-          <tr key={`hotel-rating-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-            <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">評価</th>
-            <td className="px-4 py-1 text-right">{h.rating} ★</td>
-          </tr>
-          <tr key={`hotel-comment-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-            <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">コメント</th>
-            <td className="px-4 py-1 text-right whitespace-pre-wrap">{h.comment}</td>
-          </tr>
-        </>
-      )) : (
-        <tr>
-          <td colSpan={2} className="px-4 py-2 text-center text-gray-500">登録された宿泊先はありません</td>
-        </tr>
+            </tbody>
+          </table>
+        </div>
       )}
-    </tbody>
-  </table>
-</div>
 
-{/* おすすめスポット */}
-<div className="bg-white rounded-xl shadow overflow-hidden mb-6">
-  <h2 className="text-base font-bold bg-gray-100 px-4 py-2 border-b">おすすめスポット</h2>
-  <table className="w-full text-sm table-fixed">
-    <tbody>
-      {post.spots?.length ? post.spots.map((s: any, i: number) => (
-        <>
-          <tr key={`spot-link-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-            <th className="w-1/3 px-4 py-1 text-left text-gray-700 font-normal align-top">スポットリンク</th>
-            <td className="px-4 py-1 text-right break-words">
-              {s.url && s.url.startsWith('http') ? (
-                <a
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline"
-                >
-                  {new URL(s.url).hostname.replace('www.', '')}
-                </a>
-              ) : 'リンクなし'}
-            </td>
-          </tr>
-          <tr key={`spot-rating-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-            <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">評価</th>
-            <td className="px-4 py-1 text-right">{s.rating} ★</td>
-          </tr>
-          <tr key={`spot-comment-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-            <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">コメント</th>
-            <td className="px-4 py-1 text-right whitespace-pre-wrap">{s.comment}</td>
-          </tr>
-        </>
-      )) : (
-        <tr>
-          <td colSpan={2} className="px-4 py-2 text-center text-gray-500">おすすめスポットはありません</td>
-        </tr>
+      {/* おすすめスポット */}
+      {hasSpots && (
+        <div className="bg-white rounded-xl shadow overflow-hidden mb-6">
+          <h2 className="text-base font-bold bg-gray-100 px-4 py-2 border-b">おすすめスポット</h2>
+          <table className="w-full text-sm table-fixed">
+            <tbody>
+              {post.spots.map((s: any, i: number) => (
+                <>
+                  {s.url && s.url.startsWith('http') && (
+                    <tr key={`spot-link-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                      <th className="w-1/3 px-4 py-1 text-left text-gray-700 font-normal align-top">スポットリンク</th>
+                      <td className="px-4 py-1 text-right break-words">
+                        <a
+                          href={s.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 underline"
+                        >
+                          {new URL(s.url).hostname.replace('www.', '')}
+                        </a>
+                      </td>
+                    </tr>
+                  )}
+                  {s.rating > 0 && (
+                    <tr key={`spot-rating-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                      <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">評価</th>
+                      <td className="px-4 py-1 text-right">{s.rating} ★</td>
+                    </tr>
+                  )}
+                  {s.comment && (
+                    <tr key={`spot-comment-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                      <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">コメント</th>
+                      <td className="px-4 py-1 text-right whitespace-pre-wrap">{s.comment}</td>
+                    </tr>
+                  )}
+                </>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-    </tbody>
-  </table>
-</div>
+      {/* その他の情報 */}
+      <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8 px-6 py-6">
+        <h2 className="text-xl font-extrabold text-gray-900 border-b border-gray-300 pb-3 mb-4">
+          その他の情報
+        </h2>
+        <div className="space-y-4">
+          {[
+            ['持参アイテム', post.items],
+            ['購入グッズ', post.goods],
+            ['印象的なエピソード', post.episode],
+            ['初めて行く方へ', post.firstAdvice],
+          ].map(([label, value], i) =>
+            value ? (
+              <section key={i} className="bg-gray-50 rounded-md px-4 py-2">
+                <h3 className="text-sm font-bold text-gray-800 mb-0.5">{label as string}</h3>
+                <p className="text-sm text-gray-800 whitespace-pre-wrap leading-snug">
+                  {value as string}
+                </p>
+              </section>
+            ) : null
+          )}
+        </div>
+      </div>
 
-<div className="bg-white rounded-xl shadow-md overflow-hidden mb-8 px-6 py-6">
-  <h2 className="text-xl font-extrabold text-gray-900 border-b border-gray-300 pb-3 mb-4">
-    その他の情報
-  </h2>
-  <div className="space-y-4">
-    {[
-      ['持参アイテム', post.items],
-      ['購入グッズ', post.goods],
-      ['印象的なエピソード', post.episode],
-      ['初めて行く方へ', post.firstAdvice],
-    ].map(([label, value], i) => (
-      <section key={i} className="bg-gray-50 rounded-md px-4 py-2">
-        <h3 className="text-sm font-bold text-gray-800 mb-0.5">{label}</h3>
-        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-snug">
-          {value}
-        </p>
-      </section>
-    ))}
-  </div>
-</div>
+      {/* 費用内訳 */}
+      {rawTotalCost > 0 && (
+        <div className="bg-white rounded-xl shadow overflow-hidden mb-6">
+          <h2 className="text-base font-bold bg-gray-100 px-4 py-2 border-b">費用内訳</h2>
+          <table className="w-full text-sm table-fixed">
+            <tbody>
+              {[
+                ['航空券', post.cost?.flight],
+                ['ホテル', post.cost?.hotel],
+                ['チケット', post.cost?.ticket],
+                ['交通費', post.cost?.transport],
+                ['食費', post.cost?.food],
+                ['グッズ', post.cost?.goods],
+                ['その他', post.cost?.other],
+              ].map(([label, value], i) =>
+                value !== undefined && Number(value) > 0 ? (
+                  <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                    <th className="w-1/3 px-4 py-1 text-left text-gray-700 font-normal align-top">{label as string}</th>
+                    <td className="px-4 py-1 text-right">
+                      {`¥${Number(value).toLocaleString()}`}
+                    </td>
+                  </tr>
+                ) : null
+              )}
+              <tr className="bg-white">
+                <th className="px-4 py-2 text-left text-gray-900 font-semibold">費用合計</th>
+                <td className="px-4 py-2 text-right font-bold text-gray-900">
+                  約 {totalCost} 万円
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
 
+      {/* Social Buttons */}
+      <div className="flex justify-center items-center gap-6 mt-6 text-[11px] text-gray-700">
+        {/* いいね */}
+        <div className="flex flex-col items-center">
+          <div className="flex items-center gap-1">
+            <span className="text-[14px]">♡</span>
+            <span className="text-[12px]">{post.likeCount || 0}</span>
+          </div>
+          <span className="text-[10px] mt-0.5"></span>
+        </div>
 
+        {/* コピー */}
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(`https://kansenki.app/posts/${id}`);
+            alert('リンクをコピーしました！');
+          }}
+          className="flex flex-col items-center hover:opacity-80 bg-transparent border-none p-0"
+        >
+          <img src="/フリーのクリップアイコン.png" alt="コピー" className="w-[16px] h-[16px] mb-0.5 object-contain" />
+        </button>
 
-<div className="bg-white rounded-xl shadow overflow-hidden mb-6">
-  <h2 className="text-base font-bold bg-gray-100 px-4 py-2 border-b">費用内訳</h2>
-  <table className="w-full text-sm table-fixed">
-    <tbody>
-      {[
-        ['航空券', post.cost?.flight],
-        ['ホテル', post.cost?.hotel],
-        ['チケット', post.cost?.ticket],
-        ['交通費', post.cost?.transport],
-        ['食費', post.cost?.food],
-        ['グッズ', post.cost?.goods],
-        ['その他', post.cost?.other],
-      ].map(([label, value], i) => (
-        <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-          <th className="w-1/3 px-4 py-1 text-left text-gray-700 font-normal align-top">{label}</th>
-          <td className="px-4 py-1 text-right">
-            {value !== undefined ? `¥${Number(value).toLocaleString()}` : '―'}
-          </td>
-        </tr>
-      ))}
-      <tr className="bg-white">
-        <th className="px-4 py-2 text-left text-gray-900 font-semibold">費用合計</th>
-        <td className="px-4 py-2 text-right font-bold text-gray-900">
-          約 {totalCost} 万円
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+        {/* X */}
+        <a
+          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent('観戦記をチェック！')}&url=https://kansenki.app/posts/${id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img src="/logo-black.png" alt="X" className="w-[16px] h-[16px] mb-0.5 object-contain" />
+        </a>
+      </div>
 
-<div className="flex justify-center items-center gap-6 mt-6 text-[11px] text-gray-700">
-  {/* いいね */}
-  <div className="flex flex-col items-center">
-    <div className="flex items-center gap-1">
-      <span className="text-[14px]">♡</span>
-      <span className="text-[12px]">{post.likeCount || 0}</span>
+      {/* フッター被り回避スペーサー */}
+      <div className="w-full h-[100px] sm:h-[120px]" />
     </div>
-    <span className="text-[10px] mt-0.5"></span>
-  </div>
-
-  {/* コピー */}
-  <button
-    onClick={() => {
-      navigator.clipboard.writeText(`https://kansenki.app/posts/${id}`);
-      alert('リンクをコピーしました！');
-    }}
-    className="flex flex-col items-center hover:opacity-80 bg-transparent border-none p-0"
-  >
-    <img src="/フリーのクリップアイコン.png" alt="コピー" className="w-[16px] h-[16px] mb-0.5 object-contain" />
-  </button>
-
-  {/* X */}
-  <a
-  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent('観戦記をチェック！')}&url=https://kansenki.app/posts/${id}`}
-  target="_blank"
-  rel="noopener noreferrer"
->
-  <img src="/logo-black.png" alt="X" className="w-[16px] h-[16px] mb-0.5 object-contain" />
-</a>
-
-</div>
-
-
-
- {/* フッター被り回避スペーサー */}
-    <div className="w-full h-[100px] sm:h-[120px]" />
-  </div> // ← この1つの div で全体ラップ（閉じタグ1個だけ！）
-);
+  );
 }

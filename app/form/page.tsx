@@ -1042,6 +1042,7 @@ return (
   <option value="spain">スペイン</option>
   <option value="germany">ドイツ</option>
   <option value="france">フランス</option>
+  <option value="other">その他</option>
 </select>
 
 
