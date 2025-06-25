@@ -7,36 +7,12 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { teamsByCountry } from '../lib/teamData';
 import { Heart } from 'lucide-react';
-
-type MatchInfo = {
-  teamA: string;
-  teamB: string;
-  competition: string;
-  season: string;
-  nickname: string;
-  stadium?: string;
-  seat?: string;
-  seatReview?: string;
-  ticketPrice?: string;
-};
-
-type Travel = {
-  id: string;
-  imageUrls: string[];
-  season: string;
-  title?: string;
-  author?: string;
-  league?: string;
-  homeTeam?: string;
-  awayTeam?: string;
-  matches?: MatchInfo[];
-  likeCount?: number;
-};
+import { Post } from '../types/match';
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [allPosts, setAllPosts] = useState<Travel[]>([]);
-  const [displayedPosts, setDisplayedPosts] = useState<Travel[]>([]);
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
+  const [displayedPosts, setDisplayedPosts] = useState<Post[]>([]);
   const [teamNameSuggestions, setTeamNameSuggestions] = useState<{ [key: string]: string[] }>({});
 
   const [isLoading, setIsLoading] = useState(true);
@@ -47,7 +23,7 @@ export default function HomePage() {
       setIsLoading(true);
       try {
         const snapshot = await getDocs(collection(db, 'simple-posts'));
-        const data: Travel[] = snapshot.docs.map((doc) => {
+        const data: Post[] = snapshot.docs.map((doc) => {
           const d = doc.data();
           const matches = Array.isArray(d.matches) ? d.matches : [];
           const homeTeam = matches[0]?.teamA ?? '';
@@ -57,7 +33,7 @@ export default function HomePage() {
             id: doc.id,
             imageUrls: d.imageUrls ?? [],
             season: d.season ?? '',
-            title: d.episode ?? '',
+            episode: d.episode ?? '',
             author: d.nickname ?? '',
             league: matches[0]?.competition ?? '',
             homeTeam: homeTeam,
@@ -185,7 +161,7 @@ export default function HomePage() {
                 <div className="flex-1 min-w-0">
                   <Link href={`/posts/${post.id}`} className="no-underline">
                     <p className="truncate text-sm font-bold text-gray-900">
-                      ({post.season}) {post.homeTeam} vs {post.awayTeam} - {post.title}
+                      ({post.season}) {post.homeTeam} vs {post.awayTeam} - {post.episode}
                     </p>
                   </Link>
                   <div className="mt-1 flex items-center text-xs text-gray-500">
@@ -198,7 +174,7 @@ export default function HomePage() {
                     <Link href={`/posts/${post.id}`}>
                       <Image
                         src={post.imageUrls[0]}
-                        alt={post.title || 'Post image'}
+                        alt={post.episode || 'Post image'}
                         width={96}
                         height={64}
                         className="h-full w-full rounded-md object-cover"

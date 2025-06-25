@@ -68,16 +68,16 @@ export default function UserPostsPage() {
   return (
     <div className="max-w-screen-md mx-auto bg-white rounded-lg shadow-sm overflow-hidden">
       {/* カバー画像 */}
-      <div className="relative h-40 w-full bg-gray-200">
-        {userInfo.coverUrl && (
+      {userInfo.coverUrl && (
+        <div className="relative h-40 w-full bg-gray-200">
           <Image
             src={userInfo.coverUrl}
             alt="cover"
             fill
             className="object-cover"
           />
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="px-4 pt-4 pb-6">
         <h1 className="text-2xl font-bold text-gray-900">{userInfo.nickname}</h1>

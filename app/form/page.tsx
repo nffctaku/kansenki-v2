@@ -124,11 +124,11 @@ export default function CloudinaryPostForm() {
 const [season, setSeason] = useState('');
 const [matches, setMatches] = useState<MatchInfo[]>([
   {
-    teamA: '',
-    teamB: '',
     competition: '',
-    season: '',
-    nickname: '',
+    homeTeam: '',
+    awayTeam: '',
+    homeTeamKana: '',
+    awayTeamKana: '',
     stadium: '',
     seat: '',
     seatReview: '',
@@ -175,6 +175,18 @@ const [message, setMessage] = useState('');
   const [firstAdvice, setFirstAdvice] = useState('');
   const [allowComments, setAllowComments] = useState(false); // 初期値は「許可」
   const [category, setCategory] = useState('');
+
+  const handleMatchChange = (
+    index: number,
+    field: keyof MatchInfo,
+    value: string | number
+  ) => {
+    const newMatches = [...matches];
+    const matchToUpdate = { ...newMatches[index] };
+    (matchToUpdate as any)[field] = value;
+    newMatches[index] = matchToUpdate;
+    setMatches(newMatches);
+  };
 
   // ✅ Firestore から nickname を取得（ログインユーザー）
   useEffect(() => {
@@ -291,11 +303,11 @@ const [message, setMessage] = useState('');
   setCategory('');
  setMatches([
   {
-    teamA: '',
-    teamB: '',
     competition: '',
-    season: '',
-    nickname: '',
+    homeTeam: '',
+    awayTeam: '',
+    homeTeamKana: '',
+    awayTeamKana: '',
     stadium: '',
     seat: '',
     seatReview: '',
@@ -381,24 +393,164 @@ return (
 
 
         <h2 className="text-xl font-bold mt-10 mb-6 text-blue-700 tracking-wide">
-  観戦した試合（最大5件）
-</h2>
+          観戦した試合（最大5件）
+        </h2>
 
-{matches.map((match, index) => (
-  <div
-    key={index}
-    className="space-y-5 bg-blue-50 p-5 rounded-2xl shadow-sm"
-  >
-    {/* 大会名 */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">大会名</label>
-  <Select
-    styles={customStyles}
-    options={[
-      {
-        label: 'イングランド',
-        options: [
-          { label: 'プレミアリーグ', value: 'プレミアリーグ' },
+        {matches.map((match, index) => (
+          <div
+            key={index}
+            className="space-y-5 bg-blue-50 p-5 rounded-2xl shadow-sm"
+          >
+            {/* 大会名 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">大会名</label>
+              <Select
+                styles={customStyles}
+                options={[
+                  {
+                    label: 'イングランド',
+                    options: [
+                      { label: 'プレミアリーグ', value: 'プレミアリーグ' },
+                      { label: 'EFLチャンピオンシップ', value: 'EFLチャンピオンシップ' },
+                      { label: 'FA杯', value: 'FA杯' },
+                      { label: 'EFLカラバオ杯', value: 'EFLカラバオ杯' },
+                    ],
+                  },
+                  {
+                    label: 'イタリア',
+                    options: [
+                      { label: 'セリエA', value: 'セリエA' },
+                      { label: 'セリエB', value: 'セリエB' },
+                      { label: 'コッパ・イタリア', value: 'コッパ・イタリア' },
+                      { label: 'スーペルコッパ・イタリアーナ', value: 'スーペルコッパ・イタリアーナ' },
+                    ],
+                  },
+                  {
+                    label: 'スペイン',
+                    options: [
+                      { label: 'ラ・リーガ', value: 'ラ・リーガ' },
+                      { label: 'ラ・リーガ2', value: 'ラ・リーガ2' },
+                      { label: 'コパ・デル・レイ', value: 'コパ・デル・レイ' },
+                      { label: 'スーペルコパ・デ・エスパーニャ', value: 'スーペルコパ・デ・エスパーニャ' },
+                    ],
+                  },
+                  {
+                    label: 'ドイツ',
+                    options: [
+                      { label: 'ブンデスリーガ', value: 'ブンデスリーガ' },
+                      { label: '2.ブンデスリーガ', value: '2.ブンデスリーガ' },
+                      { label: 'DFBポカール', value: 'DFBポカール' },
+                    ],
+                  },
+                  {
+                    label: 'フランス',
+                    options: [
+                      { label: 'リーグ・アン', value: 'リーグ・アン' },
+                      { label: 'リーグ・ドゥ', value: 'リーグ・ドゥ' },
+                      { label: 'クープ・ドゥ・フランス', value: 'クープ・ドゥ・フランス' },
+                    ],
+                  },
+                  {
+                    label: '欧州大会',
+                    options: [
+                      { label: 'UEFAチャンピオンズリーグ', value: 'UEFAチャンピオンズリーグ' },
+                      { label: 'UEFAヨーロッパリーグ', value: 'UEFAヨーロッパリーグ' },
+                      { label: 'UEFAカンファレンスリーグ', value: 'UEFAカンファレンスリーグ' },
+                    ],
+                  },
+                  {
+                    label: 'その他の国',
+                    options: [
+                      { label: 'クラブ・ワールドカップ', value: 'クラブ・ワールドカップ' },
+                      { label: 'エールディヴィジ', value: 'エールディヴィジ' },
+                      { label: 'MLS', value: 'MLS' },
+                      { label: 'アルゼンチン プリメーラ・ディビシオン', value: 'アルゼンチン プリメーラ・ディビシオン' },
+                      { label: 'カンピオナート・ブラジレイロ・セリエA', value: 'カンピオナート・ブラジレイロ・セリエA' },
+                    ],
+                  },
+                  {
+                    label: '分類なし',
+                    options: [
+                      { label: '国内リーグ戦(その他)', value: '国内リーグ戦(その他)' },
+                      { label: '国内カップ戦(その他)', value: '国内カップ戦(その他)' },
+                      { label: '親善試合', value: '親善試合' },
+                      { label: 'その他', value: 'その他' },
+                    ],
+                  },
+                ]}
+                value={match.competition ? { label: match.competition, value: match.competition } : null}
+                onChange={(option) => handleMatchChange(index, 'competition', option?.value || '')}
+              />
+            </div>
+
+            {/* 対戦カード */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">対戦カード</label>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 space-y-3 sm:space-y-0">
+                <Select
+                  styles={customStyles}
+                  options={[...teamList, { value: 'Other', label: 'その他' }]}
+                  isSearchable
+                  placeholder="ホームチーム"
+                  value={teamList.find((t) => t.value === match.homeTeam)}
+                  onChange={(option) => handleMatchChange(index, 'homeTeam', option?.value || '')}
+                  className="w-full"
+                />
+                <span className="text-center font-bold text-gray-600">vs</span>
+                <Select
+                  styles={customStyles}
+                  options={[...teamList, { value: 'Other', label: 'その他' }]}
+                  isSearchable
+                  placeholder="アウェイチーム"
+                  value={teamList.find((t) => t.value === match.awayTeam)}
+                  onChange={(option) => handleMatchChange(index, 'awayTeam', option?.value || '')}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            {/* カタカナ表記 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">チーム名（X共有用カタカナ表記）</label>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 space-y-3 sm:space-y-0">
+                <input
+                  type="text"
+                  placeholder="ホームチーム（カタカナ）"
+                  value={match.homeTeamKana || ''}
+                  onChange={(e) => handleMatchChange(index, 'homeTeamKana', e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                />
+                <span className="text-center font-bold text-gray-600"> </span>
+                <input
+                  type="text"
+                  placeholder="アウェイチーム（カタカナ）"
+                  value={match.awayTeamKana || ''}
+                  onChange={(e) => handleMatchChange(index, 'awayTeamKana', e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                />
+              </div>
+            </div>
+
+          </div>
+        ))}
+
+        {/* ... 他セクション ... */}
+
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-300 shadow-md"
+        >
+          投稿する
+        </button>
+
+        {message && <p className="text-center mt-4 text-gray-600">{message}</p>}
+
+      </form>
+    </div>
+  </div>
+);
+}
+
           { label: 'EFLチャンピオンシップ', value: 'EFLチャンピオンシップ' },
           { label: 'FA杯', value: 'FA杯' },
           { label: 'EFLカラバオ杯', value: 'EFLカラバオ杯' },
@@ -688,50 +840,6 @@ return (
   return (
     <div key={type} className="space-y-6 mb-10">
       <h3 className="text-md font-semibold text-blue-600">【{isGo ? '行き' : '帰り'}】</h3>
-
-      {flights.map((flight, index) => (
-        <div key={index} className="space-y-4">
-          {/* 航空会社 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">航空会社</label>
-            <select
-              value={flight.name}
-              onChange={(e) => {
-                const updated = [...flights];
-                updated[index].name = e.target.value;
-                setFlights(updated);
-              }}
-               className="w-full border-1 border-red-500 px-4 py-8 rounded-full bg-green-100 text-black"
-            >
-              <option value="">航空会社を選択</option>
-              {[
-                '日本航空（JAL）', '全日本空輸（ANA）', 'エミレーツ航空', 'カタール航空',
-                'シンガポール航空', 'ブリティッシュ・エアウェイズ', 'ルフトハンザ航空',
-                'KLMオランダ航空', 'エールフランス航空', 'ターキッシュエアラインズ',
-                'スイスインターナショナル航空', 'ユナイテッド航空', 'デルタ航空',
-                'アメリカン航空', 'その他'
-              ].map((name) => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* 座席タイプ */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">座席タイプ</label>
-            <select
-              value={flight.seat}
-              onChange={(e) => {
-                const updated = [...flights];
-                updated[index].seat = e.target.value;
-                setFlights(updated);
-              }}
-              className="w-full border-1 border-red-500 px-4 py-8 rounded-full bg-green-100 text-black"
-            >
-              <option value="">座席を選択</option>
-              <option value="エコノミー">エコノミー</option>
-              <option value="ビジネス">ビジネス</option>
-              <option value="ファースト">ファースト</option>
             </select>
           </div>
         </div>

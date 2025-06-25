@@ -10,11 +10,12 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
+import { Post } from '@/types/match';
 
 
 export default function PostDetailPage() {
   const { id } = useParams();
-  const [post, setPost] = useState<any>(null);
+  const [post, setPost] = useState<Post | null>(null);
   const [currentUrl, setCurrentUrl] = useState('');
 
   useEffect(() => {
@@ -27,7 +28,12 @@ export default function PostDetailPage() {
     const fetchPost = async () => {
       const docRef = doc(db, 'simple-posts', id as string);
       const snap = await getDoc(docRef);
-      if (snap.exists()) setPost(snap.data());
+      if (snap.exists()) {
+        const postData = snap.data() as Post;
+        // FirestoreのドキュメントにはIDが含まれていないため、手動で追加
+        postData.id = snap.id;
+        setPost(postData);
+      }
     };
     fetchPost();
   }, [id]);
@@ -41,22 +47,12 @@ export default function PostDetailPage() {
   const totalCost = Math.round(rawTotalCost / 10000);
 
 
-  const hasHotels = post.hotels?.some((h: any) => (h.url && h.url.startsWith('http')) || (h.rating && h.rating > 0) || h.comment);
-  const hasSpots = post.spots?.some((s: any) => (s.url && s.url.startsWith('http')) || (s.rating && s.rating > 0) || s.comment);
+  const hasHotels = post.hotels?.some((h) => (h.url && h.url.startsWith('http')) || (h.rating && h.rating > 0) || h.comment);
+  const hasSpots = post.spots?.some((s) => (s.url && s.url.startsWith('http')) || (s.rating && s.rating > 0) || s.comment);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10 min-h-screen pb-[100px]">
-      {/* ロゴ */}
-      <div className="text-center mb-6">
-        <Image
-          src="/footballtop-logo-12.png"
-          alt="FOOTBALLTOP ロゴ"
-          width={180}
-          height={60}
-          unoptimized
-          className="mx-auto"
-        />
-      </div>
+        <div className="max-w-3xl mx-auto px-4 pt-4 min-h-screen pb-[100px]">
+
 
       {/* 画像スライド */}
       {post.imageUrls?.length > 0 && (
@@ -92,7 +88,7 @@ export default function PostDetailPage() {
     <tbody>
       <tr className="bg-white">
         <th className="w-1/3 px-4 py-1 text-left text-gray-700 font-normal">ニックネーム</th>
-        <td className="px-4 py-1 text-right break-words">{post.nickname || '未設定'}</td>
+        <td className="px-4 py-1 text-right break-words">{post.author || '未設定'}</td>
       </tr>
       {post.userId && (
         <tr className="bg-gray-100">
@@ -214,23 +210,23 @@ export default function PostDetailPage() {
                 <td className="px-4 py-1 text-right break-words">{post.stayDuration}</td>
               </tr>
             )}
-            {post.goFlights?.length > 0 && (
+            {post.goFlights && post.goFlights.length > 0 && (
               <tr className="bg-gray-100">
                 <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">行きの航空会社</th>
                 <td className="px-4 py-1 text-right">
                   <div className="flex flex-col items-end gap-[2px]">
-                    {post.goFlights.map((f: any, i: number) => (
+                    {post.goFlights.map((f, i) => (
                       <div key={i}>{f.name}（{f.seat}）</div>
                     ))}
                   </div>
                 </td>
               </tr>
             )}
-            {post.returnFlights?.length > 0 && (
+            {post.returnFlights && post.returnFlights.length > 0 && (
               <tr className="bg-white">
                 <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">帰りの航空会社</th>
                 <td className="px-4 py-1 text-right">
-                  {(Array.from(new Set(post.returnFlights.map((f: any) => `${f.name}（${f.seat}）`))) as string[]).map((text, i) => (
+                  {(Array.from(new Set(post.returnFlights.map((f) => `${f.name}（${f.seat}）`))) as string[]).map((text, i) => (
                     <div key={i}>{text}</div>
                   ))}
                 </td>
@@ -262,7 +258,7 @@ export default function PostDetailPage() {
           <h2 className="text-base font-bold bg-gray-100 px-4 py-2 border-b">宿泊先</h2>
           <table className="w-full text-sm table-fixed">
             <tbody>
-              {post.hotels.map((h: any, i: number) => (
+              {post.hotels?.map((h, i) => (
                 <>
                   {h.url && h.url.startsWith('http') && (
                     <tr key={`hotel-link-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
@@ -279,7 +275,7 @@ export default function PostDetailPage() {
                       </td>
                     </tr>
                   )}
-                  {h.rating > 0 && (
+                  {h.rating && h.rating > 0 && (
                     <tr key={`hotel-rating-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
                       <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">評価</th>
                       <td className="px-4 py-1 text-right">{h.rating} ★</td>
@@ -304,7 +300,7 @@ export default function PostDetailPage() {
           <h2 className="text-base font-bold bg-gray-100 px-4 py-2 border-b">おすすめスポット</h2>
           <table className="w-full text-sm table-fixed">
             <tbody>
-              {post.spots.map((s: any, i: number) => (
+              {post.spots?.map((s, i) => (
                 <>
                   {s.url && s.url.startsWith('http') && (
                     <tr key={`spot-link-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
@@ -321,7 +317,7 @@ export default function PostDetailPage() {
                       </td>
                     </tr>
                   )}
-                  {s.rating > 0 && (
+                  {s.rating && s.rating > 0 && (
                     <tr key={`spot-rating-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
                       <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">評価</th>
                       <td className="px-4 py-1 text-right">{s.rating} ★</td>
@@ -425,7 +421,7 @@ export default function PostDetailPage() {
 
         {/* X */}
         <a
-          href={currentUrl && post ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(`『${post.matches[0]?.homeTeam} vs ${post.matches[0]?.awayTeam}』の観戦記をチェック！ #kansenki`)}&url=${encodeURIComponent(currentUrl)}` : '#'}
+          href={currentUrl && post ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(`『${post.matches[0]?.teamA} vs ${post.matches[0]?.teamB}』の観戦記をチェック！ #kansenki`)}&url=${encodeURIComponent(currentUrl)}` : '#'}
           target="_blank"
           rel="noopener noreferrer"
           className={!currentUrl ? 'pointer-events-none opacity-50' : ''}
