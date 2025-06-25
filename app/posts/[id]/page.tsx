@@ -15,6 +15,12 @@ import 'swiper/css/pagination';
 export default function PostDetailPage() {
   const { id } = useParams();
   const [post, setPost] = useState<any>(null);
+  const [currentUrl, setCurrentUrl] = useState('');
+
+  useEffect(() => {
+    // ページがクライアントサイドで読み込まれた後に現在のURLを取得
+    setCurrentUrl(window.location.href);
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -406,19 +412,23 @@ export default function PostDetailPage() {
         {/* コピー */}
         <button
           onClick={() => {
-            navigator.clipboard.writeText(`https://kansenki.app/posts/${id}`);
-            alert('リンクをコピーしました！');
+            if (currentUrl) {
+              navigator.clipboard.writeText(currentUrl);
+              alert('リンクをコピーしました！');
+            }
           }}
           className="flex flex-col items-center hover:opacity-80 bg-transparent border-none p-0"
+          disabled={!currentUrl}
         >
           <img src="/フリーのクリップアイコン.png" alt="コピー" className="w-[16px] h-[16px] mb-0.5 object-contain" />
         </button>
 
         {/* X */}
         <a
-          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent('観戦記をチェック！')}&url=https://kansenki.app/posts/${id}`}
+          href={currentUrl && post ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(`『${post.matches[0]?.homeTeam} vs ${post.matches[0]?.awayTeam}』の観戦記をチェック！ #kansenki`)}&url=${encodeURIComponent(currentUrl)}` : '#'}
           target="_blank"
           rel="noopener noreferrer"
+          className={!currentUrl ? 'pointer-events-none opacity-50' : ''}
         >
           <img src="/logo-black.png" alt="X" className="w-[16px] h-[16px] mb-0.5 object-contain" />
         </a>
