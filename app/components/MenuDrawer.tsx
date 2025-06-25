@@ -2,56 +2,54 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 
 export default function MenuDrawer() {
   const [isOpen, setIsOpen] = useState(false);
   const toggleMenu = () => setIsOpen(!isOpen);
+  const pathname = usePathname();
 
-return (
-  <>
-    {/* ヘッダー */}
-    <header className="bg-white border-b h-14 flex items-center px-4 z-0 relative">
- <button
-  onClick={toggleMenu}
-  className="bg-transparent border-none outline-none z-50"
->
-  <span
-    style={{
-      fontSize: '32px',
-      lineHeight: '1',
-      display: 'inline-block',
-      color: 'black',
-    }}
-  >
-    ☰
-  </span>
-</button>
+  return (
+    <>
+      {/* Conditional Header */}
+      {pathname === '/' ? (
+        <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-white flex items-center justify-center px-4 border-b">
+          {/* Centered Logo */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <Image src="/footballtop-logo-12.png" alt="Football Top Logo" width={140} height={40} />
+          </div>
+          {/* Right Menu Icon */}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+            <button onClick={toggleMenu} className="focus:outline-none">
+              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+          </div>
+        </header>
+      ) : (
+        <header className="bg-white h-14 flex items-center justify-end px-4 z-0 relative">
+           <h1 className="absolute left-1/2 transform -translate-x-1/2 text-[16px] font-bold text-black">
+            現地観戦記
+          </h1>
+          <div onClick={toggleMenu} className="z-50 p-2 cursor-pointer" role="button" tabIndex={0}>
+            <span className="text-4xl text-black">☰</span>
+          </div>
+        </header>
+      )}
 
+      {/* Overlay to close menu on click outside */}
+      {isOpen && (
+        <div className="fixed inset-0 z-[9999]" onClick={toggleMenu} />
+      )}
 
-  <h1 className="absolute left-1/2 transform -translate-x-1/2 text-[16px] font-bold text-black">
-    現地観戦記
-  </h1>
-</header>
-
-
-    {/* オーバーレイ */}
-    {isOpen && (
-      <div
-        className="fixed inset-0 bg-black/40 z-[9999]"
-        onClick={toggleMenu}
-      />
-    )}
-
-    {/* サイドメニュー本体 */}
-    <aside
-      className={`fixed top-0 left-0 w-[70vw] h-screen z-[10000] transition-transform duration-300 ease-in-out ${
-        isOpen ? 'translate-x-0' : '-translate-x-[110%]'
-      }`}
-      style={{ backgroundColor: 'white' }}
-    >
+      {/* Side Menu */}
+      {/* Side Menu: Use inline style for transform to ensure it works reliably */}
+      <aside
+        className={`fixed top-0 right-0 w-[70vw] h-screen z-[10000] bg-white transition-transform duration-300 ease-in-out transform ${isOpen ? 'translate-x-0' : 'translate-x-full'} ${!isOpen ? 'invisible' : ''}`}
+      >
       <div className="h-full overflow-y-auto pb-[72px] text-black text-sm font-sans">
         {/* 各カテゴリー */}
-        <div className="bg-[#f1f1f1] px-6 py-4 text-xs font-bold text-gray-500 tracking-wide">
+        <div className="px-6 py-4 text-xs font-bold text-gray-500 tracking-wide">
           各カテゴリー
         </div>
         {[
@@ -74,7 +72,7 @@ return (
         ))}
 
         {/* 現地観戦情報 */}
-        <div className="bg-[#f1f1f1] px-6 py-4 text-xs font-bold text-gray-500 tracking-wide">
+        <div className="px-6 py-4 text-xs font-bold text-gray-500 tracking-wide">
           現地観戦情報
         </div>
         <div className="border-b border-gray-200 px-6 py-8">
@@ -85,7 +83,7 @@ return (
         </div>
 
         {/* SNS */}
-        <div className="bg-[#f1f1f1] px-6 py-4 text-xs font-bold text-gray-500 tracking-wide">
+        <div className="px-6 py-4 text-xs font-bold text-gray-500 tracking-wide">
           SNS
         </div>
         {[
@@ -105,7 +103,7 @@ return (
         ))}
 
        {/* その他 */}
-<div className="bg-[#f1f1f1] px-6 py-6 text-xs font-bold text-gray-500 tracking-wide">
+<div className="px-6 py-6 text-xs font-bold text-gray-500 tracking-wide">
   その他
 </div>
 

@@ -5,22 +5,7 @@ import Link from 'next/link';
 
 export default function BottomTabBar() {
   return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#ffffff',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '10px 20px',
-        zIndex: 9999,
-        borderTop: '1px solid #e5e7eb',
-
-      }}
-    >
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between border-t border-gray-200 bg-white px-5 py-2.5">
       <Tab icon="/tab-mypage.png" label="ホーム" href="/" />
       <Tab icon="/新聞のフリーアイコン.png" label="特集" />
       <Tab icon="/tab-plus.png" label="投稿" href="/form" />
@@ -38,43 +23,28 @@ type TabProps = {
 
 function Tab({ icon, label, href }: TabProps) {
   const content = (
-    <div
-      style={{
-        background: 'transparent',
-        border: 'none',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        color: '#6b7280',
-        fontSize: '11px',
-        cursor: href ? 'pointer' : 'default',
-      }}
-    >
-      <div
-        style={{
-          width: 28,
-          height: 28,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 4,
-        }}
-      >
+    <>
+      <div className="mb-1 flex h-7 w-7 items-center justify-center">
         <Image
           src={icon}
           alt={label}
           width={20}
           height={20}
-          style={{
-            objectFit: 'contain',
-            opacity: 0.8,
-            filter: 'grayscale(30%)',
-          }}
+          className="object-contain opacity-80 grayscale-[30%]"
         />
       </div>
       <span>{label}</span>
-    </div>
+    </>
   );
 
-  return href ? <Link href={href}>{content}</Link> : content;
+  const commonClasses =
+    'flex flex-col items-center border-none bg-transparent text-[11px] text-gray-500';
+
+  return href ? (
+    <Link href={href} className={`${commonClasses} cursor-pointer`}>
+      {content}
+    </Link>
+  ) : (
+    <div className={`${commonClasses} cursor-default`}>{content}</div>
+  );
 }

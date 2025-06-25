@@ -10,13 +10,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>FOOTBALLTOP</title>
       </head>
-      <body className="relative min-h-screen pb-32 bg-white text-black">
-        <MenuDrawer />
-        {children}
-        <BottomTabBar />
-
-        {/* 👇 Vercel Analyticsをここに追加 */}
-        <Analytics />
+      <body className="bg-gray-50 text-black">
+        <div className="relative min-h-screen">
+          <MenuDrawer />
+          <main className="pt-16 pb-24">
+            {children}
+          </main>
+          <BottomTabBar />
+          <Analytics />
+        </div>
       </body>
     </html>
   );

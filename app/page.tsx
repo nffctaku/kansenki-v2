@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { collection, getDocs, doc, updateDoc, increment } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
-import { onAuthStateChanged, getRedirectResult } from 'firebase/auth';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { teamsByCountry } from '../lib/teamData';
+import { Heart } from 'lucide-react';
 
 type MatchInfo = {
   teamA: string;
@@ -15,7 +14,7 @@ type MatchInfo = {
   competition: string;
   season: string;
   nickname: string;
-  stadium?: string;      // ← これを追加（任意なら ? を付ける）
+  stadium?: string;
   seat?: string;
   seatReview?: string;
   ticketPrice?: string;
@@ -23,213 +22,195 @@ type MatchInfo = {
 
 type Travel = {
   id: string;
-  nickname: string;
-  imageUrls?: string[];
-  category?: string;
+  imageUrls: string[];
+  season: string;
+  title?: string;
+  author?: string;
+  league?: string;
+  homeTeam?: string;
+  awayTeam?: string;
   matches?: MatchInfo[];
-  season?: string;
   likeCount?: number;
 };
 
 export default function HomePage() {
-  const [posts, setPosts] = useState<Travel[]>([]);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); // 👈 これを復活
+  const [searchQuery, setSearchQuery] = useState('');
+  const [allPosts, setAllPosts] = useState<Travel[]>([]);
+  const [displayedPosts, setDisplayedPosts] = useState<Travel[]>([]);
+  const [teamNameSuggestions, setTeamNameSuggestions] = useState<{ [key: string]: string[] }>({});
 
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 全投稿を取得
   useEffect(() => {
     const fetchPosts = async () => {
+      setIsLoading(true);
       try {
         const snapshot = await getDocs(collection(db, 'simple-posts'));
         const data: Travel[] = snapshot.docs.map((doc) => {
           const d = doc.data();
+          const matches = Array.isArray(d.matches) ? d.matches : [];
+          const homeTeam = matches[0]?.teamA ?? '';
+          const awayTeam = matches[0]?.teamB ?? '';
+
           return {
             id: doc.id,
-            nickname: d.nickname ?? '',
             imageUrls: d.imageUrls ?? [],
-            category: d.category ?? 'other',
-            matches: Array.isArray(d.matches) ? d.matches : [],
             season: d.season ?? '',
+            title: d.episode ?? '',
+            author: d.nickname ?? '',
+            league: matches[0]?.competition ?? '',
+            homeTeam: homeTeam,
+            awayTeam: awayTeam,
+            matches: matches,
             likeCount: d.likeCount ?? 0,
           };
         });
-        setPosts(data.reverse());
+        const reversedData = data.reverse();
+        setAllPosts(reversedData);
       } catch (error) {
         console.error('投稿取得エラー:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchPosts();
-
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          setIsLoggedIn(true);
-          console.log('スマホログイン完了:', result.user);
-        }
-      })
-      .catch((err) => {
-        console.error('ログインエラー:', err);
-      });
   }, []);
 
-   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsLoggedIn(!!user);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // 👇 isLoggedIn を使用してエラー回避（ログ出力などでOK）
+  // 検索クエリに基づいて表示する投稿を更新
   useEffect(() => {
-    console.log('ログイン状態:', isLoggedIn);
-  }, [isLoggedIn]);
+    if (isLoading) {
+      return;
+    }
 
-  const groupedByCategory = posts.reduce((acc, post) => {
-    const category = post.category || 'other';
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(post);
-    return acc;
-  }, {} as Record<string, Travel[]>);
+    const query = searchQuery.trim().toLowerCase();
 
-  const handleLike = async (postId: string) => {
-    const likedKey = `liked_${postId}`;
-    if (typeof window !== 'undefined' && localStorage.getItem(likedKey)) return;
+    if (query) {
+      const filteredPosts = allPosts.filter(post =>
+        post.homeTeam?.toLowerCase().includes(query) ||
+        post.awayTeam?.toLowerCase().includes(query) ||
+        post.league?.toLowerCase().includes(query)
+      );
+      setDisplayedPosts(filteredPosts);
+    } else {
+      setDisplayedPosts(allPosts.slice(0, 5));
+    }
 
-    try {
-      const postRef = doc(db, 'simple-posts', postId);
-      await updateDoc(postRef, {
-        likeCount: increment(1),
-      });
-      localStorage.setItem(likedKey, 'true');
-    } catch (error) {
-      console.error('いいねエラー:', error);
+    // チーム検索のサジェストを更新
+    if (searchQuery.trim() === '') {
+      setTeamNameSuggestions({});
+    } else {
+      const filteredSuggestions: { [key: string]: string[] } = {};
+      for (const country in teamsByCountry) {
+        const filteredTeams = teamsByCountry[country].filter(team =>
+          team.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        if (filteredTeams.length > 0) {
+          filteredSuggestions[country] = filteredTeams;
+        }
+      }
+      setTeamNameSuggestions(filteredSuggestions);
+    }
+  }, [searchQuery, allPosts, isLoading]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    if (query) {
+      const filteredSuggestions: { [key: string]: string[] } = {};
+      for (const country in teamsByCountry) {
+        const filteredTeams = teamsByCountry[country].filter(team =>
+          team.toLowerCase().includes(query.toLowerCase())
+        );
+        if (filteredTeams.length > 0) {
+          filteredSuggestions[country] = filteredTeams;
+        }
+      }
+      setTeamNameSuggestions(filteredSuggestions);
+    } else {
+      setTeamNameSuggestions({});
     }
   };
 
-
-
-
+  const handleSuggestionClick = (teamName: string) => {
+    setSearchQuery(teamName);
+    setTeamNameSuggestions({});
+  };
 
   return (
-   <div className="bg-white min-h-screen pb-[72px]">
-    <div className="w-full flex justify-center bg-white py-6">
-      <a
-        href="https://note.com/football_top/n/n111e239d79a9?sub_rt=share_pw"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <Image
-          src="/グリーン　イエロー　シンプル　クーポン　バナー.png"
-          alt="クーポンバナー"
-          width={800}
-          height={200}
-          className="rounded-lg shadow-md max-w-full h-auto transition hover:opacity-90"
-        />
-      </a>
-    </div>
-
-   <div className="px-4 py-12 text-gray-500 w-full max-w-screen-md mx-auto pb-20">
-  {Object.entries(groupedByCategory).map(([category, posts]) => {
-    const categoryLabelMap: Record<string, string> = {
-      england: 'イングランド',
-      italy: 'イタリア',
-      spain: 'スペイン',
-      germany: 'ドイツ',
-      france: 'フランス',
-      other: 'その他',
-    };
-    const japaneseCategory = categoryLabelMap[category] || category;
-    const displayedPosts = posts.slice(0, 5);
-
-        return (
-          <div key={category} className="mb-10 bg-gray-100 px-2 py-6 rounded-lg">
-            <h2 className="text-lg font-bold mb-4 px-2 text-gray-800">
-             <h2 className="text-lg font-bold mb-4 px-2 text-black">
-  {japaneseCategory}
-</h2>
-
-            </h2>
-
-            <div className="block md:hidden">
-              <Swiper spaceBetween={12} slidesPerView={'auto'} className="!px-4">
-                {displayedPosts.map((post) => {
-                  const hasImage = post.imageUrls?.[0];
-                  const hasMatch = post.matches?.[0];
-                  return (
-                    <SwiperSlide key={post.id} className="!w-[220px] !max-w-[220px]">
-                      <div className="bg-gray-100 rounded-3xl p-3">
-                        <Link href={`/posts/${post.id}`}>
-                          <div className="relative aspect-square w-full bg-gray-200 overflow-hidden rounded-xl">
-                            {hasImage ? (
-                              <Image src={hasImage} alt="投稿画像" fill className="object-cover rounded-xl" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">No Image</div>
-                            )}
-                          </div>
-                        </Link>
-                        <div className="pt-3">
-                          <h3 className="text-sm font-semibold truncate text-gray-800">
-                            {hasMatch ? `${hasMatch.teamA} vs ${hasMatch.teamB}` : '試合情報なし'}
-                          </h3>
-                          <p className="text-xs text-gray-500">{post.season || 'シーズン未設定'}</p>
-                          <button onClick={() => handleLike(post.id)} className="mt-2 text-xs text-red-500">♡ {post.likeCount || 0}</button>
-                        </div>
-                      </div>
-                    </SwiperSlide>
-                  );
-                })}
-              </Swiper>
-            </div>
-
-            <div className="hidden md:grid grid-cols-5 gap-4">
-              {displayedPosts.map((post) => {
-                const hasImage = post.imageUrls?.[0];
-                const hasMatch = post.matches?.[0];
-                return (
-                  <div key={post.id} className="bg-gray-100 rounded-3xl p-3">
-                    <Link href={`/posts/${post.id}`}>
-                      <div className="relative aspect-square w-full bg-gray-200 overflow-hidden rounded-xl">
-                        {hasImage ? (
-                          <Image src={hasImage} alt="投稿画像" fill className="object-cover rounded-xl" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">No Image</div>
-                        )}
-                      </div>
-                    </Link>
-                    <div className="pt-4">
-                      <h3 className="text-base font-bold text-gray-800 truncate">
-                        {hasMatch ? `${hasMatch.teamA} vs ${hasMatch.teamB}` : '試合情報なし'}
-                      </h3>
-                      <p className="text-xs text-gray-500">{post.season || 'シーズン未設定'}</p>
-                      <button onClick={() => handleLike(post.id)} className="mt-2 text-xs text-red-500">♡ {post.likeCount || 0}</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+    <>
+      <div className="m-3 bg-white rounded-xl shadow p-5">
+        <div className="text-center">
+          <h2 className="text-lg font-bold mb-4 text-gray-900">観戦記を探す</h2>
+          <div className="mx-auto w-full max-w-[280px] relative">
+            <input
+              type="text"
+              placeholder="チーム名または大会名を入力"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              autoComplete="off"
+              className="w-full p-3 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {Object.keys(teamNameSuggestions).length > 0 && (
+              <div className="absolute mt-1 w-full z-10">
+                <ul className="text-left list-none m-0 p-0 bg-white rounded-xl shadow-lg border border-gray-200 max-h-60 overflow-y-auto">
+                  {Object.entries(teamNameSuggestions).map(([country, teams]) => (
+                    <React.Fragment key={country}>
+                      <li className="p-2 font-bold text-gray-500 bg-gray-100 sticky top-0">{country}</li>
+                      {teams.map((team) => (
+                        <li key={team} onClick={() => handleSuggestionClick(team)} className="p-3 cursor-pointer hover:bg-blue-100">
+                          {team}
+                        </li>
+                      ))}
+                    </React.Fragment>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
-        );
-      })}
-    </div>
+        </div>
+      </div>
 
-   <footer className="mt-12 py-8 text-center space-y-4 text-sm text-gray-600">
-  <Image
-    src="/footballtop-logo-12.png"
-    alt="FOOTBALLTOP ロゴ"
-    width={180}
-    height={60}
-    unoptimized
-    className="mx-auto"
-  />
-  <div className="flex justify-center space-x-10">
-    <a href="https://x.com/FOOTBALLTOP2024" target="_blank" rel="noopener noreferrer">
-      <Image src="/X.png" alt="Xリンク" width={32} height={32} className="hover:opacity-80 transition" />
-    </a>
-    <a href="https://note.com/football_top" target="_blank" rel="noopener noreferrer">
-      <Image src="/note.png" alt="Noteリンク" width={80} height={40} className="hover:opacity-80 transition" />
-    </a>
-  </div>
-  <p className="text-xs text-gray-400">© 2025 FOOTBALLTOP. All rights reserved.</p>
-</footer>
-</div> // ← ここは return 最上位の div（min-h-screen pb-[72px]）の閉じタグ
-);
+      {/* Latest Posts Section */}
+      <div className="p-3">
+        <h2 className="text-lg font-bold my-3 text-center text-gray-900">
+          {searchQuery.trim() === '' ? '最新の投稿' : '検索結果'}
+        </h2>
+        <div className="divide-y divide-gray-200">
+          {displayedPosts.map((post) => (
+            <div key={post.id} className="py-4">
+              <div className="flex items-start justify-between space-x-4">
+                <div className="flex-1 min-w-0">
+                  <Link href={`/posts/${post.id}`} className="no-underline">
+                    <p className="truncate text-sm font-bold text-gray-900">
+                      ({post.season}) {post.homeTeam} vs {post.awayTeam} - {post.title}
+                    </p>
+                  </Link>
+                  <div className="mt-1 flex items-center text-xs text-gray-500">
+                    <Heart className="h-3 w-3 mr-1 flex-shrink-0 text-blue-500" fill="currentColor" />
+                    <span className="truncate">{post.likeCount ?? 0} {post.author}</span>
+                  </div>
+                </div>
+                <div className="w-24 h-16 flex-shrink-0">
+                  {post.imageUrls && post.imageUrls.length > 0 && (
+                    <Link href={`/posts/${post.id}`}>
+                      <Image
+                        src={post.imageUrls[0]}
+                        alt={post.title || 'Post image'}
+                        width={96}
+                        height={64}
+                        className="h-full w-full rounded-md object-cover"
+                      />
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
 }
