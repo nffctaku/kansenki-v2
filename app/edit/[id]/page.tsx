@@ -327,10 +327,10 @@ export default function EditPage() {
           options={teamList}
           isSearchable
           placeholder="ホームチーム"
-          value={teamList.find((t) => t.value === match.teamA)}
+          value={teamList.find((t) => t.value === match.homeTeam)}
           onChange={(e) => {
             const newMatches = [...matches];
-            newMatches[index].teamA = e?.value || '';
+            newMatches[index].homeTeam = e?.value || '';
             setMatches(newMatches);
           }}
           className="w-full"
@@ -341,10 +341,10 @@ export default function EditPage() {
           options={teamList}
           isSearchable
           placeholder="アウェイチーム"
-          value={teamList.find((t) => t.value === match.teamB)}
+          value={teamList.find((t) => t.value === match.awayTeam)}
           onChange={(e) => {
             const newMatches = [...matches];
-            newMatches[index].teamB = e?.value || '';
+            newMatches[index].awayTeam = e?.value || '';
             setMatches(newMatches);
           }}
           className="w-full"
@@ -410,7 +410,7 @@ export default function EditPage() {
         value={match.ticketPrice}
         onChange={(e) => {
           const newMatches = [...matches];
-          newMatches[index].ticketPrice = Number(e.target.value);
+          newMatches[index].ticketPrice = e.target.value;
           setMatches(newMatches);
         }}
         className="w-full border px-4 py-2 rounded bg-white"
@@ -427,15 +427,19 @@ export default function EditPage() {
       setMatches([
         ...matches,
         {
-          teamA: '',
-          teamB: '',
           competition: '',
           season: '',
-          nickname: '',
+          date: '',
+          kickoff: '',
+          homeTeam: '',
+          awayTeam: '',
+          homeScore: '',
+          awayScore: '',
           stadium: '',
+          ticketPrice: '',
+          ticketPurchaseRoute: '',
           seat: '',
           seatReview: '',
-          ticketPrice: 0,
         },
       ])
     }
