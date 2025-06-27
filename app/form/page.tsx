@@ -853,19 +853,30 @@ const Section = ({ title, children }) => (
   </div>
 );
 
-const FormSelect = ({ label, options, value, onChange, placeholder, isRequired }) => {
+type SelectOptionType = { value: string; label: string };
+
+interface FormSelectProps {
+  label: string;
+  options: readonly (SelectOptionType | GroupBase<SelectOptionType>)[];
+  value: string;
+  onChange: (option: SelectOptionType | null) => void;
+  placeholder: string;
+  isRequired?: boolean;
+}
+
+const FormSelect = ({ label, options, value, onChange, placeholder, isRequired }: FormSelectProps) => {
   const { theme } = useTheme();
   const customStyles = useMemo(() => getCustomStyles(theme), [theme]);
 
   // Handle both grouped and non-grouped options
-  let allOptions = [];
+  let allOptions: SelectOptionType[] = [];
   if (options && options.length > 0) {
-    if (options[0].hasOwnProperty('options')) {
+    if ('options' in options[0]) {
       // Grouped options
-      allOptions = options.flatMap(g => g.options || []);
+      allOptions = (options as GroupBase<SelectOptionType>[]).flatMap(g => g.options || []);
     } else {
       // Non-grouped options
-      allOptions = options;
+      allOptions = options as SelectOptionType[];
     }
   }
   const selectedValue = allOptions.find(o => o.value === value);
