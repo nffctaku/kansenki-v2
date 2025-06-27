@@ -148,9 +148,9 @@ interface FlightSection {
   type: 'go' | 'return';
   title: string;
   flights: FlightInfo[];
-  handleChange: (index: number, field: keyof FlightInfo, value: string) => void;
+  handleChange: (_index: number, _field: keyof FlightInfo, _value: string) => void;
   add: () => void;
-  remove: (index: number) => void;
+  remove: (_index: number) => void;
   time: FlightTime;
   setTime: React.Dispatch<React.SetStateAction<FlightTime>>;
   flightType: string;
@@ -796,7 +796,7 @@ export default function CloudinaryPostForm() {
                 <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                   {imagePreviews.map((preview, index) => (
                     <div key={preview} className="relative aspect-square">
-                      <img src={preview} alt={`プレビュー ${index + 1}`} className="w-full h-full object-cover rounded-lg shadow-md" />
+                      <Image src={preview} alt={`プレビュー ${index + 1}`} width={150} height={150} className="w-full h-full object-cover rounded-lg shadow-md" />
                       <button
                         type="button"
                         onClick={() => removeImage(index)}
