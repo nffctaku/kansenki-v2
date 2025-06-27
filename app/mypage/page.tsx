@@ -14,6 +14,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
+import { useTheme } from 'next-themes';
 
 type Post = {
   id: string;
@@ -29,6 +30,7 @@ type Post = {
 };
 
 export default function MyPage() {
+  const { theme } = useTheme();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [nickname, setNickname] = useState('');
@@ -103,48 +105,48 @@ const handleSave = async () => {
 };
 
 
-  if (loading) return <div className="p-6">読み込み中...</div>;
+  if (loading) return <div className="p-6 dark:text-white">読み込み中...</div>;
 
 return (
-  <div className="min-h-screen bg-[#f9f9f9] font-sans pb-48">
-    <div className="flex justify-between items-center px-4 py-3 border-b bg-white">
-      <h1 className="text-lg font-bold">マイページ</h1>
+  <div className="min-h-screen bg-[#f9f9f9] dark:bg-gray-900 font-sans pb-48">
+    <div className="flex justify-between items-center px-4 py-3 border-b bg-white dark:bg-gray-800 dark:border-gray-700">
+      <h1 className="text-lg font-bold dark:text-white">マイページ</h1>
     </div>
 
     {/* 編集フォーム */}
-    <div className="mb-10 p-6 bg-white rounded-xl shadow space-y-5">
+    <div className="mb-10 p-6 bg-white dark:bg-gray-800 rounded-xl shadow space-y-5">
       {/* ニックネーム */}
       <div className="flex justify-between items-center">
-        <label className="text-sm font-semibold">ニックネーム</label>
+        <label className="text-sm font-semibold dark:text-gray-300">ニックネーム</label>
         <input
           type="text"
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
-          className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 focus:outline-none border-none"
+          className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none"
         />
       </div>
 
       {/* ユーザーID */}
       <div className="flex justify-between items-center">
-        <label className="text-sm font-semibold">ユーザーID（@ID）</label>
+        <label className="text-sm font-semibold dark:text-gray-300">ユーザーID（@ID）</label>
         <input
           type="text"
           value={userId}
           disabled
-          className="w-2/3 text-right bg-gray-100 rounded-lg px-3 py-1 text-gray-500 border-none"
+          className="w-2/3 text-right bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-1 text-gray-500 dark:text-gray-400 border-none"
         />
       </div>
 
       {/* Xリンク */}
       <div className="flex justify-between items-center">
-        <label className="text-sm font-semibold">X</label>
+        <label className="text-sm font-semibold dark:text-gray-300">X</label>
         {showXInput ? (
           <input
             type="url"
             placeholder="https://x.com/..."
             value={xLink}
             onChange={(e) => setXLink(e.target.value)}
-            className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 border-none"
+            className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 dark:bg-gray-700 dark:text-white border-none"
           />
         ) : (
           <button
@@ -159,14 +161,14 @@ return (
 
       {/* Noteリンク */}
       <div className="flex justify-between items-center">
-        <label className="text-sm font-semibold">Note</label>
+        <label className="text-sm font-semibold dark:text-gray-300">Note</label>
         {showNoteInput ? (
           <input
             type="url"
             placeholder="https://note.com/..."
             value={noteLink}
             onChange={(e) => setNoteLink(e.target.value)}
-            className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 border-none"
+            className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 dark:bg-gray-700 dark:text-white border-none"
           />
         ) : (
           <button
@@ -189,19 +191,19 @@ return (
         </button>
       </div>
 
-      {message && <p className="text-sm text-green-600">{message}</p>}
+      {message && <p className="text-sm text-green-600 dark:text-green-400">{message}</p>}
     </div>
 
     {/* あなたの投稿一覧 */}
 <div className="p-4">
   <div className="mb-6">
-    <h2 className="text-lg font-bold mb-4">あなたの投稿</h2>
+    <h2 className="text-lg font-bold mb-4 dark:text-white">あなたの投稿</h2>
 
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
       {posts.map((post) => (
         <div
           key={post.id}
-          className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col"
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden flex flex-col"
         >
           <a href={`/posts/${post.id}`}>
             <img
@@ -212,13 +214,13 @@ return (
           </a>
 
           <div className="p-4 text-sm flex-grow leading-[1.1] space-y-[2px]">
-            <p className="text-[12px] text-gray-400 leading-[1.1] m-0">
+            <p className="text-[12px] text-gray-400 dark:text-gray-500 leading-[1.1] m-0">
               {post.season || 'シーズン未設定'}
             </p>
-            <p className="text-[13px] font-bold leading-[1.1] m-0">
+            <p className="text-[13px] font-bold dark:text-gray-200 leading-[1.1] m-0">
               {post.matches?.[0]?.competition || '大会名未入力'}
             </p>
-            <p className="text-[13px] text-gray-800 leading-[1.1] m-0">
+            <p className="text-[13px] text-gray-800 dark:text-gray-300 leading-[1.1] m-0">
               {post.matches?.[0]?.teamA || 'チームA'} vs {post.matches?.[0]?.teamB || 'チームB'}
             </p>
           </div>
@@ -231,7 +233,7 @@ return (
               <img
                 src="/えんぴつのアイコン素材.png"
                 alt="編集"
-                className="w-[10px] h-[10px] object-contain"
+                className="w-[10px] h-[10px] object-contain dark:invert"
               />
               編集
             </a>
@@ -242,7 +244,7 @@ return (
               <img
                 src="/ゴミ箱の無料アイコン.png"
                 alt="削除"
-                className="w-[10px] h-[10px] object-contain"
+                className="w-[10px] h-[10px] object-contain dark:invert"
               />
                削除
                 </button>

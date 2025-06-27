@@ -117,9 +117,9 @@ export default function HomePage() {
 
   return (
     <>
-      <div className="m-3 bg-white rounded-xl shadow p-5">
+      <div className="m-3 bg-white dark:bg-gray-800 rounded-xl shadow p-5">
         <div className="text-center">
-          <h2 className="text-lg font-bold mb-4 text-gray-900">観戦記を探す</h2>
+          <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-200">観戦記を探す</h2>
           <div className="mx-auto w-full max-w-[280px] relative">
             <input
               type="text"
@@ -127,16 +127,16 @@ export default function HomePage() {
               value={searchQuery}
               onChange={handleSearchChange}
               autoComplete="off"
-              className="w-full p-3 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {Object.keys(teamNameSuggestions).length > 0 && (
               <div className="absolute mt-1 w-full z-10">
-                <ul className="text-left list-none m-0 p-0 bg-white rounded-xl shadow-lg border border-gray-200 max-h-60 overflow-y-auto">
+                <ul className="text-left list-none m-0 p-0 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto">
                   {Object.entries(teamNameSuggestions).map(([country, teams]) => (
                     <React.Fragment key={country}>
-                      <li className="p-2 font-bold text-gray-500 bg-gray-100 sticky top-0">{country}</li>
+                      <li className="p-2 font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-900 sticky top-0">{country}</li>
                       {teams.map((team) => (
-                        <li key={team} onClick={() => handleSuggestionClick(team)} className="p-3 cursor-pointer hover:bg-blue-100">
+                        <li key={team} onClick={() => handleSuggestionClick(team)} className="p-3 cursor-pointer hover:bg-blue-100 dark:hover:bg-gray-700">
                           {team}
                         </li>
                       ))}
@@ -151,21 +151,21 @@ export default function HomePage() {
 
       {/* Latest Posts Section */}
       <div className="p-3">
-        <h2 className="text-lg font-bold my-3 text-center text-gray-900">
+        <h2 className="text-lg font-bold my-3 text-center text-gray-900 dark:text-gray-200">
           {searchQuery.trim() === '' ? '最新の投稿' : '検索結果'}
         </h2>
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {displayedPosts.map((post) => (
             <div key={post.id} className="py-4">
               <div className="flex items-start justify-between space-x-4">
                 <div className="flex-1 min-w-0">
                   <Link href={`/posts/${post.id}`} className="no-underline">
-                    <p className="truncate text-sm font-bold text-gray-900">
+                    <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-200">
                       ({post.season}) {post.homeTeam} vs {post.awayTeam} - {post.episode}
                     </p>
                   </Link>
-                  <div className="mt-1 flex items-center text-xs text-gray-500">
-                    <Heart className="h-3 w-3 mr-1 flex-shrink-0 text-blue-500" fill="currentColor" />
+                  <div className="mt-1 flex items-center text-xs text-gray-500 dark:text-gray-400">
+                    <Heart className="h-3 w-3 mr-1 flex-shrink-0 text-blue-500 dark:text-blue-400" fill="currentColor" />
                     <span className="truncate">{post.likeCount ?? 0} {post.author}</span>
                   </div>
                 </div>

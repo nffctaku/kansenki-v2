@@ -1,1233 +1,877 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { MatchInfo } from '@/types/match';
-import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
+import { MatchInfo, Travel } from '@/types/match';
+import { collection, addDoc, doc, getDoc, query, where, getDocs } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import Select, {
-  CSSObjectWithLabel,
-  ControlProps,
-  GroupBase,
-} from 'react-select';
+import { useTheme } from 'next-themes';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { ja } from 'date-fns/locale/ja';
+import 'react-datepicker/dist/react-datepicker.css';
+import './datepicker-custom.css';
+import Select, { StylesConfig, GroupBase } from 'react-select';
+import { teamList, competitionOptions, costItems, CostKey, airlineList, ticketPurchaseRouteOptions } from './data';
 
-const customStyles = {
-  control: (
-    provided: CSSObjectWithLabel,
-    state: ControlProps<any, false, GroupBase<any>>
-  ): CSSObjectWithLabel => ({
+// Type definitions for complex state
+interface FlightInfo { name: string; seat: string; }
+interface HotelInfo { url: string; comment: string; rating: number; }
+interface SpotInfo { url: string; comment: string; rating: number; }
+interface FlightTime { departure: string; arrival: string; }
+
+const timeOptions = Array.from({ length: 48 }, (_, i) => {
+  const hours = Math.floor(i / 2);
+  const minutes = (i % 2) * 30;
+  const time = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  return { value: time, label: time };
+});
+
+// React Selectのダークモード対応カスタムスタイル
+registerLocale('ja', ja);
+
+const getCustomStyles = (theme: string | undefined): StylesConfig<any, false, GroupBase<any>> => ({
+  control: (provided, state) => ({
     ...provided,
-    borderRadius: '1rem', // rounded-2xl
-    border: '1px solid',
-    borderColor: state.isFocused ? '#60a5fa' : '#d1d5db',
-    boxShadow: state.isFocused ? '0 0 0 2px #bfdbfe' : 'none',
-    padding: '6px 12px',
-    minHeight: '44px',
-    backgroundColor: '#fff',
-    transition: 'all 0.2s ease',
+    borderRadius: '0.5rem',
+    borderColor: theme === 'dark' ? '#4b5563' : '#d1d5db',
+    backgroundColor: theme === 'dark' ? '#374151' : 'white',
+    boxShadow: state.isFocused ? (theme === 'dark' ? '0 0 0 1px #3b82f6' : '0 0 0 1px #60a5fa') : 'none',
+    '&:hover': {
+      borderColor: theme === 'dark' ? '#6b7280' : '#a5b4fc',
+    },
+    padding: '1px',
+    minHeight: '42px',
   }),
-
-  menu: (provided: CSSObjectWithLabel): CSSObjectWithLabel => ({
-  ...provided,
-  borderRadius: '1rem',
-  zIndex: 20,
-}),
-
-
-   placeholder: (
-    provided: CSSObjectWithLabel
-  ): CSSObjectWithLabel => ({
+  menu: (provided) => ({
     ...provided,
-    color: '#9ca3af',
-    fontSize: '0.875rem',
+    borderRadius: '0.5rem',
+    backgroundColor: theme === 'dark' ? '#1f2937' : 'white',
+    zIndex: 20,
   }),
-
-  input: (
-    provided: CSSObjectWithLabel
-  ): CSSObjectWithLabel => ({
+  option: (provided, state) => ({
     ...provided,
-    fontSize: '0.875rem',
+    backgroundColor: state.isSelected
+      ? (theme === 'dark' ? '#3b82f6' : '#60a5fa')
+      : state.isFocused
+      ? (theme === 'dark' ? '#374151' : '#f3f4f6')
+      : 'transparent',
+    color: theme === 'dark' ? '#f9fafb' : '#1f2937',
+    '&:active': {
+      backgroundColor: theme === 'dark' ? '#2563eb' : '#3b82f6',
+    },
   }),
+  singleValue: (provided) => ({
+    ...provided,
+    color: theme === 'dark' ? '#f9fafb' : '#1f2937',
+  }),
+  input: (provided) => ({
+    ...provided,
+    color: theme === 'dark' ? '#f9fafb' : '#1f2937',
+  }),
+  placeholder: (provided) => ({
+    ...provided,
+    color: theme === 'dark' ? '#9ca3af' : '#6b7280',
+  }),
+  groupHeading: (provided) => ({
+    ...provided,
+    color: theme === 'dark' ? '#d1d5db' : '#4b5563',
+    backgroundColor: theme === 'dark' ? '#374151' : '#f3f4f6',
+    padding: '8px 12px',
+    fontWeight: 'bold',
+  }),
+});
+
+const initialMatchState: MatchInfo = {
+  competition: '',
+  season: '',
+  date: '',
+  kickoff: '',
+  homeTeam: '',
+  awayTeam: '',
+  homeScore: '',
+  awayScore: '',
+  stadium: '',
+  ticketPrice: '',
+  ticketPurchaseRoute: '',
+  seat: '',
+  seatReview: '',
 };
 
+interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+}
 
-const teamList = [
-  'マンチェスター・シティ', 'アーセナル', 'リバプール', 'アストン・ビラ', 'トッテナム',
-'チェルシー', 'ニューカッスル', 'マンチェスター・ユナイテッド', 'ウエスト・ハム',
-'クリスタル・パレス', 'ブライトン', 'ボーンマス', 'フルハム', 'ウォルバーハンプトン',
-'エバートン', 'ブレントフォード', 'ノッティンガム・フォレスト', 'レスター・シティ',
-'イプスウィッチ', 'サウサンプトン','ルートン・タウン', 'バーンリー', 'シェフィールド・ユナイテッド', 'リーズ', 'WBA',
-'ノリッジ', 'ハル・シティ', 'ミドルスブラ', 'コベントリー', 'プレストン',
-'ブリストル・シティ', 'カーディフ', 'ミルウォール', 'スウォンジー', 'ワトフォード',
-'サンダーランド', 'ストーク・シティ', 'QPR', 'ブラックバーン', 'シェフィールド・ウェンズデイ',
-'プリマス', 'ポーツマス', 'ダービー・カウンティ', 'オックスフォード','レアル・マドリード', 'バルセロナ', 'ジローナ', 'アトレティコ・マドリー', 'アスレティック・ビルバオ',
-'ソシエダ', 'ベティス', 'ビジャレアル', 'バレンシア', 'アラベス',
-'オサスナ', 'ヘタフェ', 'セルタ', 'セビージャ', 'マジョルカ',
-'ラス・パルマス', 'ラージョ', 'レガネス', 'バジャドリー', 'エスパニョール',
-'カディス', 'アルメリア', 'グラナダ', 'エイバル', 'スポルティング・ヒホン',
-'オビエド', 'ラシン', 'レバンテ', 'ブルゴス', 'ラシン・フェロル',
-'エルチェ', 'テネリフェ', 'アルバセテ', 'カルタヘナ', 'サラゴサ',
-'エルデンセ', 'ウエスカ', 'ミランデス', 'カステリョン', 'デポルティボ',
-'マラガ', 'コルドバ','インテル', 'ミラン', 'ユベントス', 'アタランタ', 'ボローニャ',
-'ローマ', 'ラツィオ', 'フィオレンティーナ', 'トリノ', 'ナポリ',
-'ジェノア', 'モンツァ', 'ベローナ', 'レッチェ', 'ウディネーゼ',
-'カリアリ', 'エンポリ', 'パルマ', 'コモ', 'ベネチア',
-'パレルモ', 'チッタデッラ', 'バーリ', 'カルピ', 'モンツァ',
-'キエーボ', 'チェゼーナ', 'ペスカーラ', 'エンポリ', 'ベネベント',
-'フロジノーネ', 'クロトーネ', 'クレモネーゼ', 'ノバラ', 'テルナーナ',
-'カターニア', 'リボルノ', 'アスコリ', 'ペルージャ','レバークーゼン', 'シュツットガルト', 'バイエルン', 'ライプツィヒ', 'ドルトムント',
-'フランクフルト', 'ホッフェンハイム', 'ハイデンハイム', 'ブレーメン', 'フライブルク',
-'アウクスブルク', 'ボルフスブルク', 'マインツ', 'ボルシアMG', 'ウニオン・ベルリン',
-'ボーフム', 'ザンクト・パウリ', 'ホルシュタイン・キール', 'ケルン', 'ダルムシュタット',
-'デュッセルドルフ', 'ハンブルガーSV', 'カールスルーエ', 'ハノーファー', 'パダーボルン',
-'グロイター・フュルト', 'ヘルタ・ベルリン', 'シャルケ', 'エルフェアスベルク', 'ニュルンベルク',
-'カイザースラウテルン', 'マクデブルク', 'ブラウンシュバイク', 'ウルム', 'プロイセン・ミュンスター',
-'レーゲンスブルク','パリSG', 'モナコ', 'ブレスト', 'リール', 'ニース',
-'リヨン', 'RCランス', 'マルセイユ', 'スタッド・ランス', 'レンヌ',
-'トゥールーズ', 'モンペリエ', 'ストラスブール', 'ナント', 'ル・アーブル',
-'オセール', 'アンジェ', 'サンテティエンヌ', 'スポルティング', 'ベンフィカ',
-'ポルト', 'ブラガ', 'ビトーリア・ギマランエス', 'モレイレンセ', 'アロウカ',
-'ファマリカン', 'カサピア', 'ファレンセ', 'リオ・アベ', 'ジル・ビセンテ',
-'エストリル', 'エストレラ・アマドーラ', 'ボアビスタ', 'サンタクララ', 'ナシオナル',
-'AVS','クラブ・ブルージュ', 'ロイヤル・ユニオン・サンジロワーズ', 'アンデルレヒト', 'セルクル・ブルージュ', 'ゲンク',
-'アントワープ', 'ゲント', 'メヘレン', 'シントトロイデン', 'ルーベン',
-'ウェステルロー', 'スタンダール・リエージュ', 'シャルルロワ', 'コルトレイク', 'ベールスホット',
-'デンデル', 'PSV', 'フェイエノールト', 'トゥエンテ', 'AZ',
-'アヤックス', 'NECナイメヘン', 'ユトレヒト', 'スパルタ・ロッテルダム', 'ゴー・アヘッド・イーグルス',
-'シッタート', 'ヘーレンフェーン', 'ズウォレ', 'アルメレ・シティ', 'ヘラクレス',
-'RKCワールワイク', 'ビレム', 'フローニンゲン', 'NACブレダ', 'LAギャラクシー',
-'NYレッドブルズ', 'シアトル・サウンダーズ', 'バンクーバー・ホワイトキャップス', 'ポートランド・ティンバーズ', 'モントリオール・インパクト',
-'レアル・ソルトレイク', 'コロラド・ラピッズ', 'サンノゼ・アースクエークス', 'トロントFC', 'デポルティボ・チーバス',
-'ニューヨーク・シティ', 'フィラデルフィア・ユニオン', 'シカゴ・ファイアー', 'D.C.ユナイテッド', 'オーランド・シティ',
-'シンシナティ', 'インテル・マイアミ', 'アトランタ・ユナイテッド'
-].map((team) => ({ value: team, label: team }));
+const FormInput = ({ label, ...props }: FormInputProps) => (
+  <div>
+    {label && (
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+    )}
+    <input {...props} className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 transition" />
+  </div>
+);
 
+interface FormTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label: string;
+}
+
+const FormTextarea = ({ label, ...props }: FormTextareaProps) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+    <textarea {...props} rows={4} className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 transition" />
+  </div>
+);
+
+const initialFlightState: FlightInfo = { name: '', seat: '' };
+const initialHotelState: HotelInfo = { url: '', comment: '', rating: 0 };
+const initialSpotState: SpotInfo = { url: '', comment: '', rating: 0 };
+
+interface Travel {
+  id: string;
+  userId: string;
+  season: string;
+  travelDuration: string;
+  cities: string;
+  goFlights: FlightInfo[];
+  returnFlights: FlightInfo[];
+  goTime: FlightTime;
+  returnTime: FlightTime;
+  goFlightType: string;
+  returnFlightType: string;
+  goVia: string;
+  returnVia: string;
+  hotels: HotelInfo[];
+  cost: Record<CostKey, number>;
+}
+
+interface FlightSection {
+  type: 'go' | 'return';
+  title: string;
+  flights: FlightInfo[];
+  handleChange: (index: number, field: keyof FlightInfo, value: string) => void;
+  add: () => void;
+  remove: (index: number) => void;
+  time: FlightTime;
+  setTime: React.Dispatch<React.SetStateAction<FlightTime>>;
+  flightType: string;
+  setFlightType: React.Dispatch<React.SetStateAction<string>>;
+  via: string;
+  setVia: React.Dispatch<React.SetStateAction<string>>;
+}
 
 export default function CloudinaryPostForm() {
-  const router = useRouter(); // ✅ useRouterの初期化
+  const { theme } = useTheme();
+  const router = useRouter();
+  const customStyles = useMemo(() => getCustomStyles(theme), [theme]);
 
-  // ✅ 費用項目の型と定義
-  type CostKey = 'flight' | 'hotel' | 'ticket' | 'transport' | 'food' | 'goods' | 'other';
-
-  const costItems: { key: CostKey; label: string }[] = [
-    { key: 'flight', label: '航空券' },
-    { key: 'hotel', label: '宿泊費' },
-    { key: 'ticket', label: 'チケット代' },
-    { key: 'transport', label: '交通費' },
-    { key: 'food', label: '食費' },
-    { key: 'goods', label: 'グッズ' },
-    { key: 'other', label: 'その他' },
-  ];
-
+  // State declarations
   const [nickname, setNickname] = useState('');
-const [season, setSeason] = useState('');
-const [matches, setMatches] = useState<MatchInfo[]>([
-  {
-    competition: '',
-    homeTeam: '',
-    awayTeam: '',
-    homeTeamKana: '',
-    awayTeamKana: '',
-    stadium: '',
-    seat: '',
-    seatReview: '',
-    ticketPrice: 0,
-  },
-]);
-const [lifestyle, setLifestyle] = useState('');
-const [watchYear, setWatchYear] = useState('');
-const [watchMonth, setWatchMonth] = useState('');
-const [stayDuration, setStayDuration] = useState('');
-const [imageFiles, setImageFiles] = useState<File[]>([]);
-const [message, setMessage] = useState('');
-
-  // ✅ 行き／帰りを個別に管理
-  const [goFlights, setGoFlights] = useState([{ name: '', seat: '' }]);
-  const [returnFlights, setReturnFlights] = useState([{ name: '', seat: '' }]);
-
-  const [goTime, setGoTime] = useState('');
-  const [goType, setGoType] = useState('');
-  const [goVia, setGoVia] = useState('');
-
-  const [returnTime, setReturnTime] = useState('');
-  const [returnType, setReturnType] = useState('');
-  const [returnVia, setReturnVia] = useState('');
-
-  const [hotels, setHotels] = useState([{ url: '', comment: '', rating: 0 }]);
-  const [spots, setSpots] = useState([
-    { url: '', comment: '', rating: 0, autoName: '', address: '' },
-  ]);
-
-  const [cost, setCost] = useState<Record<CostKey, number>>({
-    flight: 0,
-    hotel: 0,
-    ticket: 0,
-    transport: 0,
-    food: 0,
-    goods: 0,
-    other: 0,
-  });
-
+  const [season, setSeason] = useState('');
+  const [match, setMatch] = useState<MatchInfo>(initialMatchState);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [message, setMessage] = useState('');
+  const [lifestyle, setLifestyle] = useState('');
+  const [stayDuration, setStayDuration] = useState('');
+  const [cost, setCost] = useState<Record<CostKey, number>>({ flight: 0, hotel: 0, transport: 0, food: 0, goods: 0, other: 0 });
   const [items, setItems] = useState('');
   const [goods, setGoods] = useState('');
   const [episode, setEpisode] = useState('');
   const [firstAdvice, setFirstAdvice] = useState('');
-  const [allowComments, setAllowComments] = useState(false); // 初期値は「許可」
-  const [category, setCategory] = useState('');
+  const [allowComments, setAllowComments] = useState(true);
 
-  const handleMatchChange = (
-    index: number,
-    field: keyof MatchInfo,
-    value: string | number
-  ) => {
-    const newMatches = [...matches];
-    const matchToUpdate = { ...newMatches[index] };
-    (matchToUpdate as any)[field] = value;
-    newMatches[index] = matchToUpdate;
-    setMatches(newMatches);
+  // Travel Info State
+  const [travelOption, setTravelOption] = useState('new'); // 'new' or 'existing'
+  const [userTravels, setUserTravels] = useState<Travel[]>([]);
+  const [selectedTravelId, setSelectedTravelId] = useState('');
+  const [travelDateRange, setTravelDateRange] = useState<[Date | null, Date | null]>([null, null]);
+  const [cities, setCities] = useState('');
+  const [category, setCategory] = useState('');
+  const [goFlights, setGoFlights] = useState<FlightInfo[]>([initialFlightState]);
+  const [returnFlights, setReturnFlights] = useState<FlightInfo[]>([initialFlightState]);
+  const [hotels, setHotels] = useState<HotelInfo[]>([initialHotelState]);
+  const [spots, setSpots] = useState<SpotInfo[]>([initialSpotState]);
+
+  // Flight section specific states
+  const [goTime, setGoTime] = useState<FlightTime>({ departure: '', arrival: '' });
+  const [returnTime, setReturnTime] = useState<FlightTime>({ departure: '', arrival: '' });
+  const [goFlightType, setGoFlightType] = useState('direct');
+  const [returnFlightType, setReturnFlightType] = useState('direct');
+  const [goVia, setGoVia] = useState('');
+  const [returnVia, setReturnVia] = useState('');
+
+  // Handlers
+  const handleMatchChange = (field: keyof MatchInfo, value: any) => {
+    setMatch({ ...match, [field]: value });
   };
 
-  // ✅ Firestore から nickname を取得（ログインユーザー）
-  useEffect(() => {
-    const fetchNickname = async () => {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (!user) return;
+  const handleCostChange = (key: CostKey, value: string) => {
+    setCost({ ...cost, [key]: Number(value) || 0 });
+  };
 
-      const userRef = doc(db, 'users', user.uid);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const userData = userSnap.data();
-        setNickname(userData.nickname || '');
+  const totalCost = useMemo(() => Object.values(cost).reduce((acc, cur) => acc + cur, 0), [cost]);
+
+  // Handlers for dynamic lists
+  const handleFlightChange = (type: 'go' | 'return', index: number, field: keyof FlightInfo, value: string) => {
+    const flights = type === 'go' ? [...goFlights] : [...returnFlights];
+    flights[index] = { ...flights[index], [field]: value };
+    if (type === 'go') setGoFlights(flights);
+    else setReturnFlights(flights);
+  };
+  const addFlight = (type: 'go' | 'return') => {
+    const flights = type === 'go' ? goFlights : returnFlights;
+    if (flights.length < 2) {
+      const setFlights = type === 'go' ? setGoFlights : setReturnFlights;
+      setFlights([...flights, { name: '', seat: '' }]);
+    }
+  };
+  const removeFlight = (type: 'go' | 'return', index: number) => {
+    const flights = type === 'go' ? goFlights : returnFlights;
+    const setFlights = type === 'go' ? setGoFlights : setReturnFlights;
+    setFlights(flights.filter((_, i) => i !== index));
+  };
+
+  const handleHotelChange = (index: number, field: keyof HotelInfo, value: string | number) => {
+    const newHotels = [...hotels];
+    newHotels[index] = { ...newHotels[index], [field]: value };
+    setHotels(newHotels);
+  };
+  const addHotel = () => {
+    if (hotels.length < 3) setHotels([...hotels, { url: '', comment: '', rating: 0 }]);
+  };
+  const removeHotel = (index: number) => {
+    setHotels(hotels.filter((_, i) => i !== index));
+  };
+
+  const handleSpotChange = (index: number, field: keyof SpotInfo, value: string | number) => {
+    const newSpots = [...spots];
+    newSpots[index] = { ...newSpots[index], [field]: value };
+    setSpots(newSpots);
+  };
+  const addSpot = () => {
+    if (spots.length < 5) setSpots([...spots, { url: '', comment: '', rating: 0 }]);
+  };
+  const removeSpot = (index: number) => {
+    setSpots(spots.filter((_, i) => i !== index));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newFiles = Array.from(e.target.files || []);
+    const combinedFiles = [...imageFiles, ...newFiles].slice(0, 5);
+    
+    setImageFiles(combinedFiles);
+
+    // Clean up old previews before creating new ones for the new combined list
+    imagePreviews.forEach(url => URL.revokeObjectURL(url));
+    
+    const newPreviews = combinedFiles.map(file => URL.createObjectURL(file));
+    setImagePreviews(newPreviews);
+  };
+
+  const removeImage = (indexToRemove: number) => {
+    // Create new arrays
+    const newImageFiles = imageFiles.filter((_, index) => index !== indexToRemove);
+    const newImagePreviews = imagePreviews.filter((_, index) => index !== indexToRemove);
+
+    // Revoke the specific object URL to free memory
+    URL.revokeObjectURL(imagePreviews[indexToRemove]);
+
+    setImageFiles(newImageFiles);
+    setImagePreviews(newImagePreviews);
+  };
+
+  useEffect(() => {
+    // This effect handles the cleanup of object URLs when the component unmounts.
+    return () => {
+      imagePreviews.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [imagePreviews]);
+
+  useEffect(() => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const fetchNickname = async () => {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        setNickname(userDoc.data().nickname);
       }
     };
 
+    const fetchTravels = async () => {
+      const q = query(collection(db, 'travelData'), where('userId', '==', user.uid));
+      const querySnapshot = await getDocs(q);
+      const travelsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Travel[];
+      setUserTravels(travelsData);
+    };
+
     fetchNickname();
+    fetchTravels();
   }, []);
+
+  useEffect(() => {
+    if (travelOption === 'existing' && selectedTravelId) {
+      const selectedTravel = userTravels.find(t => t.id === selectedTravelId);
+      if (selectedTravel) {
+        // Auto-fill form with selected travel data
+        const duration = selectedTravel.travelDuration || '';
+        if (duration && duration.includes(' - ')) {
+          const [startStr, endStr] = duration.split(' - ');
+          const startDate = startStr ? new Date(startStr) : null;
+          const endDate = endStr ? new Date(endStr) : null;
+          if (startDate && !isNaN(startDate.getTime()) && endDate && !isNaN(endDate.getTime())) {
+            setTravelDateRange([startDate, endDate]);
+          } else {
+            setTravelDateRange([null, null]);
+          }
+        } else {
+          setTravelDateRange([null, null]);
+        }
+        setCities(selectedTravel.cities || '');
+        setGoFlights(selectedTravel.goFlights || [initialFlightState]);
+        setReturnFlights(selectedTravel.returnFlights || [initialFlightState]);
+        setGoTime(typeof selectedTravel.goTime === 'object' && selectedTravel.goTime ? selectedTravel.goTime : { departure: '', arrival: '' });
+        setReturnTime(typeof selectedTravel.returnTime === 'object' && selectedTravel.returnTime ? selectedTravel.returnTime : { departure: '', arrival: '' });
+        setGoFlightType(selectedTravel.goFlightType || 'direct');
+        setReturnFlightType(selectedTravel.returnFlightType || 'direct');
+        setGoVia(selectedTravel.goVia || '');
+        setReturnVia(selectedTravel.returnVia || '');
+        setHotels(selectedTravel.hotels || [initialHotelState]);
+        setCost(selectedTravel.cost || { flight: 0, hotel: 0, transport: 0, food: 0, goods: 0, other: 0 });
+      }
+    } else {
+      // Reset fields for 'new' travel
+      setSelectedTravelId('');
+      setTravelDateRange([null, null]);
+      setCities('');
+      setGoFlights([initialFlightState]);
+      setReturnFlights([initialFlightState]);
+      setGoTime('');
+      setReturnTime('');
+      setGoFlightType('direct');
+      setReturnFlightType('direct');
+      setGoVia('');
+      setReturnVia('');
+      setHotels([initialHotelState]);
+      setCost({ flight: 0, hotel: 0, transport: 0, food: 0, goods: 0, other: 0 });
+    }
+  }, [selectedTravelId, travelOption, userTravels]);
+
+  const flightSections: FlightSection[] = [
+    {
+      type: 'go' as const,
+      title: '往路',
+      flights: goFlights,
+      handleChange: (index: number, field: keyof FlightInfo, value: string) => handleFlightChange('go', index, field, value),
+      add: () => addFlight('go'),
+      remove: (index: number) => removeFlight('go', index),
+      time: goTime,
+      setTime: setGoTime,
+      flightType: goFlightType,
+      setFlightType: setGoFlightType,
+      via: goVia,
+      setVia: setGoVia,
+    },
+    {
+      type: 'return' as const,
+      title: '復路',
+      flights: returnFlights,
+      handleChange: (index: number, field: keyof FlightInfo, value: string) => handleFlightChange('return', index, field, value),
+      add: () => addFlight('return'),
+      remove: (index: number) => removeFlight('return', index),
+      time: returnTime,
+      setTime: setReturnTime,
+      flightType: returnFlightType,
+      setFlightType: setReturnFlightType,
+      via: returnVia,
+      setVia: setReturnVia,
+    },
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('⏳ 投稿中...');
+    if (!category || !season || !match.competition || !match.homeTeam || !match.awayTeam) {
+      setMessage('❌ 必須項目（シーズン、カテゴリー、試合情報）を入力してください。');
+      return;
+    }
 
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        setMessage('ログインしてください。');
+        return;
+      }
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        setMessage('ユーザープロフィールが見つかりません');
+        return;
+      }
+      const userData = userSnap.data();
 
-  // 🔥 カテゴリの状態をログ出力
-  console.log('🔥 選択されたカテゴリー:', category);
-
-  // ❌ カテゴリ未選択ならエラー表示
-  if (!category) {
-    setMessage('❌ カテゴリーを選択してください');
-    return;
-  }
-
-  try {
-  const auth = getAuth();
-  const user = auth.currentUser;
-  if (!user) {
-    setMessage('ログインしてください。');
-    return;
-  }
-
-  // 🔽 Firestoreからユーザープロフィールを取得
-  const userRef = doc(db, 'users', user.uid);
-  const userSnap = await getDoc(userRef);
-  if (!userSnap.exists()) {
-    setMessage('ユーザープロフィールが見つかりません');
-    return;
-  }
-  const userData = userSnap.data();
-
-  const uploadedUrls: string[] = [];
-
-  if (imageFiles.length > 0) {
-    for (const file of imageFiles) {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', 'sakataku');
-
-      const res = await fetch('https://api.cloudinary.com/v1_1/dkjcpkfi1/image/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await res.json();
-      console.log('📸 Cloudinary upload result:', data);
-
-      if (!res.ok) {
-        throw new Error('Cloudinary upload failed: ' + data.error?.message);
+      const uploadedUrls: string[] = [];
+      for (const file of imageFiles) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', 'sakataku');
+        const res = await fetch('https://api.cloudinary.com/v1_1/dkjcpkfi1/image/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error('Cloudinary upload failed: ' + data.error?.message);
+        uploadedUrls.push(data.secure_url);
       }
 
-      uploadedUrls.push(data.secure_url);
-    }
-  }
+      let travelId = '';
 
-  await addDoc(collection(db, 'simple-posts'), {
-    uid: user.uid,
-    userId: userData.id,
-    nickname: userData.nickname,
-    createdAt: new Date(),
-    season,
-    imageUrls: uploadedUrls,
-    category,
-    matches,
-    lifestyle,
-    watchYear,
-    watchMonth,
-    stayDuration,
-    goFlights,
-    goTime,
-    goType,
-    goVia,
-    returnFlights,
-    returnTime,
-    returnType,
-    returnVia,
-    hotels,
-    spots,
-    cost,
-    items,
-    goods,
-    episode,
-    firstAdvice,
-    allowComments,
-  });
+      if (travelOption === 'new') {
+        // Create a new travel document in Firestore
+        const formatDate = (date: Date) => `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+        let travelDurationString = '';
+        if (travelDateRange[0] && travelDateRange[1]) {
+          travelDurationString = `${formatDate(travelDateRange[0])} - ${formatDate(travelDateRange[1])}`;
+        }
 
-  setMessage('✅ 投稿完了！');
+        const newTravelData = {
+          userId: user.uid,
+          season,
+          travelDuration: travelDurationString,
+          cities,
+          goFlights,
+          goTime,
+          goFlightType,
+          goVia,
+          returnFlights,
+          returnTime,
+          returnFlightType,
+          returnVia,
+          hotels,
+          cost,
+        };
+        const travelDocRef = await addDoc(collection(db, 'travelData'), newTravelData);
+        travelId = travelDocRef.id;
+      } else {
+        // Use the ID of the selected existing travel
+        if (!selectedTravelId) {
+          setMessage('❌ 既存の旅を選択してください。');
+          return;
+        }
+        travelId = selectedTravelId;
+      }
 
-  // ✅ Firestore保存が完了したらマイページに遷移
-  router.push('/mypage');
-
-  // ✅ フォームの内容をリセット（型に合わせて修正済）
-  setNickname('');
-  setSeason('');
-  setCategory('');
- setMatches([
-  {
-    competition: '',
-    homeTeam: '',
-    awayTeam: '',
-    homeTeamKana: '',
-    awayTeamKana: '',
-    stadium: '',
-    seat: '',
-    seatReview: '',
-    ticketPrice: 0,
-  },
-]);
-
-  setLifestyle('');
-  setWatchYear('');
-  setWatchMonth('');
-  setStayDuration('');
-  setGoFlights([{ name: '', seat: '' }]);
-  setReturnFlights([{ name: '', seat: '' }]);
-  setGoTime('');
-  setGoType('');
-  setGoVia('');
-  setReturnTime('');
-  setReturnType('');
-  setReturnVia('');
-  setHotels([{ url: '', comment: '', rating: 0 }]);
-  setSpots([{ url: '', comment: '', rating: 0, autoName: '', address: '' }]);
-  setCost({
-    flight: 0,
-    hotel: 0,
-    ticket: 0,
-    transport: 0,
-    food: 0,
-    goods: 0,
-    other: 0,
-  });
-  setItems('');
-  setGoods('');
-  setEpisode('');
-  setFirstAdvice('');
-  setImageFiles([]);
-} catch (err: any) {
-  console.error('❌ 投稿エラー:', err.message);
-  setMessage('❌ 投稿に失敗しました: ' + err.message);
- }
-};
-
-return (
-  <div className="min-h-screen flex justify-center items-start py-10 bg-gray-50 px-8">
-    <div className="w-full max-w-[700px] bg-white p-6 rounded shadow-md pb-[100px]">
-      <h1 className="text-2xl font-bold mb-6 text-center">#みんなの現地観戦記</h1>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* ニックネーム（Firestoreから取得して表示のみ） */}
-        <div className="bg-blue-50 p-5 rounded-xl shadow-sm">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            ニックネーム（マイページで編集）
-          </label>
-          <input
-            type="text"
-            value={nickname}
-            disabled
-            className="w-full border border-gray-200 bg-gray-100 rounded-lg px-4 py-2 text-gray-500 cursor-not-allowed"
-          />
-        </div>
-
-      {/* 観戦シーズン */}
-      <div className="bg-blue-50 p-5 rounded-xl shadow-sm">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          観戦シーズン <span className="text-red-500">*</span>
-        </label>
-        <select
-          value={season}
-          onChange={(e) => setSeason(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-        >
-          <option value="">観戦シーズンを選択</option>
-          {Array.from({ length: 2025 - 1960 + 1 }, (_, i) => {
-            const year = 1960 + i;
-            const label = `${year}/${(year + 1).toString().slice(-2)}`;
-            return (
-              <option key={label} value={label}>
-                {label}
-              </option>
-            );
-          }).reverse()}
-        </select>
-</div>
-
-
-        <h2 className="text-xl font-bold mt-10 mb-6 text-blue-700 tracking-wide">
-          観戦した試合（最大5件）
-        </h2>
-
-        {matches.map((match, index) => (
-          <div
-            key={index}
-            className="space-y-5 bg-blue-50 p-5 rounded-2xl shadow-sm"
-          >
-            {/* 大会名 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">大会名</label>
-              <Select
-                styles={customStyles}
-                options={[
-                  {
-                    label: 'イングランド',
-                    options: [
-                      { label: 'プレミアリーグ', value: 'プレミアリーグ' },
-                      { label: 'EFLチャンピオンシップ', value: 'EFLチャンピオンシップ' },
-                      { label: 'FA杯', value: 'FA杯' },
-                      { label: 'EFLカラバオ杯', value: 'EFLカラバオ杯' },
-                    ],
-                  },
-                  {
-                    label: 'イタリア',
-                    options: [
-                      { label: 'セリエA', value: 'セリエA' },
-                      { label: 'セリエB', value: 'セリエB' },
-                      { label: 'コッパ・イタリア', value: 'コッパ・イタリア' },
-                      { label: 'スーペルコッパ・イタリアーナ', value: 'スーペルコッパ・イタリアーナ' },
-                    ],
-                  },
-                  {
-                    label: 'スペイン',
-                    options: [
-                      { label: 'ラ・リーガ', value: 'ラ・リーガ' },
-                      { label: 'ラ・リーガ2', value: 'ラ・リーガ2' },
-                      { label: 'コパ・デル・レイ', value: 'コパ・デル・レイ' },
-                      { label: 'スーペルコパ・デ・エスパーニャ', value: 'スーペルコパ・デ・エスパーニャ' },
-                    ],
-                  },
-                  {
-                    label: 'ドイツ',
-                    options: [
-                      { label: 'ブンデスリーガ', value: 'ブンデスリーガ' },
-                      { label: '2.ブンデスリーガ', value: '2.ブンデスリーガ' },
-                      { label: 'DFBポカール', value: 'DFBポカール' },
-                    ],
-                  },
-                  {
-                    label: 'フランス',
-                    options: [
-                      { label: 'リーグ・アン', value: 'リーグ・アン' },
-                      { label: 'リーグ・ドゥ', value: 'リーグ・ドゥ' },
-                      { label: 'クープ・ドゥ・フランス', value: 'クープ・ドゥ・フランス' },
-                    ],
-                  },
-                  {
-                    label: '欧州大会',
-                    options: [
-                      { label: 'UEFAチャンピオンズリーグ', value: 'UEFAチャンピオンズリーグ' },
-                      { label: 'UEFAヨーロッパリーグ', value: 'UEFAヨーロッパリーグ' },
-                      { label: 'UEFAカンファレンスリーグ', value: 'UEFAカンファレンスリーグ' },
-                    ],
-                  },
-                  {
-                    label: 'その他の国',
-                    options: [
-                      { label: 'クラブ・ワールドカップ', value: 'クラブ・ワールドカップ' },
-                      { label: 'エールディヴィジ', value: 'エールディヴィジ' },
-                      { label: 'MLS', value: 'MLS' },
-                      { label: 'アルゼンチン プリメーラ・ディビシオン', value: 'アルゼンチン プリメーラ・ディビシオン' },
-                      { label: 'カンピオナート・ブラジレイロ・セリエA', value: 'カンピオナート・ブラジレイロ・セリエA' },
-                    ],
-                  },
-                  {
-                    label: '分類なし',
-                    options: [
-                      { label: '国内リーグ戦(その他)', value: '国内リーグ戦(その他)' },
-                      { label: '国内カップ戦(その他)', value: '国内カップ戦(その他)' },
-                      { label: '親善試合', value: '親善試合' },
-                      { label: 'その他', value: 'その他' },
-                    ],
-                  },
-                ]}
-                value={match.competition ? { label: match.competition, value: match.competition } : null}
-                onChange={(option) => handleMatchChange(index, 'competition', option?.value || '')}
-              />
-            </div>
-
-            {/* 対戦カード */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">対戦カード</label>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 space-y-3 sm:space-y-0">
-                <Select
-                  styles={customStyles}
-                  options={[...teamList, { value: 'Other', label: 'その他' }]}
-                  isSearchable
-                  placeholder="ホームチーム"
-                  value={teamList.find((t) => t.value === match.homeTeam)}
-                  onChange={(option) => handleMatchChange(index, 'homeTeam', option?.value || '')}
-                  className="w-full"
-                />
-                <span className="text-center font-bold text-gray-600">vs</span>
-                <Select
-                  styles={customStyles}
-                  options={[...teamList, { value: 'Other', label: 'その他' }]}
-                  isSearchable
-                  placeholder="アウェイチーム"
-                  value={teamList.find((t) => t.value === match.awayTeam)}
-                  onChange={(option) => handleMatchChange(index, 'awayTeam', option?.value || '')}
-                  className="w-full"
-                />
-              </div>
-            </div>
-
-            {/* カタカナ表記 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">チーム名（X共有用カタカナ表記）</label>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 space-y-3 sm:space-y-0">
-                <input
-                  type="text"
-                  placeholder="ホームチーム（カタカナ）"
-                  value={match.homeTeamKana || ''}
-                  onChange={(e) => handleMatchChange(index, 'homeTeamKana', e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                />
-                <span className="text-center font-bold text-gray-600"> </span>
-                <input
-                  type="text"
-                  placeholder="アウェイチーム（カタカナ）"
-                  value={match.awayTeamKana || ''}
-                  onChange={(e) => handleMatchChange(index, 'awayTeamKana', e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                />
-              </div>
-            </div>
-
-          </div>
-        ))}
-
-        {/* ... 他セクション ... */}
-
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-300 shadow-md"
-        >
-          投稿する
-        </button>
-
-        {message && <p className="text-center mt-4 text-gray-600">{message}</p>}
-
-      </form>
-    </div>
-  </div>
-);
-}
-
-          { label: 'EFLチャンピオンシップ', value: 'EFLチャンピオンシップ' },
-          { label: 'FA杯', value: 'FA杯' },
-          { label: 'EFLカラバオ杯', value: 'EFLカラバオ杯' },
-        ],
-      },
-      {
-        label: 'イタリア',
-        options: [
-          { label: 'セリエA', value: 'セリエA' },
-          { label: 'セリエB', value: 'セリエB' },
-          { label: 'コッパ・イタリア', value: 'コッパ・イタリア' },
-          { label: 'スーペルコッパ・イタリアーナ', value: 'スーペルコッパ・イタリアーナ' },
-        ],
-      },
-      {
-        label: 'スペイン',
-        options: [
-          { label: 'ラ・リーガ', value: 'ラ・リーガ' },
-          { label: 'ラ・リーガ2', value: 'ラ・リーガ2' },
-          { label: 'コパ・デル・レイ', value: 'コパ・デル・レイ' },
-          { label: 'スーペルコパ・デ・エスパーニャ', value: 'スーペルコパ・デ・エスパーニャ' },
-        ],
-      },
-      {
-        label: 'ドイツ',
-        options: [
-          { label: 'ブンデスリーガ', value: 'ブンデスリーガ' },
-          { label: '2.ブンデスリーガ', value: '2.ブンデスリーガ' },
-          { label: 'DFBポカール', value: 'DFBポカール' },
-        ],
-      },
-      {
-        label: 'フランス',
-        options: [
-          { label: 'リーグ・アン', value: 'リーグ・アン' },
-          { label: 'リーグ・ドゥ', value: 'リーグ・ドゥ' },
-          { label: 'クープ・ドゥ・フランス', value: 'クープ・ドゥ・フランス' },
-        ],
-      },
-      {
-        label: '欧州大会',
-        options: [
-          { label: 'UEFAチャンピオンズリーグ', value: 'UEFAチャンピオンズリーグ' },
-          { label: 'UEFAヨーロッパリーグ', value: 'UEFAヨーロッパリーグ' },
-          { label: 'UEFAカンファレンスリーグ', value: 'UEFAカンファレンスリーグ' },
-        ],
-      },
-      {
-        label: 'その他の国',
-        options: [
-          { label: 'クラブ・ワールドカップ', value: 'クラブ・ワールドカップ' },
-          { label: 'エールディヴィジ', value: 'エールディヴィジ' },
-          { label: 'MLS', value: 'MLS' },
-          { label: 'アルゼンチン プリメーラ・ディビシオン', value: 'アルゼンチン プリメーラ・ディビシオン' },
-          { label: 'カンピオナート・ブラジレイロ・セリエA', value: 'カンピオナート・ブラジレイロ・セリエA' },
-        ],
-      },
-      {
-        label: '分類なし',
-        options: [
-          { label: '国内リーグ戦(その他)', value: '国内リーグ戦(その他)' },
-          { label: '国内カップ戦(その他)', value: '国内カップ戦(その他)' },
-          { label: '親善試合', value: '親善試合' },
-          { label: 'その他', value: 'その他' },
-        ],
-      },
-    ]}
-    value={
-      match.competition
-        ? { label: match.competition, value: match.competition }
-        : null
-    }
-    onChange={(e) => {
-      const newMatches = [...matches];
-      newMatches[index].competition = e?.value || '';
-      setMatches(newMatches);
-    }}
-  />
-</div>
-
-
-    {/* 対戦カード */}
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">対戦カード</label>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 space-y-3 sm:space-y-0">
-        <Select
-          styles={customStyles}
-          options={teamList}
-          isSearchable
-          placeholder="ホームチーム"
-          value={teamList.find((t) => t.value === match.teamA)}
-          onChange={(e) => {
-            const newMatches = [...matches];
-            newMatches[index].teamA = e?.value || '';
-            setMatches(newMatches);
-          }}
-          className="w-full"
-        />
-        <span className="text-center text-gray-600 font-semibold">vs</span>
-        <Select
-          styles={customStyles}
-          options={teamList}
-          isSearchable
-          placeholder="アウェイチーム"
-          value={teamList.find((t) => t.value === match.teamB)}
-          onChange={(e) => {
-            const newMatches = [...matches];
-            newMatches[index].teamB = e?.value || '';
-            setMatches(newMatches);
-          }}
-          className="w-full"
-        />
-      </div>
-    </div>
-
-    {/* スタジアム名 */}
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">スタジアム名</label>
-      <input
-        type="text"
-        placeholder="例：エティハド・スタジアム"
-        value={match.stadium}
-        onChange={(e) => {
-          const newMatches = [...matches];
-          newMatches[index].stadium = e.target.value;
-          setMatches(newMatches);
-        }}
-        className="w-full border px-4 py-2 rounded bg-white"
-      />
-    </div>
-
-    {/* 座席 */}
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">座席</label>
-      <input
-        type="text"
-        placeholder="例：バックスタンド2階Cブロック"
-        value={match.seat}
-        onChange={(e) => {
-          const newMatches = [...matches];
-          newMatches[index].seat = e.target.value;
-          setMatches(newMatches);
-        }}
-        className="w-full border px-4 py-2 rounded bg-white"
-      />
-    </div>
-
-    {/* 席の感想 */}
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">席の感想</label>
-      <textarea
-        placeholder="例：選手の動きが見やすかった！ただ少し遠かった"
-        value={match.seatReview}
-        onChange={(e) => {
-          const newMatches = [...matches];
-          newMatches[index].seatReview = e.target.value;
-          setMatches(newMatches);
-        }}
-        className="w-full border px-4 py-2 rounded bg-white"
-        rows={3}
-      />
-    </div>
-
-    {/* チケット代 */}
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">チケット代（円）</label>
-      <input
-  type="number"
-  min={0}
-  placeholder="例：8500"
-  value={match.ticketPrice === 0 ? '' : match.ticketPrice}
-  onChange={(e) => {
-    const newMatches = [...matches];
-    const value = e.target.value;
-    newMatches[index].ticketPrice = value === '' ? 0 : Number(value);
-    setMatches(newMatches);
-  }}
-  className="w-full border px-4 py-2 rounded bg-white"
-/>
-    </div>
-  </div>
-))}
-
-{/* 追加ボタン */}
-{matches.length < 5 && (
-  <button
-    type="button"
-    onClick={() =>
-      setMatches([
-        ...matches,
-        {
-          teamA: '',
-          teamB: '',
-          competition: '',
-          season: '',
-          nickname: '',
-          stadium: '',
-          seat: '',
-          seatReview: '',
-          ticketPrice: 0,
+      // Create the post document with a reference to the travel document
+      await addDoc(collection(db, 'simple-posts'), {
+        uid: user.uid,
+        userId: userData.id,
+        nickname: userData.nickname,
+        createdAt: new Date(),
+        season,
+        imageUrls: uploadedUrls,
+        category,
+        match: {
+          ...match,
+          homeScore: match.homeScore === '' ? null : Number(match.homeScore),
+          awayScore: match.awayScore === '' ? null : Number(match.awayScore),
         },
-      ])
+        spots,
+        items,
+        goods,
+        episode,
+        firstAdvice,
+        allowComments,
+        travelId,
+      });
+
+      setMessage('✅ 投稿完了！');
+      router.push('/mypage');
+    } catch (err: any) {
+      console.error('❌ 投稿エラー:', err);
+      setMessage('❌ 投稿に失敗しました: ' + err.message);
     }
-    className="text-blue-600 font-medium hover:underline transition"
-  >
-    ＋ 試合を追加
-  </button>
-)}
-
-
-
-<h2 className="font-bold text-lg mt-6">当時のライフスタイル</h2>
-<select
-  value={lifestyle}
-  onChange={(e) => setLifestyle(e.target.value)}
-  className="w-full border p-2 rounded"
->
-  <option value="">選択してください</option>
-  <option value="社会人">社会人</option>
-  <option value="学生">学生</option>
-  <option value="留学">留学</option>
-  <option value="ワーキングホリデー">ワーキングホリデー</option>
-</select>
-
-<h2 className="font-bold text-lg mt-6">観戦時期</h2>
-<div className="flex gap-2">
-  <select
-  value={watchYear}
-  onChange={(e) => setWatchYear(e.target.value)}
-  className="w-full border p-2 rounded"
->
-  <option value="">年を選択</option>
-  {Array.from({ length: 10 }, (_, i) => 2025 - i).map((year) => (
-    <option key={year} value={year}>{year}年</option>
-  ))}
-</select>
-
-  <select
-  value={watchMonth}
-  onChange={(e) => setWatchMonth(e.target.value)}
-  className="w-full border p-2 rounded"
->
-  <option value="">月を選択</option>
-  {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
-    <option key={month} value={month}>{month}月</option>
-  ))}
-</select>
-</div>
-
-<h2 className="font-bold text-lg mt-6">滞在期間</h2>
-<select
-  value={stayDuration}
-  onChange={(e) => setStayDuration(e.target.value)}
-  className="w-full border p-2 rounded"
->
-  <option value="">選択してください</option>
-  <option value="2日">2日</option>
-  <option value="3日">3日</option>
-  <option value="4日">4日</option>
-  <option value="5日">5日</option>
-  <option value="1週間">1週間</option>
-  <option value="2週間">2週間</option>
-  <option value="3週間">3週間</option>
-  <option value="1か月">1か月</option>
-  <option value="1か月半">1か月半</option>
-  <option value="2か月">2か月</option>
-  <option value="3か月">3か月</option>
-  <option value="長期滞在">長期滞在</option>
-  <option value="留学">留学</option>
-  <option value="ワーホリ">ワーホリ</option>
-</select>
-
-
-<h2 className="text-lg font-bold text-blue-700 mt-10 mb-4">目的地までの移動情報</h2>
-
-{['go', 'return'].map((type) => {
-  const isGo = type === 'go';
-  const flights = isGo ? goFlights : returnFlights;
-  const setFlights = isGo ? setGoFlights : setReturnFlights;
-  const time = isGo ? goTime : returnTime;
-  const setTime = isGo ? setGoTime : setReturnTime;
-  const flightType = isGo ? goType : returnType;
-  const setFlightType = isGo ? setGoType : setReturnType;
-  const via = isGo ? goVia : returnVia;
-  const setVia = isGo ? setGoVia : setReturnVia;
+  };
 
   return (
-    <div key={type} className="space-y-6 mb-10">
-      <h3 className="text-md font-semibold text-blue-600">【{isGo ? '行き' : '帰り'}】</h3>
-            </select>
+    <div className="min-h-screen flex justify-center items-start py-10 bg-gray-50 dark:bg-gray-900 px-4 sm:px-8">
+      <div className="w-full max-w-3xl bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg pb-20">
+        <h1 className="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200">#みんなの現地観戦記</h1>
+
+        <form onSubmit={handleSubmit} className="space-y-10">
+          <Section title="基本情報">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ニックネーム</label>
+                <input type="text" value={nickname} disabled className="w-full border border-gray-200 dark:border-gray-600 bg-gray-200 dark:bg-gray-600 rounded-md px-3 py-2 text-gray-500 dark:text-gray-400 cursor-not-allowed" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">観戦シーズン <span className="text-red-500">*</span></label>
+                <select value={season} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSeason(e.target.value)} required className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 transition h-[42px]">
+                  <option value="">選択してください</option>
+                  {Array.from({ length: new Date().getFullYear() - 1960 + 1 }, (_, i) => {
+                    const year = new Date().getFullYear() - i;
+                    const label = `${year}/${(year + 1).toString().slice(-2)}`;
+                    return <option key={label} value={label}>{label}</option>;
+                  })}
+                </select>
+              </div>
+            </div>
+          </Section>
+
+          <Section title="旅の共通情報">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    value="new"
+                    checked={travelOption === 'new'}
+                    onChange={() => setTravelOption('new')}
+                    className="form-radio h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">新しい旅を登録</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    value="existing"
+                    checked={travelOption === 'existing'}
+                    onChange={() => setTravelOption('existing')}
+                    className="form-radio h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
+                    disabled={userTravels.length === 0}
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">既存の旅を選択</span>
+                </label>
+              </div>
+
+              {travelOption === 'existing' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">既存の旅</label>
+                  <select
+                    value={selectedTravelId}
+                    onChange={(e) => setSelectedTravelId(e.target.value)}
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 transition h-[42px]"
+                    required
+                  >
+                    <option value="">選択してください</option>
+                    {userTravels.map(travel => (
+                      <option key={travel.id} value={travel.id}>
+                        {`${travel.season} (${travel.travelDuration || travel.cities || '詳細不明'})`}
+                      </option>
+                    ))}
+                  </select>
+                  {userTravels.length === 0 && <p className="text-sm text-gray-500 mt-1">登録済みの旅はありません。</p>}
+                </div>
+              )}
+            </div>
+          </Section>
+
+          <Section title="観戦した試合">
+            <div className="space-y-6">
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg space-y-4 border border-gray-200 dark:border-gray-600">
+                <h3 className="text-md font-semibold text-gray-700 dark:text-gray-300">試合</h3>
+                <FormSelect label="大会" options={competitionOptions} value={match.competition} onChange={(opt) => handleMatchChange('competition', opt?.value || '')} placeholder="大会を選択..." isRequired />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">対戦カード <span className="text-red-500">*</span></label>
+                  <div className="flex flex-col items-center gap-2">
+                    <Select styles={customStyles} options={[...teamList, { value: 'Other', label: 'その他' }]} isSearchable placeholder="ホーム" className="w-full" value={teamList.find(t => t.value === match.homeTeam)} onChange={(opt) => handleMatchChange('homeTeam', opt?.value || '')} required />
+                    <span className="text-gray-600 dark:text-gray-400 font-bold">vs</span>
+                    <Select styles={customStyles} options={[...teamList, { value: 'Other', label: 'その他' }]} isSearchable placeholder="アウェイ" className="w-full" value={teamList.find(t => t.value === match.awayTeam)} onChange={(opt) => handleMatchChange('awayTeam', opt?.value || '')} required />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormInput label="ホームスコア" type="number" value={match.homeScore} onChange={(e) => handleMatchChange('homeScore', e.target.value)} />
+                  <FormInput label="アウェイスコア" type="number" value={match.awayScore} onChange={(e) => handleMatchChange('awayScore', e.target.value)} />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormInput label="日付" type="date" value={match.date} onChange={(e) => handleMatchChange('date', e.target.value)} />
+                  <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">キックオフ</label>
+                  <select
+                    value={match.kickoff}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleMatchChange('kickoff', e.target.value)}
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 transition h-[42px]"
+                  >
+                    <option value="">選択してください</option>
+                    {Array.from({ length: (21 - 11) * 4 + 1 }, (_, i) => {
+                      const totalMinutes = 11 * 60 + i * 15;
+                      const hours = Math.floor(totalMinutes / 60);
+                      const minutes = totalMinutes % 60;
+                      const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                      return <option key={time} value={time}>{time}</option>;
+                    })}
+                  </select>
+                </div>
+                </div>
+                <FormInput label="スタジアム" type="text" value={match.stadium} onChange={(e) => handleMatchChange('stadium', e.target.value)} />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormInput label="チケット代" type="number" value={match.ticketPrice} onChange={(e) => handleMatchChange('ticketPrice', e.target.value)} placeholder="例: 10000 (円)" />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">購入ルート</label>
+                    <select value={match.ticketPurchaseRoute} onChange={(e) => handleMatchChange('ticketPurchaseRoute', e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 transition h-[42px]">
+                      <option value="">選択してください</option>
+                      {ticketPurchaseRouteOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <FormInput label="座席・エリア" type="text" value={match.seat} onChange={(e) => handleMatchChange('seat', e.target.value)} />
+                <FormTextarea label="座席レビュー" value={match.seatReview} onChange={(e) => handleMatchChange('seatReview', e.target.value)} />
+              </div>
+            </div>
+          </Section>
+
+          {travelOption === 'new' && (
+            <>
+              <Section title="観戦旅行の概要">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">渡航期間</label>
+                    <div className="custom-datepicker-wrapper">
+                      <DatePicker
+                        selectsRange
+                        startDate={travelDateRange[0]}
+                        endDate={travelDateRange[1]}
+                        onChange={(update: [Date | null, Date | null]) => setTravelDateRange(update)}
+                        isClearable
+                        dateFormat="yyyy/MM/dd"
+                        placeholderText="開始日 - 終了日"
+                        locale="ja"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 transition h-[42px]"
+                      />
+                    </div>
+                  </div>
+                  <FormInput label="訪問都市" type="text" placeholder="例: ロンドン、マンチェスター" value={cities} onChange={(e) => setCities(e.target.value)} />
+                </div>
+              </Section>
+
+              <Section title="目的地までの移動情報">
+                <div className="space-y-6">
+                  {flightSections.map((item) => (
+                  <div key={item.type} className="space-y-4 border-t dark:border-gray-700 pt-4 first:border-t-0">
+                    <h3 className={`text-md font-semibold ${item.type === 'go' ? 'text-blue-600 dark:text-blue-400' : 'text-green-600 dark:text-green-400'}`}>{item.title}</h3>
+                    {item.flights.map((flight, index) => (
+                      <div key={index} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg space-y-3 relative">
+                        <div className="flex justify-between items-center">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">航空会社 {index + 1}</label>
+                          {item.flights.length > 1 && (
+                            <button type="button" onClick={() => item.remove(index)} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 text-xs font-medium">削除</button>
+                          )}
+                        </div>
+                        <Select styles={customStyles} options={airlineList} isSearchable placeholder="航空会社名" value={airlineList.find(a => a.value === flight.name)} onChange={(opt) => item.handleChange(index, 'name', opt?.value || '')} />
+                        <FormInput type="text" placeholder="座席の種類（例：エコノミー）" value={flight.seat} onChange={(e: React.ChangeEvent<HTMLInputElement>) => item.handleChange(index, 'seat', e.target.value)} />
+                      </div>
+                    ))}
+                    {item.flights.length < 2 && (
+                      <button type="button" onClick={item.add} className="text-blue-600 dark:text-blue-400 font-medium hover:underline transition text-sm">＋ 航空会社を追加</button>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 border-t dark:border-gray-600 pt-4 mt-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">出発時間（現地時間）</label>
+                        <select value={item.time.departure} onChange={(e) => item.setTime(prev => ({ ...prev, departure: e.target.value }))} className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 transition h-[42px]">
+                          <option value="">選択</option>
+                          {timeOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">到着時間（現地時間）</label>
+                        <select value={item.time.arrival} onChange={(e) => item.setTime(prev => ({ ...prev, arrival: e.target.value }))} className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 transition h-[42px]">
+                          <option value="">選択</option>
+                          {timeOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">便種別</label>
+                        <select value={item.flightType} onChange={(e) => item.setFlightType(e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 transition h-[42px]">
+                          <option value="">選択</option>
+                          <option value="direct">直行便</option>
+                          <option value="via">経由便</option>
+                        </select>
+                      </div>
+                      <FormInput label="経由地" type="text" placeholder="例: ドバイ" value={item.via} onChange={(e) => item.setVia(e.target.value)} disabled={item.flightType !== 'via'} />
+                    </div>
+                  </div>
+                ))}
+                </div>
+              </Section>
+
+              <Section title="宿泊先（最大3件）">
+                <div className="space-y-6">
+                  {hotels.map((hotel, index) => (
+                    <div key={index} className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg space-y-4 border border-gray-200 dark:border-gray-600 relative">
+                      <div className="flex justify-between items-center">
+                          <h3 className="text-md font-semibold text-gray-700 dark:text-gray-300">宿泊先 {index + 1}</h3>
+                          {hotels.length > 1 && (
+                            <button type="button" onClick={() => removeHotel(index)} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 text-xs font-medium">削除</button>
+                          )}
+                      </div>
+                      <FormInput label="宿泊先のURL" type="url" placeholder="https://example.com" value={hotel.url} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleHotelChange(index, 'url', e.target.value)} />
+                      <FormInput label="コメント" type="text" placeholder="快適で立地も良かったです！" value={hotel.comment} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleHotelChange(index, 'comment', e.target.value)} />
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">評価</label>
+                        <select value={hotel.rating} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleHotelChange(index, 'rating', Number(e.target.value))} className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 transition h-[42px]">
+                          <option value={0}>選択</option>
+                          <option value={1}>☆1</option>
+                          <option value={2}>☆2</option>
+                          <option value={3}>☆3</option>
+                          <option value={4}>☆4</option>
+                          <option value={5}>☆5</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                  {hotels.length < 3 && (
+                    <button type="button" onClick={addHotel} className="text-blue-600 dark:text-blue-400 font-medium hover:underline transition text-sm">＋ 宿泊先を追加</button>
+                  )}
+                </div>
+              </Section>
+
+              <Section title="費用">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {costItems.map(item => (
+                      <FormInput
+                        key={item.key}
+                        label={item.label}
+                        type="number"
+                        placeholder="例: 50000"
+                        value={cost[item.key] || ''}
+                        onChange={(e) => handleCostChange(item.key, e.target.value)}
+                      />
+                    ))}
+                  </div>
+                  <div className="text-right font-bold text-lg text-gray-800 dark:text-gray-200">
+                    合計: {totalCost.toLocaleString()} 円
+                  </div>
+                </div>
+              </Section>
+            </>
+          )}
+
+          <Section title="おすすめスポット（最大5件）">
+            <div className="space-y-6">
+              {spots.map((spot, index) => (
+                <div key={index} className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg space-y-4 border border-gray-200 dark:border-gray-600 relative">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-md font-semibold text-gray-700 dark:text-gray-300">スポット {index + 1}</h3>
+                    {spots.length > 1 && (
+                      <button type="button" onClick={() => removeSpot(index)} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 text-xs font-medium">削除</button>
+                    )}
+                  </div>
+                  <FormInput label="スポットのURL" type="url" placeholder="https://example.com" value={spot.url} onChange={(e) => handleSpotChange(index, 'url', e.target.value)} />
+                  <FormInput label="コメント" type="text" placeholder="観光におすすめ！" value={spot.comment} onChange={(e) => handleSpotChange(index, 'comment', e.target.value)} />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">評価</label>
+                    <select value={spot.rating} onChange={(e) => handleSpotChange(index, 'rating', Number(e.target.value))} className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 transition h-[42px]">
+                      <option value={0}>選択</option>
+                      <option value={1}>☆1</option>
+                      <option value={2}>☆2</option>
+                      <option value={3}>☆3</option>
+                      <option value={4}>☆4</option>
+                      <option value={5}>☆5</option>
+                    </select>
+                  </div>
+                </div>
+              ))}
+              {spots.length < 5 && (
+                <button type="button" onClick={addSpot} className="text-blue-600 dark:text-blue-400 font-medium hover:underline transition text-sm">＋ おすすめスポットを追加</button>
+              )}
+            </div>
+          </Section>
+
+
+          
+          <Section title="その他の情報">
+            <FormTextarea label="持ち物リスト" value={items} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setItems(e.target.value)} placeholder="観戦に役立った持ち物を共有しよう" />
+            <FormTextarea label="購入したグッズ" value={goods} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setGoods(e.target.value)} placeholder="スタジアムや現地で買ったグッズを自慢しよう" />
+            <FormTextarea label="旅の思い出・エピソード" value={episode} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEpisode(e.target.value)} placeholder="試合以外での楽しかった思い出を教えてください" />
+            <FormTextarea label="これから観戦に行く人へのアドバイス" value={firstAdvice} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFirstAdvice(e.target.value)} placeholder="初めての観戦者へのメッセージ" />
+          </Section>
+
+          <Section title="画像とカテゴリー">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">画像アップロード（最大5枚）</label>
+              <input type="file" multiple accept="image/*" onChange={handleImageChange} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 dark:file:bg-blue-800 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-200 dark:hover:file:bg-blue-700 transition" />
+              {imagePreviews.length > 0 && (
+                <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={preview} className="relative aspect-square">
+                      <img src={preview} alt={`プレビュー ${index + 1}`} className="w-full h-full object-cover rounded-lg shadow-md" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 leading-none hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        aria-label="画像を削除"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+             <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">カテゴリー <span className="text-red-500">*</span></label>
+                <select value={category} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCategory(e.target.value)} required className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 transition h-[42px]">
+                   <option value="">選択してください</option>
+                   <option value="england">イングランド</option>
+                   <option value="france">フランス</option>
+                   <option value="germany">ドイツ</option>
+                   <option value="spain">スペイン</option>
+                   <option value="italy">イタリア</option>
+                   <option value="cwc">CWC</option>
+                   <option value="japan_tour">ジャパンツアー</option>
+                   <option value="etc">その他</option>
+                </select>
+              </div>
+            </Section>
+
+          <div className="mt-8">
+            <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 transition-colors duration-300 shadow-md disabled:bg-gray-400 dark:disabled:bg-gray-500">
+              投稿する
+            </button>
           </div>
-        </div>
-      ))}
 
-      {flights.length < 2 && (
-        <button
-          type="button"
-          onClick={() => setFlights([...flights, { name: '', seat: '' }])}
-          className="text-blue-600 font-medium hover:underline transition"
-        >
-          ＋ 航空会社を追加
-        </button>
-      )}
-
-      {/* 総移動時間 */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">総移動時間</label>
-        <input
-          type="text"
-          placeholder="例: 16時間"
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
-          className="w-full border-1 border-red-500 px-4 py-8 rounded-full bg-green-100 text-black"
-        />
-      </div>
-
-      {/* 直行便 or 乗継便 */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">直行便 or 乗継便</label>
-        <select
-          value={flightType}
-          onChange={(e) => setFlightType(e.target.value)}
-          className="w-full border-1 border-red-500 px-4 py-8 rounded-full bg-green-100 text-black"
-        >
-          <option value="">選択してください</option>
-          <option value="直行便">直行便</option>
-          <option value="乗継便">乗継便</option>
-        </select>
-      </div>
-
-      {/* 経由地 */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">経由地</label>
-        <input
-          type="text"
-          placeholder="例: ドバイ、ヘルシンキ"
-          value={via}
-          onChange={(e) => setVia(e.target.value)}
-          className="w-full border-1 border-red-500 px-4 py-8 rounded-full bg-green-100 text-black"
-        />
+          {message && <p className="text-center mt-4 text-sm font-medium text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/50 p-3 rounded-lg">{message}</p>}
+        </form>
       </div>
     </div>
   );
-})}
-
-<h2 className="text-lg font-bold text-blue-700 mt-10 mb-4">宿泊先（最大3件）</h2>
-
-{hotels.map((hotel, index) => (
-  <div key={index} className="bg-blue-50 p-5 rounded-2xl shadow-sm space-y-4 mb-6">
-
-    {/* 宿泊先URL */}
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">宿泊先のURL</label>
-      <input
-        type="url"
-        placeholder="https://example.com"
-        value={hotel.url}
-        onChange={(e) => {
-          const newHotels = [...hotels];
-          newHotels[index].url = e.target.value;
-          setHotels(newHotels);
-        }}
-        className="w-full border border-gray-300 px-4 py-2 rounded-2xl bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
-      />
-    </div>
-
-    {/* コメント */}
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">コメント（100文字以内）</label>
-      <input
-        type="text"
-        placeholder="快適で立地も良かったです！"
-        value={hotel.comment}
-        onChange={(e) => {
-          const newHotels = [...hotels];
-          newHotels[index].comment = e.target.value;
-          setHotels(newHotels);
-        }}
-        className="w-full border border-gray-300 px-4 py-2 rounded-2xl bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
-      />
-    </div>
-
-    {/* 評価 */}
-    <div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">評価（☆1〜5）</label>
-  <select
-    value={hotel.rating}
-    onChange={(e) => {
-      const newHotels = [...hotels];
-      newHotels[index].rating = Number(e.target.value);
-      setHotels(newHotels);
-    }}
-    className="w-32 border border-gray-300 px-4 py-2 rounded-2xl bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
-  >
-    <option value={0}>選択してください</option>
-    <option value={1}>☆</option>
-    <option value={2}>☆☆</option>
-    <option value={3}>☆☆☆</option>
-    <option value={4}>☆☆☆☆</option>
-    <option value={5}>☆☆☆☆☆</option>
-  </select>
-</div>
-
-
-  </div>
-))}
-
-{/* 追加ボタン */}
-{hotels.length < 3 && (
-  <button
-    type="button"
-    onClick={() =>
-      setHotels([...hotels, { url: '', comment: '', rating: 0 }])
-    }
-    className="text-blue-600 font-medium hover:underline transition"
-  >
-    ＋ 宿泊先を追加
-  </button>
-)}
-
-
-<h2 className="text-lg font-bold text-blue-700 mt-10 mb-4">おすすめスポット（最大5件）</h2>
-
-{spots.map((spot, index) => (
-  <div key={index} className="bg-blue-50 p-5 rounded-2xl shadow-sm space-y-4 mb-6">
-
-    {/* URL */}
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">スポットのURL</label>
-      <input
-        type="url"
-        placeholder="https://example.com"
-        value={spot.url}
-        onChange={(e) => {
-          const newSpots = [...spots];
-          newSpots[index].url = e.target.value;
-          setSpots(newSpots);
-        }}
-        className="w-full border border-gray-300 px-4 py-2 rounded-2xl bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
-      />
-    </div>
-
-    {/* コメント */}
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">コメント（100文字以内）</label>
-      <input
-        type="text"
-        placeholder="観光におすすめ！"
-        value={spot.comment}
-        onChange={(e) => {
-          const newSpots = [...spots];
-          newSpots[index].comment = e.target.value;
-          setSpots(newSpots);
-        }}
-        className="w-full border border-gray-300 px-4 py-2 rounded-2xl bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
-      />
-    </div>
-
-    {/* 評価 */}
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">評価（☆1〜5）</label>
-      <select
-        value={spot.rating}
-        onChange={(e) => {
-          const newSpots = [...spots];
-          newSpots[index].rating = Number(e.target.value);
-          setSpots(newSpots);
-        }}
-        className="w-32 border border-gray-300 px-4 py-2 rounded-2xl bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
-      >
-        <option value={0}>選択してください</option>
-        <option value={1}>☆</option>
-    <option value={2}>☆☆</option>
-    <option value={3}>☆☆☆</option>
-    <option value={4}>☆☆☆☆</option>
-    <option value={5}>☆☆☆☆☆</option>
-      </select>
-    </div>
-
-  </div>
-))}
-
-{spots.length < 5 && (
-  <button
-    type="button"
-    onClick={() =>
-      setSpots([...spots, { url: '', comment: '', rating: 0, autoName: '', address: '' }])
-    }
-    className="text-blue-600 font-medium hover:underline transition"
-  >
-    ＋ おすすめスポットを追加
-  </button>
-)}
-
-
-<h2 className="text-lg font-bold text-blue-700 mt-10 mb-4">費用内訳（円単位）</h2>
-
-<div className="space-y-5 bg-blue-50 p-5 rounded-2xl shadow-sm">
-  {costItems.map(({ key, label }) => (
-    <div key={key}>
-      <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-      <input
-        type="number"
-        min={0}
-        value={cost[key] === 0 ? '' : cost[key]}
-        onChange={(e) =>
-          setCost({
-            ...cost,
-            [key]: Number(e.target.value),
-          })
-        }
-        placeholder="円単位で入力"
-        className="appearance-none w-full border border-gray-300 px-4 py-2 rounded-2xl bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
-      />
-    </div>
-  ))}
-
-  <div className="mt-4 font-semibold text-gray-700">
-    合計費用（万円）：約{' '}
-    {Math.round(
-      Object.values(cost).reduce((sum, v) => sum + Number(v), 0) / 10000
-    )} 万円
-  </div>
-</div>
-
-
-<h2 className="font-bold text-lg mt-6">その他の情報</h2>
-
-{/* おススメ旅アイテム */}
-<div className="mb-4">
-  <label className="block text-sm font-medium mb-1">おススメ旅アイテム</label>
-  <input
-    type="text"
-    value={items}
-    onChange={(e) => setItems(e.target.value)}
-    placeholder="例：モバイルバッテリー、耳栓など"
-    className="w-full border p-2 rounded"
-  />
-</div>
-
-{/* 現地で買ったグッズ */}
-<div className="mb-4">
-  <label className="block text-sm font-medium mb-1">現地で買ったグッズ</label>
-  <textarea
-    value={goods}
-    onChange={(e) => setGoods(e.target.value)}
-    placeholder="例：ユニフォーム、マフラー、マグカップなど"
-    className="w-full border p-2 rounded h-24"
-  />
-</div>
-
-{/* 印象的なエピソードや感想 */}
-<div className="mb-4">
-  <label className="block text-sm font-medium mb-1">印象的なエピソードや感想</label>
-  <textarea
-    value={episode}
-    onChange={(e) => setEpisode(e.target.value)}
-    placeholder="例：現地のサポーターとの交流など"
-    className="w-full border p-2 rounded h-24"
-  />
-</div>
-
-{/* 初めて行く人への一言 */}
-<div className="mb-4">
-  <label className="block text-sm font-medium mb-1">これから初めて現地観戦する人へ一言</label>
-  <textarea
-    value={firstAdvice}
-    onChange={(e) => setFirstAdvice(e.target.value)}
-    placeholder="例：入場時に荷物制限あるので注意！"
-    className="w-full border p-2 rounded h-24"
-  />
-</div>
-
- <div className="bg-blue-50 p-5 rounded-2xl shadow-sm mt-6">
-        <label className="inline-flex items-center">
-          <input
-            type="checkbox"
-            checked={allowComments}
-            onChange={(e) => setAllowComments(e.target.checked)}
-            className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-400"
-          />
-          <span className="ml-3 text-gray-800 text-sm font-medium">
-            コメントを受け付ける
-          </span>
-        </label>
-      </div>
-
-      <h2 className="font-bold text-lg mt-6">カテゴリー（必須）</h2>
-<select
-  value={category}
-  onChange={(e) => setCategory(e.target.value)}
-  className="border p-2 rounded w-full"
->
-  <option value="">選択してください</option>
-  <option value="england">イングランド</option>
-  <option value="italy">イタリア</option>
-  <option value="spain">スペイン</option>
-  <option value="germany">ドイツ</option>
-  <option value="france">フランス</option>
-  <option value="other">その他</option>
-</select>
-
-
-
- <div className="bg-white p-4 rounded shadow-sm space-y-2">
-  <label className="block text-sm font-semibold text-gray-700">
-    画像アップロード（最大5枚）
-  </label>
-
-    <div className="flex flex-wrap gap-3">
-  {imageFiles.map((file, index) => (
-    <div
-      key={index}
-      className="relative w-40 h-40 rounded border border-gray-300 overflow-hidden bg-white shadow-sm"
-      style={{ width: '96px', height: '96px' }} // ✅ 明示的に正方形
-    >
-      <img
-        src={URL.createObjectURL(file)}
-        alt={`preview-${index}`}
-
-        className="w-full h-full object-cover"
-      />
-      {/* 削除ボタン */}
-      <button
-        type="button"
-        onClick={() => {
-          const updated = [...imageFiles];
-          updated.splice(index, 1);
-          setImageFiles(updated);
-        }}
-        className="absolute top-[-8px] right-[-8px] w-7 h-7 bg-gray-800 text-white text-xl rounded-full shadow-md flex items-center justify-center hover:bg-red-600 transition"
-      >
-        ×
-        </button>
-      </div>
-    ))}
-
-    {imageFiles.length < 5 && (
-    <label className="border-2 border-dashed border-gray-300 rounded p-6 w-full text-center cursor-pointer hover:bg-gray-50">
-      <p className="text-sm text-gray-600">写真をドラッグして追加</p>
-      <p className="text-xs text-gray-400 my-1">- または -</p>
-      <div className="inline-block mt-2 px-4 py-2 border border-red-500 text-red-500 font-semibold rounded hover:bg-red-50">
-        <span className="mr-1">📷</span> 画像を選択する
-      </div>
-      <input
-        type="file"
-        accept="image/*"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) {
-            setImageFiles((prev) => [...prev, file].slice(0, 5));
-            e.target.value = '';
-            }
-          }}
-          className="hidden"
-              />
-            </label>
-          )}
-        </div>
-      </div>
-
-      
-
-      {/* 投稿ボタン */}
-      <button
-        type="submit"
-        className="bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700 font-semibold"
-      >
-        投稿する
-      </button>
-    </form>
-
-    {/* 投稿メッセージ */}
-    {message && (
-      <p className="mt-4 text-sm text-center text-gray-700">{message}</p>
-    )}
-  </div>
-</div>
-); // ✅ return を正しく閉じる
 }
+
+const Section = ({ title, children }) => (
+  <div className="bg-gray-100 dark:bg-gray-800/50 p-5 rounded-xl shadow-sm space-y-4">
+    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b border-gray-300 dark:border-gray-600 pb-2">{title}</h2>
+    <div className="space-y-4">
+      {children}
+    </div>
+  </div>
+);
+
+const FormSelect = ({ label, options, value, onChange, placeholder, isRequired }) => {
+  const { theme } = useTheme();
+  const customStyles = useMemo(() => getCustomStyles(theme), [theme]);
+
+  // Handle both grouped and non-grouped options
+  let allOptions = [];
+  if (options && options.length > 0) {
+    if (options[0].hasOwnProperty('options')) {
+      // Grouped options
+      allOptions = options.flatMap(g => g.options || []);
+    } else {
+      // Non-grouped options
+      allOptions = options;
+    }
+  }
+  const selectedValue = allOptions.find(o => o.value === value);
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label} {isRequired && <span className="text-red-500">*</span>}</label>
+      <Select styles={customStyles} options={options} isSearchable placeholder={placeholder} value={selectedValue} onChange={onChange} required={isRequired} />
+    </div>
+  );
+};

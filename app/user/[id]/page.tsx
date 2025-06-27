@@ -6,6 +6,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useTheme } from 'next-themes';
 
 type UserInfo = {
   nickname: string;
@@ -17,6 +18,7 @@ type UserInfo = {
 
 export default function UserPostsPage() {
   const { id } = useParams();
+  const { theme } = useTheme();
   const [posts, setPosts] = useState<any[]>([]);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,14 +64,14 @@ export default function UserPostsPage() {
     fetchUserPosts();
   }, [id]);
 
-  if (loading) return <p className="p-6">読み込み中...</p>;
+  if (loading) return <p className="p-6 dark:text-white">読み込み中...</p>;
   if (notFound || !userInfo) return <p className="p-6 text-red-500">ユーザーが見つかりません。</p>;
 
   return (
-    <div className="max-w-screen-md mx-auto bg-white rounded-lg shadow-sm overflow-hidden">
+    <div className="max-w-screen-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
       {/* カバー画像 */}
       {userInfo.coverUrl && (
-        <div className="relative h-40 w-full bg-gray-200">
+        <div className="relative h-40 w-full bg-gray-200 dark:bg-gray-700">
           <Image
             src={userInfo.coverUrl}
             alt="cover"
@@ -80,8 +82,8 @@ export default function UserPostsPage() {
       )}
 
       <div className="px-4 pt-4 pb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{userInfo.nickname}</h1>
-        <p className="text-sm text-gray-500 mb-3">@{id}</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{userInfo.nickname}</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">@{id}</p>
 
         {/* XリンクとNoteリンク */}
         <div className="flex items-center gap-4">
@@ -92,7 +94,7 @@ export default function UserPostsPage() {
                 alt="Xリンク"
                 width={32}
                 height={32}
-                className="hover:opacity-80 rounded"
+                className="hover:opacity-80 rounded dark:invert"
               />
             </Link>
           )}
@@ -111,18 +113,18 @@ export default function UserPostsPage() {
       </div>
 
       {/* 投稿一覧 */}
-<div className="px-4 pb-10 mt-4 border-t pt-6">
+<div className="px-4 pb-10 mt-4 border-t dark:border-gray-700 pt-6">
   {posts.length === 0 ? (
-    <p className="text-gray-500">投稿がありません。</p>
+    <p className="text-gray-500 dark:text-gray-400">投稿がありません。</p>
   ) : (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
       {posts.map((post) => (
         <div
           key={post.id}
-          className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition"
+          className="bg-white dark:bg-gray-700 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition"
         >
           <Link href={`/posts/${post.id}`}>
-            <div className="w-full aspect-square bg-gray-100 relative">
+            <div className="w-full aspect-square bg-gray-100 dark:bg-gray-600 relative">
               <Image
                 src={post.imageUrls?.[0] || '/no-image.png'}
                 alt="観戦写真"
@@ -132,12 +134,12 @@ export default function UserPostsPage() {
             </div>
           </Link>
           <div className="p-4">
-            <h3 className="text-sm font-semibold text-gray-800 truncate">
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
               {post.matches?.[0]
                 ? `${post.matches[0].teamA} vs ${post.matches[0].teamB}`
                 : '試合情報なし'}
             </h3>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {post.season || 'シーズン未設定'}
             </p>
             <p className="text-xs text-red-500 mt-1">

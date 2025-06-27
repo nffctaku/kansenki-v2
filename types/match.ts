@@ -1,5 +1,21 @@
 // types/match.ts
 
+export interface MatchInfo {
+  competition: string;
+  season: string;
+  date: string;
+  kickoff: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number | string;
+  awayScore: number | string;
+  stadium: string;
+  ticketPrice: string;
+  ticketPurchaseRoute: string;
+  seat: string;
+  seatReview: string;
+}
+
 export interface Match {
   teamA: string;
   teamB: string;
@@ -39,6 +55,18 @@ export interface Flight {
   seat: string;
 }
 
+export interface Travel {
+  id: string;
+  userId: string;
+  season: string;
+  travelDuration?: string;
+  flights?: Flight[];
+  hotels?: Hotel[];
+  costTotal?: number;
+  cost?: Cost;
+  cities?: string;
+}
+
 export interface Post {
   id: string;
   episode?: string; // titleから変更
@@ -70,4 +98,5 @@ export interface Post {
   returnTime?: string;
   returnType?: string;
   returnVia?: string;
+  travelId?: string;
 }
