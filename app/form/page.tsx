@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { MatchInfo } from '@/types/match';
-import { collection, addDoc, doc, getDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
@@ -129,20 +129,30 @@ const initialSpotState: SpotInfo = { url: '', comment: '', rating: 0 };
 
 interface Travel {
   id: string;
-  userId: string;
-  season: string;
-  travelDuration: string;
-  cities: string;
-  goFlights: FlightInfo[];
-  returnFlights: FlightInfo[];
-  goTime: FlightTime;
-  returnTime: FlightTime;
-  goFlightType: string;
-  returnFlightType: string;
-  goVia: string;
-  returnVia: string;
-  hotels: HotelInfo[];
-  cost: Record<CostKey, number>;
+  uid: string; // Changed from userId
+  author: string;
+  title: string;
+  isPublic: boolean;
+  season?: string; // Keep optional if not always present
+  travelDuration?: string;
+  cities?: string;
+  flights: any[]; // Simplified from go/return flights
+  hotels: any[];
+  costs: any | null;
+  itineraries: any[];
+  createdAt: any; // Can be Timestamp or FieldValue
+  updatedAt: any;
+
+  // Fields that might be used for form population from the old structure
+  goFlights?: FlightInfo[];
+  returnFlights?: FlightInfo[];
+  goTime?: FlightTime;
+  returnTime?: FlightTime;
+  goFlightType?: string;
+  returnFlightType?: string;
+  goVia?: string;
+  returnVia?: string;
+  cost?: Record<CostKey, number>;
 }
 
 interface FlightSection {
@@ -302,7 +312,8 @@ export default function CloudinaryPostForm() {
     };
 
     const fetchTravels = async () => {
-      const q = query(collection(db, 'travelData'), where('userId', '==', user.uid));
+      // Fetch from the new 'simple-travels' collection using 'uid'
+      const q = query(collection(db, 'simple-travels'), where('uid', '==', user.uid));
       const querySnapshot = await getDocs(q);
       const travelsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
@@ -319,31 +330,37 @@ export default function CloudinaryPostForm() {
     if (travelOption === 'existing' && selectedTravelId) {
       const selectedTravel = userTravels.find(t => t.id === selectedTravelId);
       if (selectedTravel) {
-        // Auto-fill form with selected travel data
-        const duration = selectedTravel.travelDuration || '';
-        if (duration && duration.includes(' - ')) {
-          const [startStr, endStr] = duration.split(' - ');
-          const startDate = startStr ? new Date(startStr) : null;
-          const endDate = endStr ? new Date(endStr) : null;
-          if (startDate && !isNaN(startDate.getTime()) && endDate && !isNaN(endDate.getTime())) {
-            setTravelDateRange([startDate, endDate]);
-          } else {
-            setTravelDateRange([null, null]);
-          }
-        } else {
-          setTravelDateRange([null, null]);
-        }
+        // Auto-fill form with selected travel data from 'simple-travels'
+        // Note: The data structure from migration is different, so we adapt.
+        // For now, we'll reset fields as the structures are incompatible.
+        // A more detailed mapping would be needed for full auto-fill.
+        setSeason(selectedTravel.season || '');
         setCities(selectedTravel.cities || '');
-        setGoFlights(selectedTravel.goFlights || [initialFlightState]);
-        setReturnFlights(selectedTravel.returnFlights || [initialFlightState]);
-        setGoTime(typeof selectedTravel.goTime === 'object' && selectedTravel.goTime ? selectedTravel.goTime : { departure: '', arrival: '' });
-        setReturnTime(typeof selectedTravel.returnTime === 'object' && selectedTravel.returnTime ? selectedTravel.returnTime : { departure: '', arrival: '' });
-        setGoFlightType(selectedTravel.goFlightType || 'direct');
-        setReturnFlightType(selectedTravel.returnFlightType || 'direct');
-        setGoVia(selectedTravel.goVia || '');
-        setReturnVia(selectedTravel.returnVia || '');
+        setGoFlights(selectedTravel.flights || [initialFlightState]); // Use 'flights'
+        setReturnFlights([]); // No separate return flights in new model
         setHotels(selectedTravel.hotels || [initialHotelState]);
-        setCost(selectedTravel.cost || { flight: 0, hotel: 0, transport: 0, food: 0, goods: 0, other: 0 });
+        
+        // Reset fields that don't map directly
+        setTravelDateRange([null, null]);
+        setGoTime({ departure: '', arrival: '' });
+        setReturnTime({ departure: '', arrival: '' });
+        setGoFlightType('direct');
+        setReturnFlightType('direct');
+        setGoVia('');
+        setReturnVia('');
+        
+        // Handle costs if they exist
+        if (selectedTravel.costs && typeof selectedTravel.costs === 'object') {
+            const currentCosts: Record<CostKey, number> = { flight: 0, hotel: 0, transport: 0, food: 0, goods: 0, other: 0 };
+            for (const key in selectedTravel.costs) {
+                if (key in currentCosts) {
+                    currentCosts[key as CostKey] = Number(selectedTravel.costs[key]) || 0;
+                }
+            }
+            setCost(currentCosts);
+        } else {
+            setCost({ flight: 0, hotel: 0, transport: 0, food: 0, goods: 0, other: 0 });
+        }
       }
     } else {
       // Reset fields for 'new' travel
@@ -439,22 +456,21 @@ export default function CloudinaryPostForm() {
         }
 
         const newTravelData = {
-          userId: user.uid,
+          uid: user.uid,
+          author: nickname,
+          title: `${match.homeTeam} vs ${match.awayTeam}観戦旅行`,
+          isPublic: true, // or based on a form input
           season,
           travelDuration: travelDurationString,
           cities,
-          goFlights,
-          goTime,
-          goFlightType,
-          goVia,
-          returnFlights,
-          returnTime,
-          returnFlightType,
-          returnVia,
-          hotels,
-          cost,
+          flights: [...goFlights, ...returnFlights].filter(f => f.name), // Combine and filter empty
+          hotels: hotels.filter(h => h.url || h.comment),
+          costs: cost,
+          itineraries: [], // Add if you have this in the form
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         };
-        const travelDocRef = await addDoc(collection(db, 'travelData'), newTravelData);
+        const travelDocRef = await addDoc(collection(db, 'simple-travels'), newTravelData);
         travelId = travelDocRef.id;
       } else {
         // Use the ID of the selected existing travel
