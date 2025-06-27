@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { MatchInfo } from '@/types/match';
-import { collection, addDoc, doc, getDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, query, where, getDocs, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
@@ -172,7 +172,12 @@ interface FlightSection {
   setVia: React.Dispatch<React.SetStateAction<string>>;
 }
 
-export default function CloudinaryPostForm() {
+interface CloudinaryPostFormProps {
+  postId?: string;
+}
+
+export default function CloudinaryPostForm({ postId }: CloudinaryPostFormProps) {
+  const isEditMode = !!postId;
   const { theme } = useTheme();
   const router = useRouter();
   const customStyles = useMemo(() => getCustomStyles(theme), [theme]);
@@ -184,6 +189,12 @@ export default function CloudinaryPostForm() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [message, setMessage] = useState('');
+  const [title, setTitle] = useState('');
+  const [lifestyle, setLifestyle] = useState('');
+  const [watchYear, setWatchYear] = useState('');
+  const [watchMonth, setWatchMonth] = useState('');
+  const [stayDuration, setStayDuration] = useState('');
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
 
   const [cost, setCost] = useState<Record<CostKey, number>>({ flight: 0, hotel: 0, transport: 0, food: 0, goods: 0, other: 0 });
   const [items, setItems] = useState('');
@@ -380,6 +391,66 @@ export default function CloudinaryPostForm() {
     }
   }, [selectedTravelId, travelOption, userTravels]);
 
+  useEffect(() => {
+    const fetchPostData = async () => {
+      if (isEditMode && postId && user) {
+        setMessage('投稿データを読み込み中...');
+        try {
+          const postDocRef = doc(db, 'simple-posts', postId);
+          const postDocSnap = await getDoc(postDocRef);
+
+          if (postDocSnap.exists()) {
+            const postData = postDocSnap.data();
+            
+            setTitle(postData.title || '');
+            setSeason(postData.season || '');
+            setCategory(postData.category || '');
+            setMatch(postData.matches && postData.matches.length > 0 ? postData.matches[0] : initialMatchState);
+            setLifestyle(postData.lifestyle || '');
+            setWatchYear(postData.watchYear || '');
+            setWatchMonth(postData.watchMonth || '');
+            setStayDuration(postData.stayDuration || '');
+            setItems(postData.items || '');
+            setGoods(postData.goods || '');
+            setEpisode(postData.episode || '');
+            setFirstAdvice(postData.firstAdvice || '');
+            setAllowComments(postData.allowComments ?? true);
+            setExistingImageUrls(postData.imageUrls || []);
+
+            if (postData.travelId) {
+              const travelDocRef = doc(db, 'simple-travels', postData.travelId);
+              const travelDocSnap = await getDoc(travelDocRef);
+
+              if (travelDocSnap.exists()) {
+                const travelData = travelDocSnap.data();
+                setGoFlights(travelData.goFlights || [{ name: '', seat: '' }]);
+                setGoTime(travelData.goTime || '');
+                setGoFlightType(travelData.goType || '');
+                setGoVia(travelData.goVia || '');
+                setReturnFlights(travelData.returnFlights || [{ name: '', seat: '' }]);
+                setReturnTime(travelData.returnTime || '');
+                setReturnFlightType(travelData.returnType || '');
+                setReturnVia(travelData.returnVia || '');
+                setHotels(travelData.hotels || [{ url: '', comment: '', rating: 0 }]);
+                setSpots(travelData.spots || [{ url: '', comment: '', rating: 0, autoName: '', address: '' }]);
+                setCost(travelData.cost || { flight: 0, hotel: 0, transport: 0, food: 0, goods: 0, other: 0 });
+              }
+            }
+            setMessage(''); // Clear loading message
+          } else {
+            console.error("No such document!");
+            setMessage('エラー: 投稿が見つかりません。');
+          }
+        } catch (error) {
+          console.error("Error fetching post data:", error);
+          setMessage('エラー: データの読み込みに失敗しました。');
+        }
+      }
+    };
+
+    fetchPostData();
+  }, [isEditMode, postId, user]);
+
   const flightSections: FlightSection[] = [
     {
       type: 'go' as const,
@@ -411,13 +482,55 @@ export default function CloudinaryPostForm() {
     },
   ];
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage('⏳ 投稿中...');
-    if (!category || !season || !match.competition || !match.homeTeam || !match.awayTeam) {
-      setMessage('❌ 必須項目（シーズン、カテゴリー、試合情報）を入力してください。');
-      return;
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    const uploadedUrls: string[] = [];
+    // NOTE: You need to create an "unsigned" upload preset in your Cloudinary settings.
+    const uploadPreset = 'kansenki-unsigned'; // TODO: Replace with your actual unsigned upload preset
+    const cloudName = 'dfamqux2y'; // TODO: Replace with your actual cloud name
+
+    if (!uploadPreset || !cloudName) {
+        const errorMsg = 'エラー: 画像アップロード設定が不完全です。';
+        console.error(errorMsg);
+        setMessage(errorMsg);
+        throw new Error('Cloudinary settings are not configured.');
     }
+
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', uploadPreset);
+
+      try {
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await response.json();
+        if (response.ok && data.secure_url) {
+          uploadedUrls.push(data.secure_url);
+        } else {
+          throw new Error(data.error?.message || 'Unknown Cloudinary error');
+    try {
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (response.ok && data.secure_url) {
+        const docRef = await addDoc(collection(db, 'simple-posts'), {
+          ...postData,
+          author: nickname,
+          uid: user.uid,
+          createdAt: serverTimestamp(),
+        });
+        setMessage('投稿が成功しました！');
+        router.push(`/post/${docRef.id}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setMessage(`エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
 
     try {
       const auth = getAuth();
@@ -515,12 +628,13 @@ export default function CloudinaryPostForm() {
   return (
     <div className="min-h-screen flex justify-center items-start py-10 bg-gray-50 dark:bg-gray-900 px-4 sm:px-8">
       <div className="w-full max-w-3xl bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg pb-20">
-        <h1 className="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200">#みんなの現地観戦記</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200">{isEditMode ? '投稿を編集' : '新規投稿'}</h1>
 
         <form onSubmit={handleSubmit} className="space-y-10">
           <Section title="基本情報">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ニックネーム</label>
                 <input type="text" value={nickname} disabled className="w-full border border-gray-200 dark:border-gray-600 bg-gray-200 dark:bg-gray-600 rounded-md px-3 py-2 text-gray-500 dark:text-gray-400 cursor-not-allowed" />
               </div>
@@ -849,7 +963,7 @@ export default function CloudinaryPostForm() {
 
           <div className="mt-8">
             <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 transition-colors duration-300 shadow-md disabled:bg-gray-400 dark:disabled:bg-gray-500">
-              投稿する
+              {isEditMode ? '更新する' : '投稿する'}
             </button>
           </div>
 
