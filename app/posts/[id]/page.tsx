@@ -135,14 +135,11 @@ export default function PostDetailPage() {
   
   const totalCost = Math.round(rawTotalCost / 10000);
 
-
-    const hasHotels = post.hotels?.some((h) => h.url || h.rating > 0 || h.comment);
-  const hasSpots = post.spots?.some((s) => s.url || s.rating > 0 || s.comment);
+  const hasHotels = post.hotels?.some((h: HotelInfo) => h.url || h.rating > 0 || h.comment);
+  const hasSpots = post.spots?.some((s: SpotInfo) => s.url || s.rating > 0 || s.comment);
 
   return (
-        <div className="max-w-3xl mx-auto px-4 pt-4 min-h-screen pb-[100px]">
-
-
+    <div className="max-w-3xl mx-auto px-4 pt-4 min-h-screen pb-[100px]">
       {/* 画像スライド */}
       {post.imageUrls?.length > 0 && (
         <div className="w-full max-w-md mx-auto mb-6">
@@ -170,31 +167,31 @@ export default function PostDetailPage() {
         </div>
       )}
 
-{/* 投稿者情報（名前＋ID整列） */}
-<div className="bg-white rounded-xl shadow overflow-hidden mb-6">
-  <h2 className="text-base font-bold bg-gray-100 dark:bg-gray-900 dark:text-gray-200 px-4 py-2 border-b dark:border-gray-700">投稿者情報</h2>
-  <table className="w-full text-sm table-fixed">
-    <tbody>
-      <tr className="bg-white">
-        <th className="w-1/3 px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal">ニックネーム</th>
-        <td className="px-4 py-1 text-right break-words dark:text-white">{post.author || '未設定'}</td>
-      </tr>
-      {post.userId && (
-        <tr className="bg-gray-100">
-          <th className="px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal">ユーザーID</th>
-          <td className="px-4 py-1 text-right break-words">
-            <a href={`/user/${post.uid}`} className="text-blue-500 dark:text-blue-400 hover:underline">
-              @{post.userId}
-            </a>
-          </td>
-        </tr>
-      )}
-    </tbody>
-  </table>
-</div>
+      {/* 投稿者情報 */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden mb-6">
+        <h2 className="text-base font-bold bg-gray-100 dark:bg-gray-900 dark:text-gray-200 px-4 py-2 border-b dark:border-gray-700">投稿者情報</h2>
+        <table className="w-full text-sm table-fixed">
+          <tbody>
+            <tr className="bg-white dark:bg-gray-800">
+              <th className="w-1/3 px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal">ニックネーム</th>
+              <td className="px-4 py-1 text-right break-words dark:text-white">{post.nickname || '未設定'}</td>
+            </tr>
+            {post.uid && (
+              <tr className="bg-gray-50 dark:bg-gray-800/50">
+                <th className="px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal">ユーザーID</th>
+                <td className="px-4 py-1 text-right break-words">
+                  <a href={`/user/${post.uid}`} className="text-blue-500 dark:text-blue-400 hover:underline">
+                    @{post.userId}
+                  </a>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* 渡航情報 */}
-      {post.travelId && (post.travelDuration || post.goFlights) && (
+      {post.travelId && (post.travelDuration || (post.goFlights && post.goFlights.length > 0)) && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden mb-6">
           <h2 className="text-base font-bold bg-gray-100 dark:bg-gray-900 dark:text-gray-200 px-4 py-2 border-b dark:border-gray-700">渡航情報</h2>
           <div className="p-4 space-y-4 text-sm">
@@ -208,7 +205,7 @@ export default function PostDetailPage() {
               <div>
                 <h3 className="font-semibold text-gray-600 dark:text-gray-400">往路フライト</h3>
                 <p className="dark:text-white mt-1">
-                  {post.goFlights.map(f => `${f.airline}${f.flightNumber}`).join(' → ')}
+                  {post.goFlights.map((f: FlightInfo, i: number) => `${f.airline}${f.flightNumber}`).join(' → ')}
                 </p>
                 {post.goTime && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">出発: {post.goTime.departure}, 到着: {post.goTime.arrival} (現地時間)</p>}
                 {post.goVia && <p className="text-xs text-gray-500 dark:text-gray-400">経由: {post.goVia}</p>}
@@ -218,7 +215,7 @@ export default function PostDetailPage() {
               <div>
                 <h3 className="font-semibold text-gray-600 dark:text-gray-400">復路フライト</h3>
                 <p className="dark:text-white mt-1">
-                  {post.returnFlights.map(f => `${f.airline}${f.flightNumber}`).join(' → ')}
+                  {post.returnFlights.map((f: FlightInfo, i: number) => `${f.airline}${f.flightNumber}`).join(' → ')}
                 </p>
                 {post.returnTime && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">出発: {post.returnTime.departure}, 到着: {post.returnTime.arrival} (現地時間)</p>}
                 {post.returnVia && <p className="text-xs text-gray-500 dark:text-gray-400">経由: {post.returnVia}</p>}
@@ -231,171 +228,22 @@ export default function PostDetailPage() {
       {/* 観戦した試合 */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden mb-6">
         <h2 className="text-base font-bold bg-gray-100 dark:bg-gray-900 dark:text-gray-200 px-4 py-2 border-b dark:border-gray-700">観戦した試合</h2>
-        <table className="w-full text-sm table-fixed">
-          <tbody>
-            {post.matches?.[0]?.competition && (
-              <tr className="bg-white dark:bg-gray-800">
-                <th className="w-1/3 px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal align-top">大会名</th>
-                <td className="px-4 py-1 text-right break-words dark:text-white">{post.matches[0].competition}</td>
-              </tr>
-            )}
-            {(post.matches?.[0]?.teamA || post.matches?.[0]?.teamB) && (
-              <tr className="bg-gray-100 dark:bg-gray-800/50">
-                <th className="px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal align-top">対戦カード</th>
-                <td className="px-4 py-1 text-right break-words dark:text-white">
-                  <div className="leading-tight">
-                    {post.matches[0].teamA}
-                    <br />
-                    vs
-                    <br />
-                    {post.matches[0].teamB}
-                  </div>
-                </td>
-              </tr>
-            )}
-            {post.season && (
-              <tr className="bg-white dark:bg-gray-800">
-                <th className="px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal align-top">シーズン</th>
-                <td className="px-4 py-1 text-right break-words dark:text-white">{post.season}</td>
-              </tr>
-            )}
-            {post.matches?.[0]?.stadium && (
-              <tr className="bg-gray-100 dark:bg-gray-800/50">
-                <th className="px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal align-top">スタジアム</th>
-                <td className="px-4 py-1 text-right break-words dark:text-white">
-                  {post.matches[0].stadium}
-                </td>
-              </tr>
-            )}
-            {post.matches?.[0]?.seat && (
-              <tr className="bg-white dark:bg-gray-800">
-                <th className="px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal align-top">座席</th>
-                <td className="px-4 py-1 text-right break-words dark:text-white">
-                  {post.matches[0].seat}
-                </td>
-              </tr>
-            )}
-            {post.matches?.[0]?.ticketPrice && (
-              <tr className="bg-gray-100 dark:bg-gray-800/50">
-                <th className="px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal align-top">チケット価格</th>
-                <td className="px-4 py-1 text-right break-words dark:text-white">
-                  {`¥${Number(post.matches[0].ticketPrice).toLocaleString()}`}
-                </td>
-              </tr>
-            )}
-            {post.matches?.[0]?.seatReview && (
-              <tr className="bg-white dark:bg-gray-800">
-                <th className="px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal align-top">座席レビュー</th>
-                <td className="px-4 py-1 text-right whitespace-pre-wrap dark:text-white">
-                  {post.matches[0].seatReview}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* 渡航・観戦情報 */}
-      <div className="bg-white rounded-xl shadow overflow-hidden mb-6">
-        <h2 className="text-base font-bold bg-gray-100 px-4 py-2 border-b">渡航・観戦情報</h2>
-        <table className="w-full text-sm table-fixed">
-          <tbody>
-            {post.category && (
-              <tr className="bg-white dark:bg-gray-800">
-                <th className="w-1/3 px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal align-top">カテゴリー</th>
-                <td className="px-4 py-1 text-right break-words dark:text-white">{post.category}</td>
-              </tr>
-            )}
-            {post.season && (
-              <tr className="bg-gray-100 dark:bg-gray-800/50">
-                <th className="px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal align-top">観戦シーズン</th>
-                <td className="px-4 py-1 text-right break-words dark:text-white">{post.season}</td>
-              </tr>
-            )}
-            {post.lifestyle && (
-              <tr className="bg-white dark:bg-gray-800">
-                <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">ライフスタイル</th>
-                <td className="px-4 py-1 text-right break-words dark:text-white">{post.lifestyle}</td>
-              </tr>
-            )}
-            {post.watchYear && post.watchMonth && (
-              <tr className="bg-gray-100 dark:bg-gray-800/50">
-                <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">観戦時期</th>
-                <td className="px-4 py-1 text-right break-words dark:text-white">
-                  {post.watchYear}年 {post.watchMonth}月
-                </td>
-              </tr>
-            )}
-            {post.stayDuration && (
-              <tr className="bg-white dark:bg-gray-800">
-                <th className="px-4 py-1 text-left text-gray-700 font-normal align-top">滞在期間</th>
-                <td className="px-4 py-1 text-right break-words dark:text-white">{post.stayDuration}</td>
-              </tr>
-            )}
-            {post.goFlights && post.goFlights.length > 0 && (
-              <tr className="bg-gray-100 dark:bg-gray-800/50">
-                <th className="px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal align-top">行きの航空会社</th>
-                <td className="px-4 py-1 text-right dark:text-white">
-                  <div className="flex flex-col items-end gap-[2px]">
-                    {post.goFlights.map((f, i) => (
-                      <span key={i}>{f.name} ({f.seat})</span>
-                    ))}
-                  </div>
-                </td>
-              </tr>
-            )}
-            {post.returnFlights && post.returnFlights.length > 0 && (
-              <tr className="bg-white dark:bg-gray-800">
-                <th className="px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal align-top">帰りの航空会社</th>
-                <td className="px-4 py-1 text-right dark:text-white">
-                  <div className="flex flex-col items-end gap-[2px]">
-                    {post.returnFlights.map((f, i) => (
-                      <span key={i}>{f.name} ({f.seat})</span>
-                    ))}
-                  </div>
-                </td>
-              </tr>
-            )}
-            {(post.goTime || post.goType || post.goVia) && (
-              <tr className="bg-gray-100 dark:bg-gray-800/50">
-                <th className="px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal align-top">行きの移動</th>
-                <td className="px-4 py-1 text-right break-words dark:text-white">
-                  {[post.goTime, post.goType, post.goVia].filter(Boolean).join(' / ')}
-                </td>
-              </tr>
-            )}
-            {(post.returnTime || post.returnType || post.returnVia) && (
-              <tr className="bg-white dark:bg-gray-800">
-                <th className="px-4 py-1 text-left text-gray-700 dark:text-gray-400 font-normal align-top">帰りの移動</th>
-                <td className="px-4 py-1 text-right break-words dark:text-white">
-                  {[post.returnTime, post.returnType, post.returnVia].filter(Boolean).join(' / ')}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <div className="p-4 text-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400">{post.match.date} @ {post.match.venue}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{post.match.competition}</p>
+          <h3 className="text-lg font-bold text-center mb-1">{post.match.homeTeam} {post.match.homeScore ?? ''}-{post.match.awayScore ?? ''} {post.match.awayTeam}</h3>
+        </div>
       </div>
 
       {/* ホテル情報 */}
       {hasHotels && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden mb-6">
           <h2 className="text-base font-bold bg-gray-100 dark:bg-gray-900 dark:text-gray-200 px-4 py-2 border-b dark:border-gray-700">ホテル情報</h2>
-          <div className="divide-y dark:divide-gray-700">
-            {post.hotels?.map((h, i) => (
-              <div key={i} className="p-4">
-                {h.name && <h3 className="font-bold text-md dark:text-white">{h.name}</h3>}
-                {h.url && h.url.startsWith('http') && (
-                  <a href={h.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 dark:text-blue-400 text-sm break-all">
-                    {h.url}
-                  </a>
-                )}
-                {h.rating && h.rating > 0 && (
-                  <div className="flex items-center mt-1">
-                    {'★'.repeat(h.rating)}
-                    {'☆'.repeat(5 - h.rating)}
-                    <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">({h.rating.toFixed(1)})</span>
-                  </div>
-                )}
+          <div className="p-4 space-y-3">
+            {post.hotels?.map((h: HotelInfo, i: number) => (h.url || h.rating > 0 || h.comment) && (
+              <div key={i} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md">
+                {h.url && <a href={h.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-sm break-all">{h.url}</a>}
+                {h.rating > 0 && <p className="text-sm text-yellow-500 mt-1">{'★'.repeat(h.rating)}</p>}
                 {h.comment && <p className="text-sm text-gray-800 dark:text-gray-300 mt-2 whitespace-pre-wrap">{h.comment}</p>}
               </div>
             ))}
@@ -403,38 +251,26 @@ export default function PostDetailPage() {
         </div>
       )}
 
-      {/* 周辺の観光スポット */}
+      {/* スポット情報 */}
       {hasSpots && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden mb-6">
-          <h2 className="text-base font-bold bg-gray-100 dark:bg-gray-900 dark:text-gray-200 px-4 py-2 border-b dark:border-gray-700">周辺の観光スポット</h2>
-          <div className="divide-y dark:divide-gray-700">
-            {post.spots?.map((s, i) => (
-              <div key={i} className="p-4">
-                {s.name && <h3 className="font-bold text-md dark:text-white">{s.name}</h3>}
-                {s.url && s.url.startsWith('http') && (
-                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 dark:text-blue-400 text-sm break-all">
-                    {s.url}
-                  </a>
-                )}
-                {s.rating && s.rating > 0 && (
-                  <div className="flex items-center mt-1">
-                    {'★'.repeat(s.rating)}
-                    {'☆'.repeat(5 - s.rating)}
-                    <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">({s.rating.toFixed(1)})</span>
-                  </div>
-                )}
+          <h2 className="text-base font-bold bg-gray-100 dark:bg-gray-900 dark:text-gray-200 px-4 py-2 border-b dark:border-gray-700">スポット情報</h2>
+          <div className="p-4 space-y-3">
+            {post.spots?.map((s: SpotInfo, i: number) => (s.url || s.rating > 0 || s.comment) && (
+              <div key={i} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md">
+                {s.url && <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-sm break-all">{s.url}</a>}
+                {s.rating > 0 && <p className="text-sm text-yellow-500 mt-1">{'★'.repeat(s.rating)}</p>}
                 {s.comment && <p className="text-sm text-gray-800 dark:text-gray-300 mt-2 whitespace-pre-wrap">{s.comment}</p>}
               </div>
             ))}
           </div>
         </div>
       )}
+
       {/* その他の情報 */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden mb-8 px-6 py-6">
-        <h2 className="text-xl font-extrabold text-gray-900 dark:text-gray-200 border-b border-gray-300 dark:border-gray-700 pb-3 mb-4">
-          その他の情報
-        </h2>
-        <div className="space-y-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden mb-6">
+        <h2 className="text-base font-bold bg-gray-100 dark:bg-gray-900 dark:text-gray-200 px-4 py-2 border-b dark:border-gray-700">その他の情報</h2>
+        <div className="p-4 space-y-4">
           {[
             ['持参アイテム', post.items],
             ['購入グッズ', post.goods],
@@ -510,6 +346,18 @@ export default function PostDetailPage() {
           className="flex flex-col items-center hover:opacity-80 bg-transparent border-none p-0"
           disabled={!currentUrl}
         >
+          <img src="/フリーのクリップアイコン.png" alt="コピー" className="w-[16px] h-[16px] mb-0.5 object-contain dark:invert" />
+        </button>
+
+        {/* X */}
+        <a
+          href={currentUrl && post ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(`『${post.match.homeTeam} vs ${post.match.awayTeam}』の観戦記をチェック！ #kansenki`)}&url=${encodeURIComponent(currentUrl)}` : '#'}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={!currentUrl ? 'pointer-events-none opacity-50' : ''}
+        >
+          <img src="/logo-black.png" alt="X" className="w-[16px] h-[16px] mb-0.5 object-contain dark:invert" />
+        </a>
       </div>
 
       {/* フッター被り回避スペーサー */}
