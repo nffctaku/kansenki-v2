@@ -352,8 +352,8 @@ export default function CloudinaryPostForm() {
       setCities('');
       setGoFlights([initialFlightState]);
       setReturnFlights([initialFlightState]);
-      setGoTime('');
-      setReturnTime('');
+      setGoTime({ departure: '', arrival: '' });
+      setReturnTime({ departure: '', arrival: '' });
       setGoFlightType('direct');
       setReturnFlightType('direct');
       setGoVia('');
