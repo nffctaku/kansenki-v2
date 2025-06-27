@@ -7,6 +7,7 @@ import { MatchInfo, Travel } from '@/types/match';
 import { collection, addDoc, doc, getDoc, query, where, getDocs } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { useTheme } from 'next-themes';
+import Image from 'next/image';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { ja } from 'date-fns/locale/ja';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -148,9 +149,11 @@ interface FlightSection {
   type: 'go' | 'return';
   title: string;
   flights: FlightInfo[];
-  handleChange: (_index: number, _field: keyof FlightInfo, _value: string) => void;
+  // eslint-disable-next-line no-unused-vars
+  handleChange: (index: number, field: keyof FlightInfo, value: string) => void;
   add: () => void;
-  remove: (_index: number) => void;
+  // eslint-disable-next-line no-unused-vars
+  remove: (index: number) => void;
   time: FlightTime;
   setTime: React.Dispatch<React.SetStateAction<FlightTime>>;
   flightType: string;
