@@ -18,7 +18,7 @@ type UserInfo = {
 
 export default function UserPostsPage() {
   const { id } = useParams();
-  const { theme } = useTheme();
+  useTheme();
   const [posts, setPosts] = useState<any[]>([]);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);

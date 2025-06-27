@@ -83,7 +83,7 @@ interface PostDetail {
 
 export default function PostDetailPage() {
   const { id } = useParams();
-  const { theme } = useTheme();
+  useTheme();
   const [post, setPost] = useState<PostDetail | null>(null);
   const [currentUrl, setCurrentUrl] = useState('');
 
@@ -205,7 +205,7 @@ export default function PostDetailPage() {
               <div>
                 <h3 className="font-semibold text-gray-600 dark:text-gray-400">往路フライト</h3>
                 <p className="dark:text-white mt-1">
-                  {post.goFlights.map((f: FlightInfo, i: number) => `${f.airline}${f.flightNumber}`).join(' → ')}
+                  {post.goFlights.map((f: FlightInfo) => `${f.airline}${f.flightNumber}`).join(' → ')}
                 </p>
                 {post.goTime && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">出発: {post.goTime.departure}, 到着: {post.goTime.arrival} (現地時間)</p>}
                 {post.goVia && <p className="text-xs text-gray-500 dark:text-gray-400">経由: {post.goVia}</p>}
@@ -215,7 +215,7 @@ export default function PostDetailPage() {
               <div>
                 <h3 className="font-semibold text-gray-600 dark:text-gray-400">復路フライト</h3>
                 <p className="dark:text-white mt-1">
-                  {post.returnFlights.map((f: FlightInfo, i: number) => `${f.airline}${f.flightNumber}`).join(' → ')}
+                  {post.returnFlights.map((f: FlightInfo) => `${f.airline}${f.flightNumber}`).join(' → ')}
                 </p>
                 {post.returnTime && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">出発: {post.returnTime.departure}, 到着: {post.returnTime.arrival} (現地時間)</p>}
                 {post.returnVia && <p className="text-xs text-gray-500 dark:text-gray-400">経由: {post.returnVia}</p>}
@@ -346,7 +346,7 @@ export default function PostDetailPage() {
           className="flex flex-col items-center hover:opacity-80 bg-transparent border-none p-0"
           disabled={!currentUrl}
         >
-          <img src="/フリーのクリップアイコン.png" alt="コピー" className="w-[16px] h-[16px] mb-0.5 object-contain dark:invert" />
+          <Image src="/フリーのクリップアイコン.png" alt="コピー" width={16} height={16} className="w-[16px] h-[16px] mb-0.5 object-contain dark:invert" />
         </button>
 
         {/* X */}
@@ -356,7 +356,7 @@ export default function PostDetailPage() {
           rel="noopener noreferrer"
           className={!currentUrl ? 'pointer-events-none opacity-50' : ''}
         >
-          <img src="/logo-black.png" alt="X" className="w-[16px] h-[16px] mb-0.5 object-contain dark:invert" />
+          <Image src="/logo-black.png" alt="X" width={16} height={16} className="w-[16px] h-[16px] mb-0.5 object-contain dark:invert" />
         </a>
       </div>
 

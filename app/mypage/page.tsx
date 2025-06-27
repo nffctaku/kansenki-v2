@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useTheme } from 'next-themes';
+import Image from 'next/image';
 
 type Post = {
   id: string;
@@ -30,7 +31,7 @@ type Post = {
 };
 
 export default function MyPage() {
-  const { theme } = useTheme();
+  useTheme();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [nickname, setNickname] = useState('');
@@ -206,9 +207,11 @@ return (
           className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden flex flex-col"
         >
           <a href={`/posts/${post.id}`}>
-            <img
+            <Image
               src={post.imageUrls?.[0] || '/no-image.png'}
               alt="観戦画像"
+              width={400}
+              height={400}
               className="w-full aspect-square object-cover hover:opacity-90 transition"
             />
           </a>
@@ -230,9 +233,11 @@ return (
               href={`/edit/${post.id}`}
               className="flex items-center gap-[4px] text-green-600 text-[12px] hover:underline"
             >
-              <img
+              <Image
                 src="/えんぴつのアイコン素材.png"
                 alt="編集"
+                width={10}
+                height={10}
                 className="w-[10px] h-[10px] object-contain dark:invert"
               />
               編集
@@ -241,9 +246,11 @@ return (
               onClick={() => handleDelete(post.id)}
               className="flex items-center gap-[4px] text-red-600 text-[12px] hover:underline"
             >
-              <img
+              <Image
                 src="/ゴミ箱の無料アイコン.png"
                 alt="削除"
+                width={10}
+                height={10}
                 className="w-[10px] h-[10px] object-contain dark:invert"
               />
                削除

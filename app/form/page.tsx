@@ -171,14 +171,13 @@ export default function CloudinaryPostForm() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [message, setMessage] = useState('');
-  const [lifestyle, setLifestyle] = useState('');
-  const [stayDuration, setStayDuration] = useState('');
+
   const [cost, setCost] = useState<Record<CostKey, number>>({ flight: 0, hotel: 0, transport: 0, food: 0, goods: 0, other: 0 });
   const [items, setItems] = useState('');
   const [goods, setGoods] = useState('');
   const [episode, setEpisode] = useState('');
   const [firstAdvice, setFirstAdvice] = useState('');
-  const [allowComments, setAllowComments] = useState(true);
+  const allowComments = true;
 
   // Travel Info State
   const [travelOption, setTravelOption] = useState('new'); // 'new' or 'existing'

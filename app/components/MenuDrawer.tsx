@@ -51,7 +51,7 @@ export default function MenuDrawer() {
   const handleSectionClick = (section: string) => {
     setOpenSection(openSection === section ? null : section);
   };
-  const pathname = usePathname();
+
 
   return (
     <>

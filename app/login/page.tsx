@@ -9,7 +9,7 @@ import { useTheme } from 'next-themes';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { theme } = useTheme();
+  useTheme();
 
   const handleLogin = async () => {
     try {
