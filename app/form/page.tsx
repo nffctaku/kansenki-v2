@@ -844,7 +844,7 @@ export default function CloudinaryPostForm() {
   );
 }
 
-const Section = ({ title, children }) => (
+const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="bg-gray-100 dark:bg-gray-800/50 p-5 rounded-xl shadow-sm space-y-4">
     <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b border-gray-300 dark:border-gray-600 pb-2">{title}</h2>
     <div className="space-y-4">
