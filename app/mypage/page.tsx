@@ -64,11 +64,16 @@ const [showNoteInput, setShowNoteInput] = useState(true); // ← true にする
           where('uid', '==', user.uid)
         );
         const snapshot = await getDocs(q);
-        const userPosts: Post[] = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as any),
-        }));
-        setPosts(userPosts);
+        const postsData = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          const matchesWithCompat = (Array.isArray(data.matches) ? data.matches : []).map((match: any) => ({
+            ...match,
+            homeTeam: match.homeTeam || match.teamA,
+            awayTeam: match.awayTeam || match.teamB,
+          }));
+          return { id: doc.id, ...data, matches: matchesWithCompat } as Post;
+        });
+        setPosts(postsData);
       } else {
         router.push('/login');
       }
@@ -224,7 +229,7 @@ return (
               {post.matches?.[0]?.competition || '大会名未入力'}
             </p>
             <p className="text-[13px] text-gray-800 dark:text-gray-300 leading-[1.1] m-0">
-              {post.matches?.[0]?.teamA || 'チームA'} vs {post.matches?.[0]?.teamB || 'チームB'}
+              {(post.matches?.[0] as any)?.homeTeam || 'チームA'} vs {(post.matches?.[0] as any)?.awayTeam || 'チームB'}
             </p>
           </div>
 

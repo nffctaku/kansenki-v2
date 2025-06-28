@@ -1,13 +1,13 @@
+// app/edit/[id]/page.tsx
 'use client';
 
 import { useParams } from 'next/navigation';
-import CloudinaryPostForm from '@/app/form/page';
+import PostForm from '@/components/PostForm';
 
-export default function EditPage() {
+export default function EditPostPage() {
   const { id } = useParams();
-
-  // idが配列の場合は最初の要素を、文字列の場合はそのまま使用
+  // useParams can return string or string[]. Handle both cases.
   const postId = Array.isArray(id) ? id[0] : id;
 
-  return <CloudinaryPostForm postId={postId} />;
+  return <PostForm postId={postId} />;
 }

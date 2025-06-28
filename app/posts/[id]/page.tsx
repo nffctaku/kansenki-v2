@@ -6,8 +6,8 @@ import Link from 'next/link';
 
 // Define all necessary types locally to match Firestore data structure
 interface FlightInfo {
-  airline: string;
-  flightNumber: string;
+  name: string;
+  seat: string;
 }
 
 interface HotelInfo {
@@ -22,19 +22,24 @@ interface SpotInfo {
   rating: number;
 }
 
-interface FlightTime {
-  departure: string;
-  arrival: string;
-}
-
 interface MatchInfo {
-  date: string;
   competition: string;
+  season: string;
+  date: string;
+  kickoff: string;
   homeTeam: string;
   awayTeam: string;
-  homeScore: number | null;
-  awayScore: number | null;
-  venue: string;
+  homeScore: number | string | null;
+  awayScore: number | string | null;
+  stadium: string;
+  ticketPrice: string;
+  ticketPurchaseRoute: string;
+  seat: string;
+  seatReview: string;
+  // For backward compatibility
+  venue?: string;
+  teamA?: string;
+  teamB?: string;
 }
 
 interface PostDetail {
@@ -46,7 +51,7 @@ interface PostDetail {
   season: string;
   imageUrls: string[];
   category: string;
-  match?: MatchInfo;
+  matches?: MatchInfo[];
   spots: SpotInfo[];
   items: string;
   goods: string;
@@ -58,8 +63,8 @@ interface PostDetail {
   cities?: string;
   goFlights?: FlightInfo[];
   returnFlights?: FlightInfo[];
-  goTime?: FlightTime;
-  returnTime?: FlightTime;
+  goTime?: string;
+  returnTime?: string;
   goFlightType?: string;
   returnFlightType?: string;
   goVia?: string;
@@ -78,22 +83,37 @@ async function getPostData(id: string): Promise<PostDetail | null> {
     return null;
   }
 
-  const postData = { id: postSnap.id, ...postSnap.data() } as PostDetail;
+  // Cast to any to handle legacy data structures before conforming to PostDetail
+  let postData: any = { id: postSnap.id, ...postSnap.data() };
 
+  // Backward compatibility for old match data (teamA/teamB)
+  if (postData.matches && Array.isArray(postData.matches)) {
+    postData.matches = postData.matches.map((match: any) => {
+      const newMatch = { ...match };
+      if (newMatch.teamA && !newMatch.homeTeam) {
+        newMatch.homeTeam = newMatch.teamA;
+      }
+      if (newMatch.teamB && !newMatch.awayTeam) {
+        newMatch.awayTeam = newMatch.teamB;
+      }
+      return newMatch;
+    });
+  }
+
+  // Fetch and merge travel data if it exists
   if (postData.travelId) {
     const travelDocRef = doc(db, 'simple-travels', postData.travelId);
     const travelSnap = await getDoc(travelDocRef);
 
     if (travelSnap.exists()) {
       const travelData = travelSnap.data();
-      return { ...postData, ...travelData };
+      postData = { ...postData, ...travelData };
     } else {
       console.warn(`Travel data not found for travelId: ${postData.travelId}`);
-      return postData;
     }
   }
 
-  return postData;
+  return postData as PostDetail;
 }
 
 // Generate static paths for existing posts for better performance (SSG)
@@ -164,18 +184,73 @@ export default async function PostDetailPage({ params }: { params: { id: string 
                 <p className="dark:text-white mt-1">約{totalCost}万円</p>
               </div>
             )}
+
+            {(post.goFlights && post.goFlights.length > 0 && post.goFlights.some(f => f.name)) && (
+              <div>
+                <h3 className="font-semibold text-gray-600 dark:text-gray-400 border-t pt-4 mt-4 border-gray-200 dark:border-gray-700">往路フライト</h3>
+                <div className="mt-2 space-y-2 text-gray-800 dark:text-gray-300">
+                  {post.goTime && <p><span className="font-medium text-gray-500">所要時間:</span> {post.goTime}</p>}
+                  {post.goVia && <p><span className="font-medium text-gray-500">経由地:</span> {post.goVia}</p>}
+                  {post.goFlightType && <p><span className="font-medium text-gray-500">種別:</span> {post.goFlightType}</p>}
+                  {post.goFlights.map((flight, index) => flight.name && (
+                    <div key={index} className="pl-4 mt-2">
+                      <p><span className="font-medium text-gray-500">航空会社/便名:</span> {flight.name}</p>
+                      <p><span className="font-medium text-gray-500">座席:</span> {flight.seat}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(post.returnFlights && post.returnFlights.length > 0 && post.returnFlights.some(f => f.name)) && (
+              <div>
+                <h3 className="font-semibold text-gray-600 dark:text-gray-400 border-t pt-4 mt-4 border-gray-200 dark:border-gray-700">復路フライト</h3>
+                <div className="mt-2 space-y-2 text-gray-800 dark:text-gray-300">
+                  {post.returnTime && <p><span className="font-medium text-gray-500">所要時間:</span> {post.returnTime}</p>}
+                  {post.returnVia && <p><span className="font-medium text-gray-500">経由地:</span> {post.returnVia}</p>}
+                  {post.returnFlightType && <p><span className="font-medium text-gray-500">種別:</span> {post.returnFlightType}</p>}
+                  {post.returnFlights.map((flight, index) => flight.name && (
+                    <div key={index} className="pl-4 mt-2">
+                      <p><span className="font-medium text-gray-500">航空会社/便名:</span> {flight.name}</p>
+                      <p><span className="font-medium text-gray-500">座席:</span> {flight.seat}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {post.match && (
+      {post.matches && post.matches.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden mb-6">
           <h2 className="text-base font-bold bg-gray-100 dark:bg-gray-900 dark:text-gray-200 px-4 py-2 border-b dark:border-gray-700">観戦した試合</h2>
           <div className="p-4 text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400">{post.match.date} @ {post.match.venue}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{post.match.competition}</p>
-            <h3 className="text-lg font-bold text-center mb-1">{`${post.match.homeTeam} ${post.match.homeScore ?? ''}-${post.match.awayScore ?? ''} ${post.match.awayTeam}`}</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400"> {post.matches[0].competition} / {post.matches[0].date}</p>
+            <div className="flex flex-col justify-center items-center text-2xl font-bold my-2 text-center">
+              <span className="truncate">{post.matches[0].homeTeam || '未設定'}</span>
+              <span className="my-1 text-lg">
+                {(post.matches[0].homeScore != null && post.matches[0].homeScore !== '') && (post.matches[0].awayScore != null && post.matches[0].awayScore !== '')
+                  ? `${post.matches[0].homeScore} - ${post.matches[0].awayScore}`
+                  : 'vs'}
+              </span>
+              <span className="truncate">{post.matches[0].awayTeam || '未設定'}</span>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-300">{post.matches[0].stadium}</p>
           </div>
+          {(post.matches[0].seat || post.matches[0].seatReview) && (
+            <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+              {post.matches[0].seat && (
+                <div className="text-sm">
+                  <span className="font-semibold text-gray-600 dark:text-gray-400">座席情報:</span>
+                  <span className="ml-2 dark:text-white">{post.matches[0].seat}</span>
+                </div>
+              )}
+              {post.matches[0].seatReview && (
+                <p className="text-sm mt-2 whitespace-pre-wrap bg-gray-50 dark:bg-gray-900/50 p-3 rounded-md">{post.matches[0].seatReview}</p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -254,7 +329,7 @@ export default async function PostDetailPage({ params }: { params: { id: string 
         </div>
       )}
 
-      <PostActions likeCount={post.likeCount || 0} match={post.match} />
+      <PostActions likeCount={post.likeCount || 0} match={post.matches && post.matches.length > 0 ? post.matches[0] : undefined} />
 
       <div className="w-full h-[100px] sm:h-[120px]" />
     </div>

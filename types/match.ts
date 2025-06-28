@@ -1,5 +1,6 @@
 // types/match.ts
 
+// Re-defining to ensure all properties are correctly recognized by the compiler.
 export interface MatchInfo {
   competition: string;
   season: string;
@@ -16,15 +17,7 @@ export interface MatchInfo {
   seatReview: string;
 }
 
-export interface Match {
-  teamA: string;
-  teamB: string;
-  competition: string;
-  stadium?: string;
-  seat?: string;
-  seatReview?: string;
-  ticketPrice?: string;
-}
+
 
 export interface Spot {
   name?: string;
@@ -74,10 +67,8 @@ export interface Post {
   userId?: string;
   imageUrls: string[];
   season: string;
-  matches: Match[];
+  matches: MatchInfo[];
   league: string;
-  homeTeam: string;
-  awayTeam: string;
   likeCount: number;
   items?: string;
   goods?: string;

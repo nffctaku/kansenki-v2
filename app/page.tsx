@@ -25,9 +25,11 @@ export default function HomePage() {
         const snapshot = await getDocs(collection(db, 'simple-posts'));
         const data: Post[] = snapshot.docs.map((doc) => {
           const d = doc.data();
-          const matches = Array.isArray(d.matches) ? d.matches : [];
-          const homeTeam = matches[0]?.teamA ?? '';
-          const awayTeam = matches[0]?.teamB ?? '';
+          const matchesWithCompat = (Array.isArray(d.matches) ? d.matches : []).map((match: any) => ({
+            ...match,
+            homeTeam: match.homeTeam || match.teamA,
+            awayTeam: match.awayTeam || match.teamB,
+          }));
 
           return {
             id: doc.id,
@@ -35,12 +37,10 @@ export default function HomePage() {
             season: d.season ?? '',
             episode: d.episode ?? '',
             author: d.nickname ?? '',
-            league: matches[0]?.competition ?? '',
-            homeTeam: homeTeam,
-            awayTeam: awayTeam,
-            matches: matches,
+            league: matchesWithCompat[0]?.competition ?? '',
+            matches: matchesWithCompat,
             likeCount: d.likeCount ?? 0,
-          };
+          } as Post;
         });
         const reversedData = data.reverse();
         setAllPosts(reversedData);
@@ -63,11 +63,14 @@ export default function HomePage() {
     const query = searchQuery.trim().toLowerCase();
 
     if (query) {
-      const filteredPosts = allPosts.filter(post =>
-        post.homeTeam?.toLowerCase().includes(query) ||
-        post.awayTeam?.toLowerCase().includes(query) ||
-        post.league?.toLowerCase().includes(query)
-      );
+      const filteredPosts = allPosts.filter(post => {
+        const match = post.matches && post.matches[0];
+        return (
+          (match && match.homeTeam?.toLowerCase().includes(query)) ||
+          (match && match.awayTeam?.toLowerCase().includes(query)) ||
+          post.league?.toLowerCase().includes(query)
+        );
+      });
       setDisplayedPosts(filteredPosts);
     } else {
       setDisplayedPosts(allPosts.slice(0, 5));
@@ -161,7 +164,7 @@ export default function HomePage() {
                 <div className="flex-1 min-w-0">
                   <Link href={`/posts/${post.id}`} className="no-underline">
                     <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-200">
-                      ({post.season}) {post.homeTeam} vs {post.awayTeam} - {post.episode}
+                      ({post.season}) {post.matches[0]?.homeTeam || ''} vs {post.matches[0]?.awayTeam || ''} - {post.episode}
                     </p>
                   </Link>
                   <div className="mt-1 flex items-center text-xs text-gray-500 dark:text-gray-400">
