@@ -96,19 +96,32 @@ export default function PostDetailPage() {
 
           {/* Match Details */}
           <div className="mt-4 border-t pt-4 dark:border-gray-700">
-            <h2 className="text-lg font-semibold mb-2">試合情報</h2>
+            <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">試合情報</h2>
             {post.matches && post.matches.length > 0 ? (
               post.matches.map((match, index) => (
-                <div key={index} className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-md">
-                  <p><strong>{match.competition}</strong> - {match.season}</p>
-                  <p>{match.homeTeam} vs {match.awayTeam}</p>
-                  <p><strong>Result:</strong> {match.homeScore} - {match.awayScore}</p>
-                  <p><strong>Date:</strong> {match.date} {match.kickoff}</p>
-                  <p><strong>Stadium:</strong> {match.stadium}</p>
+                <div key={index} className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">{match.competition}</span>
+                    <span className="text-gray-600 dark:text-gray-400">{match.season}</span>
+                  </div>
+                  <div className="text-center my-3 p-2 bg-white dark:bg-gray-800 rounded-md">
+                    <p className="text-base font-bold text-gray-800 dark:text-gray-200">{match.homeTeam} vs {match.awayTeam}</p>
+                    <p className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-wider">{match.homeScore} - {match.awayScore}</p>
+                  </div>
+                  <div className="space-y-1 text-gray-700 dark:text-gray-300 mt-3">
+                    <div className="flex justify-between">
+                      <span className="font-medium">日程:</span>
+                      <span>{`${match.date} ${match.kickoff || ''}`.trim()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">スタジアム:</span>
+                      <span className="text-right">{match.stadium}</span>
+                    </div>
+                  </div>
                 </div>
               ))
             ) : (
-              <p>試合情報がありません。</p>
+              <p className="text-gray-500 dark:text-gray-400">試合情報がありません。</p>
             )}
           </div>
 
