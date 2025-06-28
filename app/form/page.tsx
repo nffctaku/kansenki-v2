@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
+
 import { MatchInfo } from '@/types/match';
-import { collection, addDoc, doc, getDoc, query, where, getDocs, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { collection, addDoc, doc, getDoc, query, where, getDocs, serverTimestamp, updateDoc, setDoc } from 'firebase/firestore';
+import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import DatePicker, { registerLocale } from 'react-datepicker';
@@ -123,6 +124,46 @@ const FormTextarea = ({ label, ...props }: FormTextareaProps) => (
   </div>
 );
 
+const Section = ({ title, children }: { title: string, children: React.ReactNode }) => (
+  <div className="space-y-4 pt-6 first:pt-0">
+    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">{title}</h2>
+    <div className="space-y-6">{children}</div>
+  </div>
+);
+
+type SelectOptionType = { value: string; label: string };
+
+interface FormSelectProps {
+  label: string;
+  options: readonly (SelectOptionType | GroupBase<SelectOptionType>)[];
+  value: string;
+  onChange: (option: SelectOptionType | null) => void;
+  placeholder: string;
+  isRequired?: boolean;
+}
+
+const FormSelect = ({ label, options, value, onChange, placeholder, isRequired }: FormSelectProps) => {
+  const { theme } = useTheme();
+  const customStyles = useMemo(() => getCustomStyles(theme), [theme]);
+
+  let allOptions: SelectOptionType[] = [];
+  if (options && options.length > 0) {
+    if ('options' in options[0]) {
+      allOptions = (options as GroupBase<SelectOptionType>[]).flatMap(g => g.options || []);
+    } else {
+      allOptions = options as SelectOptionType[];
+    }
+  }
+  const selectedValue = allOptions.find(o => o.value === value);
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label} {isRequired && <span className="text-red-500">*</span>}</label>
+      <Select styles={customStyles} options={options} isSearchable placeholder={placeholder} value={selectedValue} onChange={onChange} required={isRequired} />
+    </div>
+  );
+};
+
 const initialFlightState: FlightInfo = { name: '', seat: '' };
 const initialHotelState: HotelInfo = { url: '', comment: '', rating: 0 };
 const initialSpotState: SpotInfo = { url: '', comment: '', rating: 0 };
@@ -183,6 +224,7 @@ export default function CloudinaryPostForm({ postId }: CloudinaryPostFormProps) 
   const customStyles = useMemo(() => getCustomStyles(theme), [theme]);
 
   // State declarations
+  const [user, setUser] = useState<User | null>(null);
   const [nickname, setNickname] = useState('');
   const [season, setSeason] = useState('');
   const [match, setMatch] = useState<MatchInfo>(initialMatchState);
@@ -201,7 +243,7 @@ export default function CloudinaryPostForm({ postId }: CloudinaryPostFormProps) 
   const [goods, setGoods] = useState('');
   const [episode, setEpisode] = useState('');
   const [firstAdvice, setFirstAdvice] = useState('');
-  const allowComments = true;
+  const [allowComments, setAllowComments] = useState(true);
 
   // Travel Info State
   const [travelOption, setTravelOption] = useState('new'); // 'new' or 'existing'
@@ -312,30 +354,24 @@ export default function CloudinaryPostForm({ postId }: CloudinaryPostFormProps) 
 
   useEffect(() => {
     const auth = getAuth();
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const fetchNickname = async () => {
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists()) {
-        setNickname(userDoc.data().nickname);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+          setNickname(userDoc.data().nickname);
+        }
+        const q = query(collection(db, 'simple-travels'), where('uid', '==', currentUser.uid));
+        const querySnapshot = await getDocs(q);
+        const travelsData = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Travel[];
+        setUserTravels(travelsData);
+      } else {
+        setUser(null);
+        router.push('/login');
       }
-    };
-
-    const fetchTravels = async () => {
-      // Fetch from the new 'simple-travels' collection using 'uid'
-      const q = query(collection(db, 'simple-travels'), where('uid', '==', user.uid));
-      const querySnapshot = await getDocs(q);
-      const travelsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Travel[];
-      setUserTravels(travelsData);
-    };
-
-    fetchNickname();
-    fetchTravels();
-  }, []);
+    });
+    return () => unsubscribe();
+  }, [router]);
 
   useEffect(() => {
     if (travelOption === 'existing' && selectedTravelId) {
@@ -482,147 +518,147 @@ export default function CloudinaryPostForm({ postId }: CloudinaryPostFormProps) 
     },
   ];
 
-  const uploadImages = async (files: File[]): Promise<string[]> => {
-    const uploadedUrls: string[] = [];
-    // NOTE: You need to create an "unsigned" upload preset in your Cloudinary settings.
-    const uploadPreset = 'kansenki-unsigned'; // TODO: Replace with your actual unsigned upload preset
-    const cloudName = 'dfamqux2y'; // TODO: Replace with your actual cloud name
-
-    if (!uploadPreset || !cloudName) {
-        const errorMsg = 'エラー: 画像アップロード設定が不完全です。';
-        console.error(errorMsg);
-        setMessage(errorMsg);
-        throw new Error('Cloudinary settings are not configured.');
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!user) {
+      setMessage('エラー: ログインしていません。');
+      return;
+    }
+    if (!season || !match.homeTeam || !match.awayTeam || !category) {
+      setMessage('エラー: 必須項目（シーズン、対戦カード、カテゴリー）を入力してください。');
+      return;
     }
 
-    for (const file of files) {
+    setMessage('投稿処理中...');
+
+    try {
+      let travelId = selectedTravelId;
+
+      // Handle Travel Data
+      if (travelOption === 'new') {
+        const newTravelRef = doc(collection(db, 'simple-travels'));
+        travelId = newTravelRef.id;
+        const travelData = {
+          uid: user.uid,
+          author: nickname,
+          isPublic: true,
+          season: season,
+          travelDuration: travelDateRange[0] && travelDateRange[1] ? `${travelDateRange[0].toLocaleDateString()} - ${travelDateRange[1].toLocaleDateString()}` : '',
+          cities: cities,
+          goFlights: goFlights.filter(f => f.name),
+          returnFlights: returnFlights.filter(f => f.name),
+          goTime: goTime,
+          returnTime: returnTime,
+          goType: goFlightType,
+          returnType: returnFlightType,
+          goVia: goVia,
+          returnVia: returnVia,
+          hotels: hotels.filter(h => h.url || h.comment),
+          spots: spots.filter(s => s.url || s.comment),
+          cost: cost,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        await setDoc(newTravelRef, travelData);
+      } else if (!travelId) {
+        setMessage('エラー: 既存の旅を選択してください。');
+        return;
+      }
+
+      // Prepare Post Data
+      const postData: any = {
+        uid: user.uid,
+        author: nickname,
+        title: title || `${match.homeTeam} vs ${match.awayTeam}`,
+        isPublic: true,
+        season: season,
+        category: category,
+        matches: [match],
+        lifestyle: lifestyle,
+        watchYear: watchYear,
+        watchMonth: watchMonth,
+        stayDuration: stayDuration,
+        items: items,
+        goods: goods,
+        episode: episode,
+        firstAdvice: firstAdvice,
+        allowComments: allowComments,
+        travelId: travelId,
+        imageUrls: existingImageUrls,
+        updatedAt: serverTimestamp(),
+      };
+
+      let currentPostId = postId;
+      let postRef;
+
+      if (isEditMode && currentPostId) {
+        postRef = doc(db, 'simple-posts', currentPostId);
+      } else {
+        postRef = doc(collection(db, 'simple-posts'));
+        currentPostId = postRef.id;
+        postData.createdAt = serverTimestamp();
+      }
+
+      if (imageFiles.length > 0) {
+        const newImageUrls = await uploadImages(imageFiles);
+        postData.imageUrls = [...existingImageUrls, ...newImageUrls];
+      }
+
+      if (isEditMode) {
+        await updateDoc(postRef, postData);
+      } else {
+        await setDoc(postRef, postData);
+      }
+
+      setMessage(isEditMode ? '投稿を更新しました！' : '投稿が完了しました！');
+      setTimeout(() => {
+        if(currentPostId) router.push(`/post/${currentPostId}`);
+      }, 2000);
+
+    } catch (error) {
+      console.error('Form submission error:', error);
+      setMessage(`エラーが発生しました: ${(error as Error).message}`);
+    }
+  };
+
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    if (files.length === 0) return [];
+
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+    if (!cloudName || !uploadPreset) {
+      setMessage('エラー: Cloudinaryの設定が不完全です。環境変数を確認してください。');
+      throw new Error('Cloudinary configuration is missing.');
+    }
+
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+    const uploadPromises = files.map(async (file) => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', uploadPreset);
 
       try {
-        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        const response = await fetch(uploadUrl, {
           method: 'POST',
           body: formData,
         });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Cloudinary upload error response:', errorData);
+          throw new Error(`Cloudinaryへのアップロードに失敗しました: ${errorData.error.message}`);
+        }
+
         const data = await response.json();
-        if (response.ok && data.secure_url) {
-          uploadedUrls.push(data.secure_url);
-        } else {
-          throw new Error(data.error?.message || 'Unknown Cloudinary error');
-    try {
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      if (response.ok && data.secure_url) {
-        const docRef = await addDoc(collection(db, 'simple-posts'), {
-          ...postData,
-          author: nickname,
-          uid: user.uid,
-          createdAt: serverTimestamp(),
-        });
-        setMessage('投稿が成功しました！');
-        router.push(`/post/${docRef.id}`);
+        return data.secure_url;
+      } catch (error) {
+        console.error('Error uploading image to Cloudinary:', error);
+        throw error;
       }
-    } catch (error) {
-      console.error('Error:', error);
-      setMessage(`エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  };
+    });
 
-    try {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (!user) {
-        setMessage('ログインしてください。');
-        return;
-      }
-      const userRef = doc(db, 'users', user.uid);
-      const userSnap = await getDoc(userRef);
-      if (!userSnap.exists()) {
-        setMessage('ユーザープロフィールが見つかりません');
-        return;
-      }
-      const userData = userSnap.data();
-
-      const uploadedUrls: string[] = [];
-      for (const file of imageFiles) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', 'sakataku');
-        const res = await fetch('https://api.cloudinary.com/v1_1/dkjcpkfi1/image/upload', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (!res.ok) throw new Error('Cloudinary upload failed: ' + data.error?.message);
-        uploadedUrls.push(data.secure_url);
-      }
-
-      let travelId = '';
-
-      if (travelOption === 'new') {
-        // Create a new travel document in Firestore
-        const formatDate = (date: Date) => `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
-        let travelDurationString = '';
-        if (travelDateRange[0] && travelDateRange[1]) {
-          travelDurationString = `${formatDate(travelDateRange[0])} - ${formatDate(travelDateRange[1])}`;
-        }
-
-        const newTravelData = {
-          uid: user.uid,
-          author: nickname,
-          title: `${match.homeTeam} vs ${match.awayTeam}観戦旅行`,
-          isPublic: true, // or based on a form input
-          season,
-          travelDuration: travelDurationString,
-          cities,
-          flights: [...goFlights, ...returnFlights].filter(f => f.name), // Combine and filter empty
-          hotels: hotels.filter(h => h.url || h.comment),
-          costs: cost,
-          itineraries: [], // Add if you have this in the form
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        };
-        const travelDocRef = await addDoc(collection(db, 'simple-travels'), newTravelData);
-        travelId = travelDocRef.id;
-      } else {
-        // Use the ID of the selected existing travel
-        if (!selectedTravelId) {
-          setMessage('❌ 既存の旅を選択してください。');
-          return;
-        }
-        travelId = selectedTravelId;
-      }
-
-      // Create the post document with a reference to the travel document
-      await addDoc(collection(db, 'simple-posts'), {
-        uid: user.uid,
-        userId: userData.id,
-        nickname: userData.nickname,
-        createdAt: new Date(),
-        season,
-        imageUrls: uploadedUrls,
-        category,
-        match: {
-          ...match,
-          homeScore: match.homeScore === '' ? null : Number(match.homeScore),
-          awayScore: match.awayScore === '' ? null : Number(match.awayScore),
-        },
-        spots,
-        items,
-        goods,
-        episode,
-        firstAdvice,
-        allowComments,
-        travelId,
-      });
-
-      setMessage('✅ 投稿完了！');
-      router.push('/mypage');
-    } catch (err: any) {
-      console.error('❌ 投稿エラー:', err);
-      setMessage('❌ 投稿に失敗しました: ' + err.message);
-    }
+    return Promise.all(uploadPromises);
   };
 
   return (
@@ -962,59 +998,22 @@ export default function CloudinaryPostForm({ postId }: CloudinaryPostFormProps) 
             </Section>
 
           <div className="mt-8">
-            <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 transition-colors duration-300 shadow-md disabled:bg-gray-400 dark:disabled:bg-gray-500">
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 transition-colors duration-300 shadow-md disabled:bg-gray-400 dark:disabled:bg-gray-500"
+              disabled={!!message && message.includes('処理中')}
+            >
               {isEditMode ? '更新する' : '投稿する'}
             </button>
           </div>
 
-          {message && <p className="text-center mt-4 text-sm font-medium text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/50 p-3 rounded-lg">{message}</p>}
+          {message && (
+            <div className="mt-4 text-center">
+              <p className={`text-sm ${message.includes('エラー') || message.includes('失敗') ? 'text-red-500 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>{message}</p>
+            </div>
+          )}
         </form>
       </div>
     </div>
   );
 }
-
-const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <div className="bg-gray-100 dark:bg-gray-800/50 p-5 rounded-xl shadow-sm space-y-4">
-    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b border-gray-300 dark:border-gray-600 pb-2">{title}</h2>
-    <div className="space-y-4">
-      {children}
-    </div>
-  </div>
-);
-
-type SelectOptionType = { value: string; label: string };
-
-interface FormSelectProps {
-  label: string;
-  options: readonly (SelectOptionType | GroupBase<SelectOptionType>)[];
-  value: string;
-  onChange: (option: SelectOptionType | null) => void;
-  placeholder: string;
-  isRequired?: boolean;
-}
-
-const FormSelect = ({ label, options, value, onChange, placeholder, isRequired }: FormSelectProps) => {
-  const { theme } = useTheme();
-  const customStyles = useMemo(() => getCustomStyles(theme), [theme]);
-
-  // Handle both grouped and non-grouped options
-  let allOptions: SelectOptionType[] = [];
-  if (options && options.length > 0) {
-    if ('options' in options[0]) {
-      // Grouped options
-      allOptions = (options as GroupBase<SelectOptionType>[]).flatMap(g => g.options || []);
-    } else {
-      // Non-grouped options
-      allOptions = options as SelectOptionType[];
-    }
-  }
-  const selectedValue = allOptions.find(o => o.value === value);
-
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label} {isRequired && <span className="text-red-500">*</span>}</label>
-      <Select styles={customStyles} options={options} isSearchable placeholder={placeholder} value={selectedValue} onChange={onChange} required={isRequired} />
-    </div>
-  );
-};
