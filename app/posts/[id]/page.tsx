@@ -1,8 +1,8 @@
-interface PostPageProps {
+export default async function PostDetailPage({
+  params,
+}: {
   params: { id: string };
-}
-
-export default async function PostDetailPage({ params }: PostPageProps) {
+}) {
   return (
     <div>
       <h1>Post ID: {params.id}</h1>
