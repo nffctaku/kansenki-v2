@@ -150,6 +150,7 @@ interface FormSelectProps {
   label: string;
   options: readonly (SelectOptionType | GroupBase<SelectOptionType>)[];
   value: string;
+  // eslint-disable-next-line no-unused-vars
   onChange: (_option: SelectOptionType | null) => void;
   placeholder: string;
   isRequired?: boolean;

@@ -117,19 +117,24 @@ async function getPostData(id: string): Promise<PostDetail | null> {
 }
 
 // Generate static paths for existing posts for better performance (SSG)
-export async function generateStaticParams(): Promise<{ id: string }[]> {
-  try {
-    const postsCollectionRef = collection(db, 'simple-posts');
-    const postSnapshot = await getDocs(postsCollectionRef);
-    return postSnapshot.docs.map(doc => ({ id: doc.id }));
-  } catch (error) {
-    console.error("Error fetching posts for generateStaticParams:", error);
-    return [];
-  }
-}
+// Generate static paths for existing posts for better performance (SSG)
+// export async function generateStaticParams() {
+//   try {
+//     const postsCollectionRef = collection(db, 'simple-posts');
+//     const postSnapshot = await getDocs(postsCollectionRef);
+//     return postSnapshot.docs.map(doc => ({ id: doc.id }));
+//   } catch (error) {
+//     console.error("Error fetching posts for generateStaticParams:", error);
+//     return [];
+//   }
+// }
 
 // The page component is now an async Server Component
-export default async function PostDetailPage({ params }: { params: { id: string } }) {
+interface PostPageProps {
+  params: { id: string };
+}
+
+export default async function PostDetailPage({ params }: PostPageProps) {
   const post = await getPostData(params.id);
 
   if (!post) {
