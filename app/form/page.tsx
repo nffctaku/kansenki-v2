@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 
 import { MatchInfo } from '@/types/match';
-import { collection, addDoc, doc, getDoc, query, where, getDocs, serverTimestamp, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, query, where, getDocs, serverTimestamp, updateDoc, setDoc } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
@@ -137,7 +137,7 @@ interface FormSelectProps {
   label: string;
   options: readonly (SelectOptionType | GroupBase<SelectOptionType>)[];
   value: string;
-  onChange: (option: SelectOptionType | null) => void;
+  onChange: (_option: SelectOptionType | null) => void;
   placeholder: string;
   isRequired?: boolean;
 }
