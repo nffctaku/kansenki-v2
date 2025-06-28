@@ -914,63 +914,59 @@ export default function PostForm({ postId }: PostFormProps) {
 
               <Section title="目的地までの移動情報">
                 <div className="space-y-6">
-                  {flightSections.map((item, sectionIndex) => {
-                    console.log(`[Debug] Rendering section: ${item.title}`, {
-                      time: item.time,
-                      flightType: item.flightType,
-                      via: item.via,
-                    });
-                    return (
-                      <div key={item.type} className="space-y-4 border-t dark:border-gray-700 pt-4 first:border-t-0">
-                        <h3 className={`text-md font-semibold ${item.type === 'go' ? 'text-blue-600 dark:text-blue-400' : 'text-green-600 dark:text-green-400'}`}>{item.title}</h3>
-                                                {item.flights.map((flight, index) => (
-                          <div key={index} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg space-y-3 relative">
-                            <div className="flex justify-between items-center">
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">航空会社 {index + 1}</label>
-                              {item.flights.length > 1 && (
-                                <button type="button" onClick={() => item.remove(index)} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 text-xs font-medium">削除</button>
-                              )}
-                            </div>
-                            <Select styles={customStyles} options={airlineList} isSearchable placeholder="航空会社名" value={airlineList.find((a: OptionType) => a.value === flight.name)} onChange={(opt) => item.handleChange(index, 'name', opt?.value || '')} />
-                            <FormInput type="text" placeholder="座席の種類（例：エコノミー）" value={flight.seat} onChange={(e: React.ChangeEvent<HTMLInputElement>) => item.handleChange(index, 'seat', e.target.value)} />
+                  {flightSections.map((item) => (
+                    <div key={item.type} className="space-y-4 border-t dark:border-gray-700 pt-4 first:border-t-0">
+                      <h3 className={`text-md font-semibold ${item.type === 'go' ? 'text-blue-600 dark:text-blue-400' : 'text-green-600 dark:text-green-400'}`}>{item.title}</h3>
+                      
+                      {item.flights.map((flight, index) => (
+                        <div key={index} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg space-y-3 relative">
+                          <div className="flex justify-between items-center">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">航空会社 {index + 1}</label>
+                            {item.flights.length > 1 && (
+                              <button type="button" onClick={() => item.remove(index)} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 text-xs font-medium">削除</button>
+                            )}
                           </div>
-                        ))}
-                        {item.flights.length < 2 && (
-                          <button type="button" onClick={item.add} className="text-blue-600 dark:text-blue-400 font-medium hover:underline transition text-sm">＋ 航空会社を追加</button>
-                        )}
-                        
-                        <div className="mt-4 space-y-4 border-t dark:border-gray-600 pt-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">出発・到着時刻</label>
-                            <div className="grid grid-cols-2 gap-4">
-                              <input type="time" value={item.time?.departure || ''} onChange={(e) => item.setTime({ ...item.time, departure: e.target.value })} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md px-3 py-2" />
-                              <input type="time" value={item.time?.arrival || ''} onChange={(e) => item.setTime({ ...item.time, arrival: e.target.value })} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md px-3 py-2" />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">便種別</label>
-                            <div className="flex items-center gap-4">
-                              <label className="flex items-center">
-                                <input type="radio" name={`${item.type}FlightType`} value="direct" checked={item.flightType === 'direct'} onChange={(e) => item.setFlightType(e.target.value)} className="mr-2" />
-                                直行便
-                              </label>
-                              <label className="flex items-center">
-                                <input type="radio" name={`${item.type}FlightType`} value="via" checked={item.flightType === 'via'} onChange={(e) => item.setFlightType(e.target.value)} className="mr-2" />
-                                乗継便
-                              </label>
-                            </div>
-                          </div>
-
-                          {item.flightType === 'via' && (
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">経由地</label>
-                              <input type="text" value={item.via} onChange={(e) => item.setVia(e.target.value)} placeholder="例: ドバイ" className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md px-3 py-2" />
-                            </div>
-                          )}
+                          <Select styles={customStyles} options={airlineList} isSearchable placeholder="航空会社名" value={airlineList.find((a: OptionType) => a.value === flight.name)} onChange={(opt) => item.handleChange(index, 'name', opt?.value || '')} />
+                          <FormInput type="text" placeholder="座席の種類（例：エコノミー）" value={flight.seat} onChange={(e: React.ChangeEvent<HTMLInputElement>) => item.handleChange(index, 'seat', e.target.value)} />
                         </div>
-                  </div>
-                ))}
+                      ))}
+                      
+                      {item.flights.length < 2 && (
+                        <button type="button" onClick={item.add} className="text-blue-600 dark:text-blue-400 font-medium hover:underline transition text-sm">＋ 航空会社を追加</button>
+                      )}
+                      
+                      <div className="mt-4 space-y-4 border-t dark:border-gray-600 pt-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">出発・到着時刻</label>
+                          <div className="grid grid-cols-2 gap-4">
+                            <input type="time" value={item.time?.departure || ''} onChange={(e) => item.setTime({ ...item.time, departure: e.target.value })} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md px-3 py-2" />
+                            <input type="time" value={item.time?.arrival || ''} onChange={(e) => item.setTime({ ...item.time, arrival: e.target.value })} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md px-3 py-2" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">便種別</label>
+                          <div className="flex items-center gap-4">
+                            <label className="flex items-center">
+                              <input type="radio" name={`${item.type}FlightType`} value="direct" checked={item.flightType === 'direct'} onChange={(e) => item.setFlightType(e.target.value)} className="mr-2" />
+                              直行便
+                            </label>
+                            <label className="flex items-center">
+                              <input type="radio" name={`${item.type}FlightType`} value="via" checked={item.flightType === 'via'} onChange={(e) => item.setFlightType(e.target.value)} className="mr-2" />
+                              乗継便
+                            </label>
+                          </div>
+                        </div>
+
+                        {item.flightType === 'via' && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">経由地</label>
+                            <input type="text" value={item.via} onChange={(e) => item.setVia(e.target.value)} placeholder="例: ドバイ" className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md px-3 py-2" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </Section>
 
@@ -1059,37 +1055,40 @@ export default function PostForm({ postId }: PostFormProps) {
           </Section>
           
           <Section title="その他の情報">
-            <FormTextarea label="持ち物リスト" value={items} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setItems(e.target.value)} placeholder="観戦に役立った持ち物を共有しよう" />
-            <FormTextarea label="購入したグッズ" value={goods} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setGoods(e.target.value)} placeholder="スタジアムや現地で買ったグッズを自慢しよう" />
-            <FormTextarea label="旅の思い出・エピソード" value={episode} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEpisode(e.target.value)} placeholder="試合以外での楽しかった思い出を教えてください" />
-            <FormTextarea label="これから観戦に行く人へのアドバイス" value={firstAdvice} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFirstAdvice(e.target.value)} placeholder="初めての観戦者へのメッセージ" />
+            <div className="space-y-4">
+              <FormTextarea label="持ち物リスト" value={items} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setItems(e.target.value)} placeholder="観戦に役立った持ち物を共有しよう" />
+              <FormTextarea label="購入したグッズ" value={goods} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setGoods(e.target.value)} placeholder="スタジアムや現地で買ったグッズを自慢しよう" />
+              <FormTextarea label="旅の思い出・エピソード" value={episode} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEpisode(e.target.value)} placeholder="試合以外での楽しかった思い出を教えてください" />
+              <FormTextarea label="これから観戦に行く人へのアドバイス" value={firstAdvice} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFirstAdvice(e.target.value)} placeholder="初めての観戦者へのメッセージ" />
+            </div>
           </Section>
 
           <Section title="画像とカテゴリー">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">画像アップロード（最大5枚）</label>
-              <input type="file" multiple accept="image/*" onChange={handleImageChange} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 dark:file:bg-blue-800 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-200 dark:hover:file:bg-blue-700 transition" />
-              {imagePreviews.length > 0 && (
-                <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                  {imagePreviews.map((preview, index) => (
-                    <div key={preview} className="relative aspect-square">
-                      <Image src={preview} alt={`プレビュー ${index + 1}`} width={150} height={150} className="w-full h-full object-cover rounded-lg shadow-md" />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 leading-none hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        aria-label="画像を削除"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-             <div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">画像アップロード（最大5枚）</label>
+                <input type="file" multiple accept="image/*" onChange={handleImageChange} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 dark:file:bg-blue-800 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-200 dark:hover:file:bg-blue-700 transition" />
+                {imagePreviews.length > 0 && (
+                  <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={preview} className="relative aspect-square">
+                        <Image src={preview} alt={`プレビュー ${index + 1}`} width={150} height={150} className="w-full h-full object-cover rounded-lg shadow-md" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 leading-none hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          aria-label="画像を削除"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">カテゴリー <span className="text-red-500">*</span></label>
                 <select value={category} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCategory(e.target.value)} required className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 transition h-[42px]">
                    <option value="">選択してください</option>
@@ -1103,6 +1102,7 @@ export default function PostForm({ postId }: PostFormProps) {
                    <option value="etc">その他</option>
                 </select>
               </div>
+            </div>
             </Section>
 
           <div className="mt-8">
