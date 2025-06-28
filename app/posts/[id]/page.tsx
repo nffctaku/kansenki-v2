@@ -117,7 +117,7 @@ async function getPostData(id: string): Promise<PostDetail | null> {
 }
 
 // Generate static paths for existing posts for better performance (SSG)
-export async function generateStaticParams() {
+export async function generateStaticParams(): Promise<{ id: string }[]> {
   try {
     const postsCollectionRef = collection(db, 'simple-posts');
     const postSnapshot = await getDocs(postsCollectionRef);
@@ -129,12 +129,7 @@ export async function generateStaticParams() {
 }
 
 // The page component is now an async Server Component
-type PageProps = {
-  params: { id: string };
-  searchParams?: { [key: string]: string | string[] | undefined };
-};
-
-export default async function PostDetailPage({ params }: PageProps) {
+export default async function PostDetailPage({ params }: { params: { id: string } }) {
   const post = await getPostData(params.id);
 
   if (!post) {

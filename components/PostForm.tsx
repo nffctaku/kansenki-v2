@@ -150,7 +150,7 @@ interface FormSelectProps {
   label: string;
   options: readonly (SelectOptionType | GroupBase<SelectOptionType>)[];
   value: string;
-  onChange: (option: SelectOptionType | null) => void;
+  onChange: (_option: SelectOptionType | null) => void;
   placeholder: string;
   isRequired?: boolean;
 }
