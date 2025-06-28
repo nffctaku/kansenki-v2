@@ -129,7 +129,12 @@ export async function generateStaticParams() {
 }
 
 // The page component is now an async Server Component
-export default async function PostDetailPage({ params }: { params: { id: string } }) {
+type PageProps = {
+  params: { id: string };
+  searchParams?: { [key: string]: string | string[] | undefined };
+};
+
+export default async function PostDetailPage({ params }: PageProps) {
   const post = await getPostData(params.id);
 
   if (!post) {
