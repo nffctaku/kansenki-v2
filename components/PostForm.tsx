@@ -40,12 +40,7 @@ interface UserTravel {
   [key: string]: any; // Allow other properties from firestore doc
 }
 
-const timeOptions = Array.from({ length: 48 }, (_, i) => {
-  const hours = Math.floor(i / 2);
-  const minutes = (i % 2) * 30;
-  const time = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-  return { value: time, label: time };
-});
+
 
 // React Selectのダークモード対応カスタムスタイル
 registerLocale('ja', ja);
@@ -258,8 +253,7 @@ export default function PostForm({ postId }: PostFormProps) {
   const [firstAdvice, setFirstAdvice] = useState<string>('');
   const [allowComments, setAllowComments] = useState<boolean>(true);
 
-  const [travels, setTravels] = useState<any[]>([]);
-  const [isEditMode, setIsEditMode] = useState(!!postId);
+  const isEditMode = !!postId;
   const [travelOption, setTravelOption] = useState(postId ? 'existing' : 'new'); 
   const [userTravels, setUserTravels] = useState<UserTravel[]>([]);
   const [selectedTravelId, setSelectedTravelId] = useState<string>('');
