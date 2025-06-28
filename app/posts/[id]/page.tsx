@@ -1,8 +1,10 @@
-export default async function PostDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+'use client';
+
+import { useParams } from 'next/navigation';
+
+export default function PostDetailPage() {
+  const params = useParams();
+
   return (
     <div>
       <h1>Post ID: {params.id}</h1>
