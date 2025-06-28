@@ -1,4 +1,4 @@
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import PostImageCarousel from '@/components/PostImageCarousel';
 import PostActions from '@/components/PostActions';
