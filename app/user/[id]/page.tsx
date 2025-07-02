@@ -25,14 +25,13 @@ export default function UserPostsPage() {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    const fetchUserPosts = async () => {
+    const fetchUserPosts = async (userId: string) => {
       try {
-        const userRef = doc(db, 'users', id);
+        const userRef = doc(db, 'users', userId);
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
           setNotFound(true);
-          setLoading(false);
           return;
         }
 
@@ -42,7 +41,7 @@ export default function UserPostsPage() {
         setUserInfo({ nickname, xLink, noteLink, avatarUrl, coverUrl });
 
         const postsRef = collection(db, 'simple-posts');
-        const postsQuery = query(postsRef, where('uid', '==', id));
+        const postsQuery = query(postsRef, where('uid', '==', userId));
         const postsSnap = await getDocs(postsQuery);
 
         const fetchedPosts = postsSnap.docs.map((doc) => ({
@@ -59,7 +58,13 @@ export default function UserPostsPage() {
       }
     };
 
-    fetchUserPosts();
+    if (id && typeof id === 'string') {
+      fetchUserPosts(id);
+    } else if (id) {
+      // Handle cases where id is string[] if necessary, or mark as not found
+      setNotFound(true);
+      setLoading(false);
+    }
   }, [id]);
 
   if (loading) return <p className="p-6 dark:text-white">読み込み中...</p>;
