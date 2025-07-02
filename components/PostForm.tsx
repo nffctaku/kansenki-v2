@@ -375,13 +375,10 @@ export default function PostForm({ postId }: PostFormProps) {
 
   const handlePostTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPostType = e.target.value as 'new' | 'additional';
-    setFormData({ ...initialFormData, authorNickname: formData.authorNickname, postType: newPostType });
+    setFormData(prev => ({ ...initialFormData, authorNickname: prev.authorNickname, postType: newPostType }));
     if (newPostType === 'new') {
       setSelectedParentPostId(null);
     }
-          setSelectedParentPostId(null);
-          // userPosts are not cleared to avoid re-fetching if user toggles back
-      }
   };
 
   const handleParentPostChange = (option: { value: string; label: string } | null) => {
@@ -401,24 +398,24 @@ export default function PostForm({ postId }: PostFormProps) {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('upload_preset', uploadPreset);
-    
+
         try {
           const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
             method: 'POST',
             body: formData,
           });
-    
+
           if (!response.ok) {
             const errorData = await response.json();
             console.error('Cloudinary upload error:', errorData);
             throw new Error(`Cloudinary image upload failed: ${errorData.error.message}`);
           }
-    
+
           const data = await response.json();
           uploadedImageUrls.push(data.secure_url);
         } catch (error) {
           console.error('Error uploading image:', error);
-          // Continue to next image if one fails
+          setMessage(`画像のアップロードに失敗しました: ${file.name}`);
         }
       }
       return uploadedImageUrls;
