@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -27,24 +27,22 @@ export default function UserPostsPage() {
   useEffect(() => {
     const fetchUserPosts = async () => {
       try {
-        const usersRef = collection(db, 'users');
-        const userQuery = query(usersRef, where('id', '==', id));
-        const userSnap = await getDocs(userQuery);
+        const userRef = doc(db, 'users', id);
+        const userSnap = await getDoc(userRef);
 
-        if (userSnap.empty) {
+        if (!userSnap.exists()) {
           setNotFound(true);
           setLoading(false);
           return;
         }
 
-        const userDoc = userSnap.docs[0];
-        const userData = userDoc.data();
+        const userData = userSnap.data();
         const { nickname, xLink, noteLink, avatarUrl, coverUrl } = userData;
 
         setUserInfo({ nickname, xLink, noteLink, avatarUrl, coverUrl });
 
         const postsRef = collection(db, 'simple-posts');
-        const postsQuery = query(postsRef, where('uid', '==', userData.uid));
+        const postsQuery = query(postsRef, where('uid', '==', id));
         const postsSnap = await getDocs(postsQuery);
 
         const fetchedPosts = postsSnap.docs.map((doc) => ({

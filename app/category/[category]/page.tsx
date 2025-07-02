@@ -22,6 +22,14 @@ type Travel = {
   }[];
 };
 
+const categoryLabelMap: Record<string, string> = {
+  england: 'イングランド',
+  italy: 'イタリア',
+  france: 'フランス',
+  spain: 'スペイン',
+  other: 'その他',
+};
+
 export default function CategoryPage() {
   const { category } = useParams();
   const [posts, setPosts] = useState<Travel[]>([]);
@@ -29,30 +37,66 @@ export default function CategoryPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!category) return;
-      const q = query(collection(db, 'simple-posts'), where('category', '==', category));
-      const snapshot = await getDocs(q);
-      const data = snapshot.docs.map((doc) => {
-        const postData = doc.data();
-        const matchesWithCompat = (Array.isArray(postData.matches) ? postData.matches : []).map((match: any) => ({
-          ...match,
-          homeTeam: match.homeTeam || match.teamA,
-          awayTeam: match.awayTeam || match.teamB,
-        }));
-        return { id: doc.id, ...postData, matches: matchesWithCompat } as Travel;
-      });
-      setPosts(data);
+      try {
+        if (!category || typeof category !== 'string') return;
+        console.log(`Fetching data for category: ${category}`);
+
+        const japaneseCategory = categoryLabelMap[category] || category;
+        console.log(`Translated to japanese category: ${japaneseCategory}`);
+
+        // Query for old simple-posts
+        const oldPostsQuery = query(collection(db, 'simple-posts'), where('category', '==', category));
+        
+        // Query for new posts
+        const newPostsQuery = query(collection(db, 'posts'), where('categories', 'array-contains', japaneseCategory));
+
+        const [oldPostsSnap, newPostsSnap] = await Promise.all([
+          getDocs(oldPostsQuery),
+          getDocs(newPostsQuery)
+        ]);
+
+        console.log(`Old posts found: ${oldPostsSnap.docs.length}`);
+        console.log(`New posts found: ${newPostsSnap.docs.length}`);
+
+        const oldPosts = oldPostsSnap.docs.map((doc) => {
+          const postData = doc.data();
+          const matchesWithCompat = (Array.isArray(postData.matches) ? postData.matches : []).map((match: any) => ({
+            ...match,
+            homeTeam: match.homeTeam || match.teamA,
+            awayTeam: match.awayTeam || match.teamB,
+          }));
+          return { id: doc.id, ...postData, matches: matchesWithCompat } as Travel;
+        });
+
+        const newPosts = newPostsSnap.docs.map((doc) => {
+          const postData = doc.data();
+          const match = postData.match || {};
+          const normalizedMatches = [{
+              homeTeam: match.homeTeam,
+              awayTeam: match.awayTeam,
+          }];
+          
+          return {
+            id: doc.id,
+            nickname: postData.authorNickname || '',
+            imageUrls: postData.imageUrls || [],
+            category: (postData.categories && postData.categories[0]) || '',
+            season: match.season || '',
+            likeCount: postData.likeCount || 0,
+            matches: normalizedMatches,
+          } as Travel;
+        });
+        
+        const combinedPosts = [...oldPosts, ...newPosts];
+        const uniquePosts = Array.from(new Map(combinedPosts.map(post => [post.id, post])).values());
+
+        setPosts(uniquePosts);
+      } catch (error) {
+        console.error("Failed to fetch category posts:", error);
+      }
     };
     fetchData();
   }, [category]);
-
-  const categoryLabelMap: Record<string, string> = {
-    england: 'イングランド',
-    italy: 'イタリア',
-    france: 'フランス',
-    spain: 'スペイン',
-    other: 'その他',
-  };
 
   const title = categoryLabelMap[category as string] || category;
 
