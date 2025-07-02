@@ -184,7 +184,7 @@ export default function PostDetailPage() {
     firstAdvice,
     authorNickname,
     authorId,
-    createdAt,
+
     likeCount,
     outboundTotalDuration,
     inboundTotalDuration,

@@ -14,7 +14,7 @@ function CategorySection({ formData, setFormData }: SectionProps) {
     if (!formData.categories || formData.categories.length === 0) {
       setFormData((prev: PostFormData) => ({ ...prev, categories: [availableCategories[0]] }));
     }
-  }, []);
+  }, [formData.categories, setFormData]);
 
   const handleCategoryChange = (category: string) => {
     setFormData({ ...formData, categories: [category] });

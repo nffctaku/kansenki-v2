@@ -5,13 +5,7 @@ import { Hotel } from '@/types/match';
 import { v4 as uuidv4 } from 'uuid';
 import CollapsibleSection from './CollapsibleSection';
 
-function Section({ title, children }: { title: string, children: React.ReactNode }) {
-  return (
-    <CollapsibleSection title={title}>
-      {children}
-    </CollapsibleSection>
-  );
-}
+
 
 type RatingCategory = {
   key: keyof Pick<Hotel, 'accessRating' | 'cleanlinessRating' | 'comfortRating' | 'facilityRating' | 'staffRating'>;

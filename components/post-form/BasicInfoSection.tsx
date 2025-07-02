@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { PostFormData, SectionProps } from '@/types/post';
+import { SectionProps } from '@/types/post';
 import CollapsibleSection from './CollapsibleSection';
 
 // These should be imported from a shared components file later
@@ -12,7 +12,7 @@ const FormInput = ({ label, ...props }: any) => (
     </div>
 );
 
-export default function BasicInfoSection({ formData, setFormData, user }: SectionProps) {
+export default function BasicInfoSection({ formData, setFormData }: SectionProps) {
   return (
     <CollapsibleSection title="基本情報">
       <FormInput

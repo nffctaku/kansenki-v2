@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import Select from 'react-select';
-import { SectionProps, Transport, PostFormData } from '@/types/post';
+import { SectionProps, Transport } from '@/types/post';
 import { v4 as uuidv4 } from 'uuid';
 import { airlineOptions, seatClassOptions, travelDurationOptions } from '../data';
 import { selectStyles } from './selectStyles';

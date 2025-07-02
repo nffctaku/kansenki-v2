@@ -19,7 +19,7 @@ const CostsSection: React.FC<SectionProps> = ({ formData, setFormData }) => {
       }));
       setFormData(prev => ({ ...prev, costs: initialCosts }));
     }
-  }, []);
+  }, [formData.costs, setFormData]);
 
   const handleCostChange = (id: string, field: keyof IndividualCost, value: string | number) => {
     const updatedCosts = (formData.costs || []).map(c =>

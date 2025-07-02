@@ -371,7 +371,7 @@ export default function PostForm({ postId }: PostFormProps) {
         authorNickname: formData.authorNickname,
       });
     }
-  }, [selectedParentPostId, userPosts, formData.postType]);
+  }, [selectedParentPostId, userPosts, formData.postType, formData.authorNickname]);
 
   const handlePostTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPostType = e.target.value as 'new' | 'additional';
