@@ -3,16 +3,16 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { teamsByCountry } from '../lib/teamData';
 import { Heart } from 'lucide-react';
-import { Post } from '../types/match';
+import { SimplePost } from '../types/match';
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [allPosts, setAllPosts] = useState<Post[]>([]);
-  const [displayedPosts, setDisplayedPosts] = useState<Post[]>([]);
+    const [allPosts, setAllPosts] = useState<SimplePost[]>([]);
+    const [displayedPosts, setDisplayedPosts] = useState<SimplePost[]>([]);
   const [teamNameSuggestions, setTeamNameSuggestions] = useState<{ [key: string]: string[] }>({});
 
   const [isLoading, setIsLoading] = useState(true);
@@ -22,15 +22,36 @@ export default function HomePage() {
     const fetchPosts = async () => {
       setIsLoading(true);
       try {
-        const snapshot = await getDocs(collection(db, 'simple-posts'));
-        const data: Post[] = snapshot.docs.map((doc) => {
+        // Fetch from 'posts' (new format)
+        const postsCollection = collection(db, 'posts');
+        const qNew = query(postsCollection, where("isPublic", "==", true), orderBy('createdAt', 'desc'), limit(50));
+        const snapshotNew = await getDocs(qNew);
+        const newPosts: SimplePost[] = snapshotNew.docs.map((doc) => {
+          const d = doc.data();
+          return {
+            id: doc.id,
+            imageUrls: d.imageUrls ?? [],
+            season: d.match?.season ?? '',
+            episode: d.title ?? '', // Using title as episode for consistency
+            author: d.authorNickname ?? '',
+            league: d.match?.competition ?? '',
+            matches: d.match ? [d.match] : [],
+            likeCount: d.likeCount ?? 0,
+            createdAt: d.createdAt?.toDate() || new Date(0),
+          } as SimplePost;
+        });
+
+        // Fetch from 'simple-posts' (legacy format)
+        const simplePostsCollection = collection(db, 'simple-posts');
+        const qLegacy = query(simplePostsCollection, orderBy('createdAt', 'desc'), limit(50));
+        const snapshotLegacy = await getDocs(qLegacy);
+        const legacyPosts: SimplePost[] = snapshotLegacy.docs.map((doc) => {
           const d = doc.data();
           const matchesWithCompat = (Array.isArray(d.matches) ? d.matches : []).map((match: any) => ({
             ...match,
             homeTeam: match.homeTeam || match.teamA,
             awayTeam: match.awayTeam || match.teamB,
           }));
-
           return {
             id: doc.id,
             imageUrls: d.imageUrls ?? [],
@@ -40,10 +61,17 @@ export default function HomePage() {
             league: matchesWithCompat[0]?.competition ?? '',
             matches: matchesWithCompat,
             likeCount: d.likeCount ?? 0,
-          } as Post;
+            createdAt: d.createdAt?.toDate() || new Date(0),
+          } as SimplePost;
         });
-        const reversedData = data.reverse();
-        setAllPosts(reversedData);
+
+        // Combine and remove duplicates, preferring new posts
+        const combined = [...newPosts, ...legacyPosts];
+        // Filter for posts that have at least one image
+        const postsWithImages = combined.filter(p => p.imageUrls && p.imageUrls.length > 0);
+        const uniquePosts = Array.from(new Map(postsWithImages.map(p => [p.id, p])).values());
+        uniquePosts.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+        setAllPosts(uniquePosts.slice(0, 10));
       } catch (error) {
         console.error('投稿取得エラー:', error);
       } finally {
@@ -73,7 +101,7 @@ export default function HomePage() {
       });
       setDisplayedPosts(filteredPosts);
     } else {
-      setDisplayedPosts(allPosts.slice(0, 5));
+      setDisplayedPosts(allPosts.slice(0, 10));
     }
 
     // チーム検索のサジェストを更新
@@ -163,9 +191,14 @@ export default function HomePage() {
               <div className="flex items-start justify-between space-x-4">
                 <div className="flex-1 min-w-0">
                   <Link href={`/posts/${post.id}`} className="no-underline">
-                    <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-200">
-                      ({post.season}) {post.matches[0]?.homeTeam || ''} vs {post.matches[0]?.awayTeam || ''} - {post.episode}
-                    </p>
+                    <>
+                      <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-200">
+                        {post.episode}
+                      </p>
+                      <p className="truncate text-xs text-gray-500 dark:text-gray-400">
+                        {post.matches[0]?.homeTeam || ''} vs {post.matches[0]?.awayTeam || ''}
+                      </p>
+                    </>
                   </Link>
                   <div className="mt-1 flex items-center text-xs text-gray-500 dark:text-gray-400">
                     <Heart className="h-3 w-3 mr-1 flex-shrink-0 text-blue-500 dark:text-blue-400" fill="currentColor" />

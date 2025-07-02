@@ -156,6 +156,55 @@ export const costItems: { key: CostKey; label: string }[] = [
   { key: 'other', label: 'その他' },
 ];
 
+export const seatClassOptions = [
+  { value: 'economy', label: 'エコノミークラス' },
+  { value: 'premium_economy', label: 'プレミアムエコノミー' },
+  { value: 'business', label: 'ビジネスクラス' },
+  { value: 'first', label: 'ファーストクラス' },
+];
+
+export const airlineOptions = [
+  { value: 'jal', label: '日本航空 (JAL)' },
+  { value: 'ana', label: '全日本空輸 (ANA)' },
+  { value: 'skymark', label: 'スカイマーク' },
+  { value: 'airdo', label: 'AIRDO' },
+  { value: 'solaseed', label: 'ソラシドエア' },
+  { value: 'starflyer', label: 'スターフライヤー' },
+  { value: 'peach', label: 'Peach Aviation' },
+  { value: 'jetstar_japan', label: 'ジェットスター・ジャパン' },
+  { value: 'spring_japan', label: 'スプリング・ジャパン' },
+  { value: 'korean_air', label: '大韓航空' },
+  { value: 'asiana', label: 'アシアナ航空' },
+  { value: 'singapore_airlines', label: 'シンガポール航空' },
+  { value: 'qatar_airways', label: 'カタール航空' },
+  { value: 'emirates', label: 'エミレーツ航空' },
+  { value: 'lufthansa', label: 'ルフトハンザドイツ航空' },
+  { value: 'air_france', label: 'エールフランス' },
+  { value: 'british_airways', label: 'ブリティッシュ・エアウェイズ' },
+  { value: 'united_airlines', label: 'ユナイテッド航空' },
+  { value: 'delta_air_lines', label: 'デルタ航空' },
+  { value: 'american_airlines', label: 'アメリカン航空' },
+];
+
+export const seatOptions = [
+  { value: 'メインスタンド', label: 'メインスタンド' },
+  { value: 'バックスタンド', label: 'バックスタンド' },
+  { value: 'ホームゴール裏', label: 'ホームゴール裏' },
+  { value: 'アウェイゴール裏', label: 'アウェイゴール裏' },
+  { value: 'メインスタンド2階', label: 'メインスタンド2階' },
+  { value: 'バックスタンド2階', label: 'バックスタンド2階' },
+  { value: 'ホームゴール裏2階', label: 'ホームゴール裏2階' },
+  { value: 'アウェイゴール裏2階', label: 'アウェイゴール裏2階' },
+  { value: 'メインスタンド3階', label: 'メインスタンド3階' },
+  { value: 'バックスタンド3階', label: 'バックスタンド3階' },
+  { value: 'ホームゴール裏3階', label: 'ホームゴール裏3階' },
+  { value: 'アウェイゴール裏3階', label: 'アウェイゴール裏3階' },
+  { value: 'メインスタンド4階', label: 'メインスタンド4階' },
+  { value: 'バックスタンド4階', label: 'バックスタンド4階' },
+  { value: 'ホームゴール裏4階', label: 'ホームゴール裏4階' },
+  { value: 'アウェイゴール裏4階', label: 'アウェイゴール裏4階' },
+];
+
 export const ticketPurchaseRouteOptions = [
   { value: 'club_official', label: 'クラブ公式サイト' },
   { value: 'league_official', label: 'リーグ公式サイト' },
@@ -164,3 +213,13 @@ export const ticketPurchaseRouteOptions = [
   { value: 'friend', label: '知人・友人' },
   { value: 'other', label: 'その他' },
 ];
+
+export const travelDurationOptions = Array.from({ length: 80 }, (_, i) => {
+  const totalMinutes = (i + 1) * 30;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const hourText = hours > 0 ? `${hours}時間` : '';
+  const minuteText = minutes > 0 ? `${minutes}分` : '';
+  const value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  return { value: value, label: `${hourText}${minuteText}` };
+});

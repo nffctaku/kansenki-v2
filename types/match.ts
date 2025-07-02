@@ -13,27 +13,68 @@ export interface MatchInfo {
   stadium: string;
   ticketPrice: string;
   ticketPurchaseRoute: string;
+  ticketPurchaseRouteUrl?: string;
+  ticketTeam?: string;
+  isTour?: boolean;
+  isHospitality?: boolean;
+  hospitalityDetail?: string;
   seat: string;
   seatReview: string;
+  // Legacy fields for compatibility
+  teamA?: string;
+  teamB?: string;
+  scoreA?: number | string;
+  scoreB?: number | string;
 }
 
-
+export interface Transport {
+  id: string;
+  direction: 'outbound' | 'inbound';
+  method: string;
+  from: string;
+  to: string;
+  departureTime: string;
+  arrivalTime: string;
+  airline: string;
+  seatType: string;
+}
 
 export interface Spot {
-  name?: string;
+  id: string;
+  name: string;
   url?: string;
+  city?: string;
+  description: string;
   rating?: number;
   comment?: string;
 }
 
 export interface Hotel {
-  name?: string;
+  id: string; // Added for unique key
+  name: string;
+  city?: string;
+  nights?: number;
+  price?: number;
+  bookingSite?: string;
   url?: string;
-  rating?: number;
   comment?: string;
+  overallRating?: number;
+  accessRating?: number;
+  cleanlinessRating?: number;
+  comfortRating?: number;
+  facilityRating?: number;
+  staffRating?: number;
 }
 
-export interface Cost {
+// This is for individual cost items
+export interface IndividualCost {
+  id: string;
+  category: string;
+  amount: number;
+}
+
+// This is for the summary of costs
+export interface CostSummary {
   flight?: number;
   hotel?: number;
   ticket?: number;
@@ -56,38 +97,65 @@ export interface Travel {
   flights?: Flight[];
   hotels?: Hotel[];
   costTotal?: number;
-  cost?: Cost;
+  cost?: CostSummary; // Changed to CostSummary
   cities?: string;
+  individualCosts?: IndividualCost[];
 }
 
 export interface Post {
+  parentPostId?: string;
   id: string;
-  episode?: string; // titleから変更
-  author: string; // nickname
-  userId?: string;
+  authorId: string;
+  authorNickname: string;
+  title: string;
+  content: string; // 観戦記
+  isPublic: boolean;
   imageUrls: string[];
-  season: string;
-  matches: MatchInfo[];
-  league: string;
   likeCount: number;
-  items?: string;
-  goods?: string;
-  firstAdvice?: string;
-  cost?: Cost;
+  createdAt: any; // Firestore Timestamp
+  updatedAt: any; // Firestore Timestamp
+  match?: MatchInfo;
+  travelId?: string;
+  costs?: IndividualCost[];
+  totalCost?: number;
   hotels?: Hotel[];
   spots?: Spot[];
-  category?: string;
-  lifestyle?: string;
-  watchYear?: number;
-  watchMonth?: number;
-  stayDuration?: string;
-  goFlights?: Flight[];
-  returnFlights?: Flight[];
-  goTime?: string;
-  goType?: string;
-  goVia?: string;
-  returnTime?: string;
-  returnType?: string;
-  returnVia?: string;
-  travelId?: string;
+  goods?: string;
+  firstAdvice?: string; // これから行く人へのアドバイス
+  transports?: Transport[];
+  outboundTotalDuration?: string;
+  inboundTotalDuration?: string;
+}
+
+// For data from 'simple-travels' collection
+export interface SimpleTravel {
+  id: string;
+  authorId: string;
+  name: string;
+  cost?: CostSummary; // Changed to CostSummary
+  totalCost?: number;
+  hotels?: Hotel[];
+  spots?: Spot[];
+  goods?: string;
+  firstAdvice?: string;
+  createdAt: any;
+  updatedAt: any;
+}
+
+// For data from 'simple-posts' collection for list pages
+export interface SimplePost {
+  id: string;
+  isPublic?: boolean;
+  imageUrls: string[];
+  season: string;
+  episode: string;
+  author: string; // authorNickname
+  league: string; // competition name
+  matches: {
+    homeTeam: string;
+    awayTeam: string;
+    competition: string;
+  }[];
+  likeCount: number;
+  createdAt?: Date;
 }

@@ -6,11 +6,11 @@ import Link from 'next/link';
 export default function BottomTabBar() {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between border-t border-gray-200 bg-white px-5 py-2.5">
-      <Tab icon="/tab-mypage.png" label="ホーム" href="/" />
+            <Tab icon="/tab-home.png" label="ホーム" href="/" />
       <Tab icon="/新聞のフリーアイコン.png" label="特集" />
       <Tab icon="/tab-plus.png" label="投稿" href="/form" />
       <Tab icon="/チケットのフリーアイコン6.png" label="観戦情報" />
-      <Tab icon="/位置情報アイコン4.png" label="マイページ" href="/mypage" />
+            <Tab icon="/tab-mypage.png" label="マイページ" href="/mypage" />
     </div>
   );
 }

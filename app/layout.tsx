@@ -11,7 +11,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>FOOTBALLTOP</title>
       </head>
-      <body className="bg-gray-50 text-black dark:bg-black dark:text-white">
+      <body className="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-50">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
