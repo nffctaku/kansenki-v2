@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, onSnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Post, Hotel, Spot, SimpleTravel, IndividualCost, Transport } from '@/types/match';
+import { Post, Hotel, SimpleTravel, IndividualCost, Transport } from '@/types/match';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -214,16 +214,6 @@ export default function PostDetailPage() {
     other: 'その他',
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
   return (
     <div className="max-w-2xl mx-auto p-4">
       {/* Image Carousel */}
@@ -251,7 +241,7 @@ export default function PostDetailPage() {
             </Link>
             <span className="text-slate-500 dark:text-slate-400">•</span>
             <span className="text-sm text-slate-500 dark:text-slate-400">
-              {post.createdAt ? new Date(post.createdAt.toDate()).toLocaleDateString() : '日付不明'}
+              {post.createdAt && typeof post.createdAt.toDate === 'function' ? new Date(post.createdAt.toDate()).toLocaleDateString() : '日付不明'}
             </span>
           </div>
           <div className="flex items-center text-red-500">

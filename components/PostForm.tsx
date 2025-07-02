@@ -3,7 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { doc, getDoc, serverTimestamp, setDoc, collection, DocumentData, query, where, orderBy, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc, collection, DocumentData, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { PostFormData, MatchInfo, Post } from '@/types/post';
 import { v4 as uuidv4 } from 'uuid';
@@ -117,290 +117,268 @@ export default function PostForm({ postId }: PostFormProps) {
             hospitalityDetail: oldMatch.hospitalityDetail || '',
             seat: oldMatch.seat || '',
             seatReview: oldMatch.seatReview || '',
-        };
-
-        const costs = oldData.cost ? Object.entries(oldData.cost).map(([category, amount]) => ({
-            id: uuidv4(),
-            category: category as string,
-            amount: Number(amount) || 0,
-        })) : [];
-
-        const hotels = (oldData.hotels || []).map((h: any) => ({
-            ...h,
-            id: h.id || uuidv4(),
-            comment: h.comment || h.review || '',
-        }));
-
-        const spots = (oldData.spots || []).map((s: any) => ({
-            ...s,
-            id: s.id || uuidv4(),
-            description: s.description || s.review || '',
-        }));
-
-        return {
-            title: oldData.title || '',
-            isPublic: oldData.isPublic !== undefined ? oldData.isPublic : true,
-            match: matchInfo,
-            memories: oldData.content || '',
-            message: oldData.firstAdvice || '',
-            goods: oldData.goods || '',
-            hotels: hotels,
-            spots: spots,
-            costs: costs,
-            existingImageUrls: oldData.imageUrls || [],
-        };
     };
 
-    // Normalizes data from 'posts' (new)
-    const normalizeNewPostToFormData = (post: Post): Partial<PostFormData> => {
-        const match: MatchInfo = {
-            competition: post.match?.competition || '',
-            season: post.match?.season || '',
-            date: post.match?.date || '',
-            kickoff: post.match?.kickoff || '',
-            homeTeam: post.match?.homeTeam || '',
-            awayTeam: post.match?.awayTeam || '',
-            homeScore: String(post.match?.homeScore ?? ''),
-            awayScore: String(post.match?.awayScore ?? ''),
-            stadium: post.match?.stadium || '',
-            ticketPrice: post.match?.ticketPrice || '',
-            ticketPurchaseRoute: post.match?.ticketPurchaseRoute || '',
-            ticketPurchaseRouteUrl: post.match?.ticketPurchaseRouteUrl || '',
-            ticketTeam: post.match?.ticketTeam || '',
-            isTour: post.match?.isTour || false,
-            isHospitality: post.match?.isHospitality || false,
-            hospitalityDetail: post.match?.hospitalityDetail || '',
-            seat: post.match?.seat || '',
-            seatReview: post.match?.seatReview || '',
-        };
+    const costs = oldData.cost ? Object.entries(oldData.cost).map(([category, amount]) => ({
+      id: uuidv4(),
+      category: category as string,
+      amount: Number(amount) || 0,
+    })) : [];
 
-        const hotels = (post.hotels || []).map((h: any) => ({
-            ...h,
-            id: h.id || uuidv4(),
-            comment: h.comment || h.review || '', // Handle legacy 'review' field
-        }));
+    const hotels = (oldData.hotels || []).map((h: any) => ({
+      ...h,
+      id: h.id || uuidv4(),
+      comment: h.comment || h.review || '',
+    }));
 
-        const spots = (post.spots || []).map((s: any) => ({
-            ...s,
-            id: s.id || uuidv4(),
-            description: s.description || s.review || '', // Handle legacy 'review' field
-        }));
+    const spots = (oldData.spots || []).map((s: any) => ({
+      ...s,
+      id: s.id || uuidv4(),
+      description: s.description || s.review || '',
+    }));
 
-        return {
-            id: post.id,
-            authorNickname: post.authorNickname || '',
-            postType: post.postType || 'new',
-            parentPostId: post.parentPostId,
-            title: post.title || '',
-            isPublic: post.isPublic !== undefined ? post.isPublic : true,
-            match: match,
-            travelStartDate: post.travelStartDate || '',
-            travelEndDate: post.travelEndDate || '',
-            visitedCities: post.visitedCities || [],
+    return {
+      title: oldData.title || '',
+      isPublic: oldData.isPublic !== undefined ? oldData.isPublic : true,
+      match: matchInfo,
+      memories: oldData.content || '',
+      message: oldData.firstAdvice || '',
+      goods: oldData.goods || '',
+      hotels: hotels,
+      spots: spots,
+      costs: costs,
+      existingImageUrls: oldData.imageUrls || [],
+    };
+  };
+
+  const normalizeNewPostToFormData = (post: Post): Partial<PostFormData> => {
+    const match: MatchInfo = {
+      competition: post.match?.competition || '',
+      season: post.match?.season || '',
+      date: post.match?.date || '',
+      kickoff: post.match?.kickoff || '',
+      homeTeam: post.match?.homeTeam || '',
+      awayTeam: post.match?.awayTeam || '',
+      homeScore: String(post.match?.homeScore ?? ''),
+      awayScore: String(post.match?.awayScore ?? ''),
+      stadium: post.match?.stadium || '',
+      ticketPrice: post.match?.ticketPrice || '',
+      ticketPurchaseRoute: post.match?.ticketPurchaseRoute || '',
+      ticketPurchaseRouteUrl: post.match?.ticketPurchaseRouteUrl || '',
+      ticketTeam: post.match?.ticketTeam || '',
+      isTour: post.match?.isTour || false,
+      isHospitality: post.match?.isHospitality || false,
+      hospitalityDetail: post.match?.hospitalityDetail || '',
+      seat: post.match?.seat || '',
+      seatReview: post.match?.seatReview || '',
+    };
+
+    const hotels = (post.hotels || []).map((h: any) => ({
+      ...h,
+      id: h.id || uuidv4(),
+      comment: h.comment || h.review || '', // Handle legacy 'review' field
+    }));
+
+    const spots = (post.spots || []).map((s: any) => ({
+      ...s,
+      id: s.id || uuidv4(),
+      description: s.description || s.review || '', // Handle legacy 'review' field
+    }));
+
+    return {
+      id: post.id,
+      authorNickname: post.authorNickname || '',
+      postType: post.postType || 'new',
+      parentPostId: post.parentPostId,
+      title: post.title || '',
+      isPublic: post.isPublic !== undefined ? post.isPublic : true,
+      match: match,
+      travelStartDate: post.travelStartDate || '',
+      travelEndDate: post.travelEndDate || '',
+      visitedCities: post.visitedCities || [],
       outboundTotalDuration: post.outboundTotalDuration || '',
       inboundTotalDuration: post.inboundTotalDuration || '',
-            transports: post.transports || [],
-            hotels: hotels,
-            spots: spots,
-            costs: post.costs || [],
-            belongings: post.belongings || '',
-            goods: post.goods || '',
-            memories: post.content || '',
-            message: post.firstAdvice || '',
-            existingImageUrls: post.imageUrls || [],
-            categories: post.categories || [],
-        };
+      transports: post.transports || [],
+      hotels: hotels,
+      spots: spots,
+      costs: post.costs || [],
+      belongings: post.belongings || '',
+      goods: post.goods || '',
+      memories: post.content || '',
+      message: post.firstAdvice || '',
+      existingImageUrls: post.imageUrls || [],
+      categories: post.categories || [],
     };
+  };
 
-
-
-  // useEffect for fetching initial data (user & post for edit mode)
   useEffect(() => {
     const fetchUserDataAndPost = async () => {
-        if (authLoading) return;
-        if (!user) {
-            router.push('/login');
+      if (authLoading) return;
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      const userNickname = userDocSnap.exists() ? userDocSnap.data().nickname : '';
+
+      if (!isEditMode || !postId) {
+        setFormData({ ...initialFormData, authorNickname: userNickname, postType: 'new' });
+        setIsFetching(false);
+        return;
+      }
+
+      setIsFetching(true);
+      try {
+        let normalizedData: Partial<PostFormData> | null = null;
+        let postExists = false;
+
+        const postRef = doc(db, 'posts', postId);
+        const postSnap = await getDoc(postRef);
+        if (postSnap.exists()) {
+          postExists = true;
+          setIsLegacyPost(false);
+          const post = postSnap.data() as Post;
+          if (post.authorId !== user.uid) {
+            setMessage('この投稿を編集する権限がありません。');
+            router.push('/');
             return;
-        }
-
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        const userNickname = userDocSnap.exists() ? userDocSnap.data().nickname : '';
-
-        if (!isEditMode || !postId) {
-            setFormData(prev => ({ ...initialFormData, authorNickname: userNickname, postType: 'new' }));
-            setIsFetching(false);
-            return;
-        }
-
-        setIsFetching(true);
-        try {
-            let normalizedData: Partial<PostFormData> | null = null;
-            let postExists = false;
-
-            // Check 'posts' collection
-            const postRef = doc(db, 'posts', postId);
-            const postSnap = await getDoc(postRef);
-            if (postSnap.exists()) {
-                postExists = true;
-                setIsLegacyPost(false);
-                const post = postSnap.data() as Post;
-                if (post.authorId !== user.uid) {
-                    setMessage('この投稿を編集する権限がありません。');
-                    router.push('/');
-                    return;
-                }
-                normalizedData = normalizeNewPostToFormData(post);
-            } else {
-                // Check 'simple-posts' collection
-                const legacyPostRef = doc(db, 'simple-posts', postId);
-                const legacyPostSnap = await getDoc(legacyPostRef);
-                if (legacyPostSnap.exists()) {
-                    postExists = true;
-                    setIsLegacyPost(true);
-                    const legacyPost = legacyPostSnap.data();
-                    const authorField = legacyPost.uid || legacyPost.authorId;
-                     if (authorField && authorField !== user.uid) {
-                       setMessage('この投稿を編集する権限がありません。');
-                       router.push('/');
-                       return;
-                    }
-                    normalizedData = normalizeOldPostToFormData(legacyPost);
-                }
+          }
+          normalizedData = normalizeNewPostToFormData(post);
+        } else {
+          const legacyPostRef = doc(db, 'simple-posts', postId);
+          const legacyPostSnap = await getDoc(legacyPostRef);
+          if (legacyPostSnap.exists()) {
+            postExists = true;
+            setIsLegacyPost(true);
+            const legacyPost = legacyPostSnap.data();
+            const authorField = legacyPost.uid || legacyPost.authorId;
+            if (authorField && authorField !== user.uid) {
+              setMessage('この投稿を編集する権限がありません。');
+              router.push('/');
+              return;
             }
-
-            if (postExists && normalizedData) {
-                const finalMatch = {
-                    ...initialFormData.match!,
-                    ...(normalizedData.match || {}),
-                } as MatchInfo;
-
-                setFormData({
-                    ...initialFormData,
-                    ...normalizedData,
-                    match: finalMatch,
-                    id: postId,
-                    authorNickname: userNickname,
-                    imageFiles: [],
-                });
-            } else {
-                setMessage('投稿が見つかりません。');
-            }
-        } catch (error) {
-            console.error('データ取得エラー:', error);
-            setMessage('データの読み込み中にエラーが発生しました。');
-        } finally {
-            setIsFetching(false);
+            normalizedData = normalizeOldPostToFormData(legacyPost);
+          }
         }
+
+        if (postExists && normalizedData) {
+          const finalMatch = {
+            ...initialFormData.match!,
+            ...(normalizedData.match || {}),
+          } as MatchInfo;
+
+          setFormData({
+            ...initialFormData,
+            ...normalizedData,
+            match: finalMatch,
+            id: postId,
+            authorNickname: userNickname,
+            imageFiles: [],
+          });
+        } else {
+          setMessage('投稿が見つかりません。');
+        }
+      } catch (error) {
+        console.error('データ取得エラー:', error);
+        setMessage('データの読み込み中にエラーが発生しました。');
+      } finally {
+        setIsFetching(false);
+      }
     };
 
     fetchUserDataAndPost();
   }, [postId, isEditMode, user, authLoading, router]);
 
-
-  // useEffect for fetching user's posts for parent post selection
   useEffect(() => {
-      const fetchUserPosts = async () => {
-          if (!user) return;
-          setLoadingUserPosts(true);
-          try {
-              // Fetch from 'posts'
-              const postsQuery = query(
-                  collection(db, 'posts'),
-                  where('authorId', '==', user.uid),
-                  orderBy('match.date', 'desc')
-              );
-              const postsSnapshot = await getDocs(postsQuery);
-              const newPosts = postsSnapshot.docs.map(doc => normalizeNewPostToFormData({ id: doc.id, ...doc.data() } as Post));
+    const fetchUserPosts = async () => {
+      if (!user) return;
+      setLoadingUserPosts(true);
+      try {
+        const postsQuery = query(
+          collection(db, 'posts'),
+          where('authorId', '==', user.uid),
+          orderBy('match.date', 'desc')
+        );
+        const postsSnapshot = await getDocs(postsQuery);
+        const newPosts = postsSnapshot.docs.map(doc => normalizeNewPostToFormData({ id: doc.id, ...doc.data() } as Post));
 
-              // Fetch from 'simple-posts'
-              const legacyPostsQuery = query(
-                  collection(db, 'simple-posts'),
-                  where('uid', '==', user.uid),
-                  orderBy('match_date', 'desc')
-              );
-              const legacyPostsSnapshot = await getDocs(legacyPostsQuery);
-              const legacyPosts = legacyPostsSnapshot.docs.map(doc => normalizeOldPostToFormData({ id: doc.id, ...doc.data() }));
-              
-              // Combine and remove duplicates (preferring new posts)
-              const allPosts = [...newPosts, ...legacyPosts];
-              const uniquePosts = allPosts.filter((post, index, self) =>
-                  index === self.findIndex((p) => (
-                      p.id === post.id
-                  ))
-              );
+        const legacyPostsQuery = query(
+          collection(db, 'simple-posts'),
+          where('uid', '==', user.uid),
+          orderBy('match_date', 'desc')
+        );
+        const legacyPostsSnapshot = await getDocs(legacyPostsQuery);
+        const legacyPosts = legacyPostsSnapshot.docs.map(doc => normalizeOldPostToFormData({ id: doc.id, ...doc.data() }));
 
-              setUserPosts(uniquePosts);
-          } catch (error) {
-              console.error("ユーザーの投稿の取得に失敗しました:", error);
-              setMessage("過去の投稿の読み込みに失敗しました。");
-          } finally {
-              setLoadingUserPosts(false);
-          }
-      };
+        const allPosts = [...newPosts, ...legacyPosts];
+        const uniquePosts = allPosts.filter((post, index, self) =>
+          index === self.findIndex((p) => (
+            p.id === post.id
+          ))
+        );
 
-      if (formData.postType === 'additional' && !isEditMode) {
-          fetchUserPosts();
+        setUserPosts(uniquePosts);
+      } catch (error) {
+        console.error("ユーザーの投稿の取得に失敗しました:", error);
+        setMessage("過去の投稿の読み込みに失敗しました。");
+      } finally {
+        setLoadingUserPosts(false);
       }
+    };
+
+    if (formData.postType === 'additional' && !isEditMode) {
+      fetchUserPosts();
+    }
   }, [formData.postType, user, isEditMode]);
 
-  // useEffect to pre-fill form when a parent post is selected
   useEffect(() => {
-      if (selectedParentPostId) {
-          const parentPost = userPosts.find(p => p.id === selectedParentPostId);
-          if (parentPost) {
-              // Ensure nested objects are properly handled to avoid undefined errors
-              const parentHotels = (parentPost.hotels || []).map((h: any) => ({
-                  ...h,
-                  id: h.id || uuidv4(),
-                  comment: h.comment || h.review || '',
-              }));
-              const parentSpots = (parentPost.spots || []).map((s: any) => ({
-                  ...s,
-                  id: s.id || uuidv4(),
-                  description: s.description || s.review || '',
-              }));
+    if (selectedParentPostId) {
+      const parentPost = userPosts.find(p => p.id === selectedParentPostId);
+      if (parentPost) {
+        const parentHotels = (parentPost.hotels || []).map((h: any) => ({ ...h, id: h.id || uuidv4(), comment: h.comment || h.review || '' }));
+        const parentSpots = (parentPost.spots || []).map((s: any) => ({ ...s, id: s.id || uuidv4(), description: s.description || s.review || '' }));
 
-              setFormData(prevFormData => ({
-                  ...initialFormData,
-                  authorNickname: prevFormData.authorNickname,
-                  postType: 'additional',
-                  parentPostId: parentPost.id,
-                  // Copy travel and cost related fields
-                  travelStartDate: parentPost.travelStartDate || '',
-                  travelEndDate: parentPost.travelEndDate || '',
-                  visitedCities: parentPost.visitedCities || [],
-                  transports: parentPost.transports || [],
-                  hotels: parentHotels,
-                  spots: parentSpots,
-                  costs: parentPost.costs || [],
-                  belongings: parentPost.belongings || '',
-                  goods: parentPost.goods || '',
-                  // Reset fields that should be unique for the new post
-                  title: '',
-                  match: initialFormData.match,
-                  memories: '',
-                  message: '',
-                  imageFiles: [],
-                  existingImageUrls: [],
-                  categories: [],
-                  id: null,
-              }));
-          }
-      } else if (formData.postType === 'additional') {
-          // If parent is deselected, reset the form but keep the 'additional' type
-          setFormData(prev => ({
-              ...initialFormData,
-              postType: 'additional',
-              authorNickname: prev.authorNickname,
-          }));
+        setFormData({
+          ...initialFormData,
+          authorNickname: formData.authorNickname,
+          postType: 'additional',
+          parentPostId: parentPost.id,
+          travelStartDate: parentPost.travelStartDate || '',
+          travelEndDate: parentPost.travelEndDate || '',
+          visitedCities: parentPost.visitedCities || [],
+          transports: parentPost.transports || [],
+          hotels: parentHotels,
+          spots: parentSpots,
+          costs: parentPost.costs || [],
+          belongings: parentPost.belongings || '',
+          goods: parentPost.goods || '',
+          title: '',
+          match: initialFormData.match,
+          memories: '',
+          message: '',
+          imageFiles: [],
+          existingImageUrls: [],
+          categories: [],
+          id: null,
+        });
       }
-  }, [selectedParentPostId, userPosts]);
+    } else if (formData.postType === 'additional') {
+      setFormData({
+        ...initialFormData,
+        postType: 'additional',
+        authorNickname: formData.authorNickname,
+      });
+    }
+  }, [selectedParentPostId, userPosts, formData.postType]);
 
   const handlePostTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newPostType = e.target.value as 'new' | 'additional';
-      setFormData(prev => ({ ...initialFormData, authorNickname: prev.authorNickname, postType: newPostType }));
-      if (newPostType === 'new') {
+    const newPostType = e.target.value as 'new' | 'additional';
+    setFormData({ ...initialFormData, authorNickname: formData.authorNickname, postType: newPostType });
+    if (newPostType === 'new') {
+      setSelectedParentPostId(null);
+    }
           setSelectedParentPostId(null);
           // userPosts are not cleared to avoid re-fetching if user toggles back
       }
