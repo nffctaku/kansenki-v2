@@ -8,14 +8,17 @@ import { doc, getDoc, runTransaction } from 'firebase/firestore';
 
 interface LikeButtonProps {
   postId: string;
+  postType?: 'simple' | 'new';
   size?: 'xs' | 'sm' | 'md';
 }
 
-const LikeButton: React.FC<LikeButtonProps> = ({ postId, size = 'md' }) => {
+const LikeButton: React.FC<LikeButtonProps> = ({ postId, postType = 'new', size = 'md' }) => {
   const [user, setUser] = useState<User | null>(null);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  const collectionName = postType === 'simple' ? 'simple-posts' : 'posts';
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -25,19 +28,19 @@ const LikeButton: React.FC<LikeButtonProps> = ({ postId, size = 'md' }) => {
   }, []);
 
   const getLikeCount = useCallback(async () => {
-    const postRef = doc(db, 'posts', postId);
+    const postRef = doc(db, collectionName, postId);
     const postSnap = await getDoc(postRef);
     if (postSnap.exists()) {
       setLikeCount(postSnap.data().likeCount || 0);
     }
-  }, [postId]);
+  }, [postId, collectionName]);
 
   useEffect(() => {
     const checkLikeStatus = async () => {
       setLoading(true);
       await getLikeCount();
       if (user) {
-        const likeRef = doc(db, 'posts', postId, 'likes', user.uid);
+        const likeRef = doc(db, collectionName, postId, 'likes', user.uid);
         const likeSnap = await getDoc(likeRef);
         setLiked(likeSnap.exists());
       } else {
@@ -49,7 +52,7 @@ const LikeButton: React.FC<LikeButtonProps> = ({ postId, size = 'md' }) => {
     if (postId) {
       checkLikeStatus();
     }
-  }, [postId, user, getLikeCount]);
+  }, [postId, user, getLikeCount, collectionName]);
 
   const handleLike = async () => {
     if (!user) {
@@ -60,8 +63,8 @@ const LikeButton: React.FC<LikeButtonProps> = ({ postId, size = 'md' }) => {
 
     setLoading(true);
 
-    const postRef = doc(db, 'posts', postId);
-    const likeRef = doc(db, 'posts', postId, 'likes', user.uid);
+    const postRef = doc(db, collectionName, postId);
+    const likeRef = doc(db, collectionName, postId, 'likes', user.uid);
 
     try {
       await runTransaction(db, async (transaction) => {

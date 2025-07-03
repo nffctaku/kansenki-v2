@@ -41,6 +41,7 @@ export default function HomePage() {
             likeCount: d.likeCount ?? 0,
             helpfulCount: d.helpfulCount ?? 0,
             createdAt: d.createdAt?.toDate() || new Date(0),
+            postType: 'new',
           } as SimplePost;
         });
 
@@ -67,6 +68,7 @@ export default function HomePage() {
             likeCount: d.likeCount ?? 0,
             helpfulCount: d.helpfulCount ?? 0,
             createdAt: d.createdAt?.toDate() || new Date(0),
+            postType: 'simple',
           } as SimplePost;
         });
 
@@ -215,7 +217,7 @@ export default function HomePage() {
                       ) : (
                         <span className="truncate font-medium text-gray-700 dark:text-gray-300">{post.author}</span>
                       )}
-                      <LikeButton postId={post.id} size="xs" />
+                      <LikeButton postId={post.id} postType={post.postType} size="xs" />
                       {displayDate && (
                         <>
                           <span className="mx-1">·</span>

@@ -138,4 +138,5 @@ export interface SimplePost {
   likeCount: number;
   helpfulCount: number;
   createdAt?: Date;
+  postType?: 'simple' | 'new';
 }
