@@ -19,6 +19,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import Image from 'next/image';
 
 // Define a type for combined images
 type ImageItem = {
@@ -37,11 +38,13 @@ const SortableImage: React.FC<{ image: ImageItem; onRemove: () => void; }> = ({ 
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative group touch-none">
-      <img
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative group touch-none w-full h-32">
+      <Image
         src={image.type === 'existing' ? (image.value as string) : URL.createObjectURL(image.value as File)}
         alt={`プレビュー画像`}
-        className="w-full h-32 object-cover rounded-lg"
+        fill
+        className="object-cover rounded-lg"
+        sizes="10rem"
       />
       <button
         type="button"

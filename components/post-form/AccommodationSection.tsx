@@ -147,7 +147,7 @@ function AccommodationSection({ formData, setFormData }: SectionProps) {
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">総合評価</label>
               <div className="flex items-center gap-x-4">
-                <StarRating rating={Math.round(hotel.overallRating || 0)} setRating={() => {}} readOnly />
+                <StarRating rating={Math.round(hotel.overallRating || 0)} setRating={(_rating) => {}} readOnly />
                 <span className="text-xl font-bold text-slate-700 dark:text-slate-200 tabular-nums">
                   {(hotel.overallRating || 0).toFixed(1)}
                 </span>

@@ -51,7 +51,7 @@ const menuConfig = [
 
 export default function MenuDrawer() {
   const [isOpen, setIsOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
+  useTheme();
   const [openSection, setOpenSection] = useState<string | null>(null);
   const toggleMenu = () => setIsOpen(!isOpen);
   const handleSectionClick = (section: string) => {
