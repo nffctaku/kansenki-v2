@@ -3,7 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { doc, getDoc, serverTimestamp, setDoc, collection, DocumentData, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc, collection, DocumentData, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { PostFormData, MatchInfo, Post } from '@/types/post';
 import { v4 as uuidv4 } from 'uuid';
