@@ -16,7 +16,7 @@ import {
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
-import { Post, PostFormData, MatchInfo } from '@/types/post';
+import { Post, MatchInfo } from '@/types/post';
 import CollapsibleSection from '@/components/post-form/CollapsibleSection';
 import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
 
