@@ -31,6 +31,7 @@ export interface Post {
   createdAt: any; // Consider using Timestamp type
   updatedAt: any; // Consider using Timestamp type
   parentPostId?: string | null;
+  travelId?: string;
   likeCount?: number;
   helpfulCount?: number;
 

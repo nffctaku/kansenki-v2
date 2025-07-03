@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, onSnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Post, Hotel, SimpleTravel, IndividualCost, Transport } from '@/types/match';
+import { Hotel, SimpleTravel, IndividualCost, Transport } from '@/types/match';
+import { Post } from '@/types/post';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -109,28 +110,35 @@ export default function PostDetailPage() {
 
       return {
         id: docId,
-        authorId: data.authorId || data.uid,
+        authorId: data.authorId || data.uid || '',
         authorNickname: data.authorNickname || data.nickname || '',
-        title: data.title || '',
-        content: data.content || data.memories || '',
         isPublic: data.isPublic !== undefined ? data.isPublic : true,
-        imageUrls: data.imageUrls || [],
-        match: data.match || matchInfo,
-        costs: data.costs || costs,
+        title: data.title || '',
+        content: data.content || data.memories || data.text || '',
+        firstAdvice: data.firstAdvice || data.message || '',
+        goods: data.goods || '',
+        imageUrls: data.imageUrls || data.existingImageUrls || [],
+        categories: data.categories || data.tags || [],
+        match: matchInfo,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+        parentPostId: data.parentPostId || null,
+        travelId: data.travelId,
+        likeCount: data.likeCount || 0,
+        helpfulCount: data.helpfulCount || 0,
+        postType: data.postType || 'new',
+        travelStartDate: data.travelStartDate || '',
+        travelEndDate: data.travelEndDate || '',
+        visitedCities: data.visitedCities || [],
+        outboundTotalDuration: data.outboundTotalDuration || '',
+        inboundTotalDuration: data.inboundTotalDuration || '',
         transports: data.transports || [],
         hotels: data.hotels || [],
         spots: data.spots || [],
-        goods: data.goods || '',
-        firstAdvice: data.firstAdvice || data.message || '',
-        outboundTotalDuration,
-        inboundTotalDuration,
-        likeCount: data.likeCount || 0,
-        helpfulCount: data.helpfulCount || 0,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
-        postType: data.postType || 'new',
-        travelId: data.travelId,
-      } as Post;
+        costs: data.costs || [],
+        belongings: data.belongings || '',
+        youtubeUrl: data.youtubeUrl || '',
+      } as unknown as Post;
     };
 
     const postRef = doc(db, 'posts', id);
