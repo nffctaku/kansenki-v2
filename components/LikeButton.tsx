@@ -122,18 +122,14 @@ const LikeButton: React.FC<LikeButtonProps> = ({ postId, size = 'md' }) => {
     <button
       onClick={handleLike}
       disabled={loading || !user}
-      className={`flex items-center justify-center ${gapStyles[size]} rounded-full transition-colors duration-200 ease-in-out ${sizeStyles[size]} ${
-        liked
-          ? 'bg-pink-500 text-white'
-          : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-      } disabled:opacity-50 disabled:cursor-not-allowed`}
+      className={`flex items-center justify-center ${gapStyles[size]} rounded-full transition-colors duration-200 ease-in-out ${sizeStyles[size]} bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed`}
     >
       {liked ? (
         <FaHeart className={`${iconStyles[size]} text-red-500`} />
       ) : (
-        <FaRegHeart className={`${iconStyles[size]} text-gray-400`} />
+        <FaRegHeart className={`${iconStyles[size]} text-gray-600 dark:text-gray-300`} />
       )}
-      <span className="font-semibold text-gray-800 dark:text-gray-200">{likeCount}</span>
+      <span className={`font-semibold ${liked ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'}`}>{likeCount}</span>
     </button>
   );
 };
