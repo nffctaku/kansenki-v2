@@ -25,11 +25,47 @@ type Travel = {
 
 const categoryLabelMap: Record<string, string> = {
   england: 'イングランド',
-  italy: 'イタリア',
-  france: 'フランス',
   spain: 'スペイン',
+  italy: 'イタリア',
+  germany: 'ドイツ',
+  france: 'フランス',
+  'club-world-cup': 'クラブワールドカップ',
+  'japan-tour': 'ジャパンツアー',
   other: 'その他',
 };
+
+const getCategoryStyles = (category: string | string[] | undefined): { style: React.CSSProperties; titleClassName: string } => {
+  if (typeof category !== 'string') {
+    return { style: { paddingBottom: '200px' }, titleClassName: 'text-gray-800' };
+  }
+  switch (category) {
+    case 'club-world-cup':
+      return {
+        style: {
+          backgroundImage: 'url(/cwc-background.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+          paddingBottom: '200px',
+          minHeight: '100vh',
+        },
+        titleClassName: 'text-white',
+      };
+    // Example for Japan Tour
+    // case 'japan-tour':
+    //   return {
+    //     style: {
+    //       background: 'linear-gradient(135deg, #bc002d 0%, #ffffff 100%)', // Red and white
+    //       paddingBottom: '200px',
+    //       minHeight: '100vh',
+    //     },
+    //     titleClassName: 'text-black',
+    //   };
+    default:
+      return { style: { paddingBottom: '200px' }, titleClassName: 'text-gray-800' };
+  }
+};
+
 
 export default function CategoryPage() {
   const { category } = useParams();
@@ -100,6 +136,7 @@ export default function CategoryPage() {
     fetchData();
   }, [category]);
 
+  const { style: pageStyle, titleClassName } = getCategoryStyles(category);
   const title = categoryLabelMap[category as string] || category;
 
   const displayedPosts = posts.filter((post) => {
@@ -117,9 +154,9 @@ export default function CategoryPage() {
   return (
     <div
       className="mb-12 px-4 w-full max-w-screen-xl mx-auto"
-      style={{ paddingBottom: '200px' }}
+      style={pageStyle}
     >
-      <h1 className="text-2xl font-bold mb-4 text-gray-800">{title}の観戦記</h1>
+      <h1 className={`text-2xl font-bold mb-4 ${titleClassName}`}>{title}の観戦記</h1>
 
       <div className="mb-6">
         <input

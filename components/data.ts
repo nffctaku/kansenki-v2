@@ -102,7 +102,6 @@ export const competitionOptions = [
   {
     label: 'その他の国',
     options: [
-      { label: 'クラブ・ワールドカップ', value: 'クラブ・ワールドカップ' },
       { label: 'エールディヴィジ', value: 'エールディヴィジ' },
       { label: 'MLS', value: 'MLS' },
       { label: 'アルゼンチン プリメーラ・ディビシオン', value: 'アルゼンチン プリメーラ・ディビシオン' },
@@ -112,7 +111,10 @@ export const competitionOptions = [
   {
     label: '分類なし',
     options: [
-      { label: '国内リーグ戦(その他)', value: '国内リーグ戦(その他)' },
+      { label: 'クラブワールドカップ', value: 'クラブワールドカップ' },
+      { label: 'ジャパンツアー', value: 'ジャパンツアー' },
+      { label: 'プレシーズンマッチ', value: 'プレシーズンマッチ' },
+      { label: '代表戦', value: '代表戦' },
       { label: '国内カップ戦(その他)', value: '国内カップ戦(その他)' },
       { label: '親善試合', value: '親善試合' },
       { label: 'その他', value: 'その他' },

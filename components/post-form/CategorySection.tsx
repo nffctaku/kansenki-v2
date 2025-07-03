@@ -6,7 +6,7 @@ import CollapsibleSection from './CollapsibleSection';
 
 
 const availableCategories = [
-  'イングランド', 'イタリア', 'スペイン', 'ドイツ', 'フランス', 'その他', 'CWC'
+  'イングランド', 'イタリア', 'スペイン', 'ドイツ', 'フランス', 'その他', 'クラブワールドカップ', 'ジャパンツアー'
 ];
 
 function CategorySection({ formData, setFormData }: SectionProps) {

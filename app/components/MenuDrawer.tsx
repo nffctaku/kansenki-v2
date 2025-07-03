@@ -15,6 +15,8 @@ const menuConfig = [
       { label: 'イタリア', href: '/category/italy' },
       { label: 'フランス', href: '/category/france' },
       { label: 'ドイツ', href: '/category/germany' },
+      { label: 'クラブワールドカップ', href: '/category/club-world-cup' },
+      { label: 'ジャパンツアー', href: '/category/japan-tour' },
       { label: 'その他', href: '/category/other' },
     ],
   },
