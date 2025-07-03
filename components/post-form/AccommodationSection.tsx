@@ -22,7 +22,7 @@ const ratingCategories: RatingCategory[] = [
 
 type StarRatingProps = {
   rating: number;
-  setRating: (rating: number) => void;
+  setRating?: (rating: number) => void;
   readOnly?: boolean;
 };
 
@@ -41,7 +41,7 @@ function StarRating({ rating, setRating, readOnly = false }: StarRatingProps) {
         return (
           <svg
             key={star}
-            onClick={() => !readOnly && setRating(star)}
+            onClick={() => !readOnly && setRating && setRating(star)}
             className={starClasses.join(' ')}
             fill="currentColor"
             viewBox="0 0 20 20"
@@ -147,7 +147,7 @@ function AccommodationSection({ formData, setFormData }: SectionProps) {
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">総合評価</label>
               <div className="flex items-center gap-x-4">
-                <StarRating rating={Math.round(hotel.overallRating || 0)} setRating={(_rating) => {}} readOnly />
+                <StarRating rating={Math.round(hotel.overallRating || 0)} readOnly />
                 <span className="text-xl font-bold text-slate-700 dark:text-slate-200 tabular-nums">
                   {(hotel.overallRating || 0).toFixed(1)}
                 </span>
