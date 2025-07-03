@@ -8,6 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { FaInstagram, FaYoutube, FaXTwitter } from 'react-icons/fa6';
 
+
 import { useTheme } from 'next-themes';
 import LikeButton from '@/components/LikeButton';
 import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
@@ -129,23 +130,23 @@ export default function UserPostsPage() {
             {/* Social Links */}
             <div className="flex items-center justify-center sm:justify-start gap-4 mt-4">
               {userInfo.xLink && (
-                <a href={userInfo.xLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700">
+                <a href={userInfo.xLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
                   <FaXTwitter size={24} />
                 </a>
               )}
               {userInfo.instagramLink && (
-                <a href={userInfo.instagramLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700">
+                <a href={userInfo.instagramLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
                   <FaInstagram size={24} />
                 </a>
               )}
               {userInfo.youtubeUrl && (
-                <a href={userInfo.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700">
+                <a href={userInfo.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
                   <FaYoutube size={24} />
                 </a>
               )}
               {userInfo.noteLink && (
-                <a href={userInfo.noteLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700">
-                  <Image src="/icon.png" alt="Note icon" width={24} height={24} className="opacity-60 hover:opacity-100 transition" />
+                <a href={userInfo.noteLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
+                  <span className="font-bold text-xl">note</span>
                 </a>
               )}
             </div>

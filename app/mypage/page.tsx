@@ -17,6 +17,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import { FaInstagram, FaYoutube, FaXTwitter } from 'react-icons/fa6';
+
 import { Post, MatchInfo } from '@/types/post';
 import CollapsibleSection from '@/components/post-form/CollapsibleSection';
 import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
@@ -251,22 +252,22 @@ export default function MyPage() {
             <div className="flex items-center justify-center sm:justify-start gap-4 mt-2">
               {xLink && (
                 <a href={xLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
-                  <FaXTwitter size={20} />
+                  <FaXTwitter size={24} />
                 </a>
               )}
               {instagramLink && (
                 <a href={instagramLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
-                  <FaInstagram size={20} />
+                  <FaInstagram size={24} />
                 </a>
               )}
               {youtubeLink && (
                 <a href={youtubeLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
-                  <FaYoutube size={20} />
+                  <FaYoutube size={24} />
                 </a>
               )}
               {noteLink && (
                 <a href={noteLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
-                  <span className="font-bold text-lg">note</span>
+                  <span className="font-bold text-xl">note</span>
                 </a>
               )}
             </div>
