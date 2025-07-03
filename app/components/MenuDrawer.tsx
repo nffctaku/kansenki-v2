@@ -34,6 +34,12 @@ const menuConfig = [
     ],
   },
   {
+    title: 'アップデート情報',
+    items: [
+      { label: '更新履歴', href: '/updates' },
+    ],
+  },
+  {
     title: 'FOOTBALLTOP',
     items: [
       { label: 'FOOTBALL TOP', href: '/about' },
@@ -104,13 +110,6 @@ export default function MenuDrawer() {
               </div>
             </div>
           ))}
-          <div className="px-6 py-4 text-center">
-            <div className="flex justify-center gap-2">
-              <button onClick={() => setTheme('light')} className={`px-3 py-1 rounded-md text-sm ${theme === 'light' ? 'bg-gray-200 dark:bg-gray-700' : 'bg-transparent'}`}>Light</button>
-              <button onClick={() => setTheme('dark')} className={`px-3 py-1 rounded-md text-sm ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-transparent'}`}>Dark</button>
-              <button onClick={() => setTheme('system')} className={`px-3 py-1 rounded-md text-sm ${theme === 'system' ? 'bg-gray-200 dark:bg-gray-700' : 'bg-transparent'}`}>System</button>
-            </div>
-          </div>
         </div>
       </aside>
     </>

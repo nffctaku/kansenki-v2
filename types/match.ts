@@ -112,6 +112,7 @@ export interface Post {
   isPublic: boolean;
   imageUrls: string[];
   likeCount: number;
+  helpfulCount: number;
   createdAt: any; // Firestore Timestamp
   updatedAt: any; // Firestore Timestamp
   match?: MatchInfo;
@@ -157,5 +158,6 @@ export interface SimplePost {
     competition: string;
   }[];
   likeCount: number;
+  helpfulCount: number;
   createdAt?: Date;
 }

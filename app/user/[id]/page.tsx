@@ -36,20 +36,39 @@ export default function UserPostsPage() {
         }
 
         const userData = userSnap.data();
-        const { nickname, xLink, noteLink, avatarUrl, coverUrl } = userData;
+        setUserInfo(userData as UserInfo);
 
-        setUserInfo({ nickname, xLink, noteLink, avatarUrl, coverUrl });
+        // Fetch from 'posts' (new format)
+        const postsCollection = collection(db, 'posts');
+        const qNew = query(postsCollection, where("authorId", "==", userId), where("isPublic", "==", true));
+        const snapshotNew = await getDocs(qNew);
+        const newPosts = snapshotNew.docs.map((doc) => {
+            const d = doc.data();
+            return {
+                id: doc.id,
+                ...d,
+                // ensure consistency for fields used in render
+                matches: d.match ? [d.match] : [],
+            };
+        });
 
-        const postsRef = collection(db, 'simple-posts');
-        const postsQuery = query(postsRef, where('uid', '==', userId));
-        const postsSnap = await getDocs(postsQuery);
-
-        const fetchedPosts = postsSnap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
+        // Fetch from 'simple-posts' (legacy format)
+        const simplePostsCollection = collection(db, 'simple-posts');
+        const qLegacy = query(simplePostsCollection, where('uid', '==', userId));
+        const snapshotLegacy = await getDocs(qLegacy);
+        const legacyPosts = snapshotLegacy.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
         }));
 
-        setPosts(fetchedPosts);
+        // Combine and remove duplicates
+        const combined = [...newPosts, ...legacyPosts];
+        const uniquePosts = Array.from(new Map(combined.map(p => [p.id, p])).values());
+        
+        // Sort by creation date
+        uniquePosts.sort((a: any, b: any) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+
+        setPosts(uniquePosts);
       } catch (err) {
         console.error('データ取得エラー:', err);
         setNotFound(true);
@@ -139,7 +158,7 @@ export default function UserPostsPage() {
           <div className="p-4">
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
               {post.matches?.[0]
-                ? `${post.matches[0].teamA} vs ${post.matches[0].teamB}`
+                ? `${post.matches[0].homeTeam || post.matches[0].teamA} vs ${post.matches[0].awayTeam || post.matches[0].teamB}`
                 : '試合情報なし'}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

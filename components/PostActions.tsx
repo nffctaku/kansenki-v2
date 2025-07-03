@@ -3,26 +3,80 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
+import { doc, writeBatch, increment } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
 interface PostActionsProps {
+  postId: string;
   likeCount: number;
+  helpfulCount: number;
   match?: {
     homeTeam: string;
     awayTeam: string;
   };
 }
 
-export default function PostActions({ likeCount, match }: PostActionsProps) {
+export default function PostActions({ postId, likeCount, helpfulCount, match }: PostActionsProps) {
   const [currentUrl, setCurrentUrl] = useState('');
+  const [currentLikes, setCurrentLikes] = useState(likeCount);
+  const [currentHelpfuls, setCurrentHelpfuls] = useState(helpfulCount);
+  const [hasLiked, setHasLiked] = useState(false);
+  const [hasBeenHelpful, setHasBeenHelpful] = useState(false);
 
   useEffect(() => {
-    // Get the current URL on the client side
     setCurrentUrl(window.location.href);
-  }, []);
+    // Check localStorage to see if user has already interacted
+    if (localStorage.getItem(`liked_${postId}`)) {
+      setHasLiked(true);
+    }
+    if (localStorage.getItem(`helpful_${postId}`)) {
+      setHasBeenHelpful(true);
+    }
+  }, [postId]);
 
   const handleCopy = () => {
     if (currentUrl) {
       navigator.clipboard.writeText(currentUrl);
       alert('リンクをコピーしました！');
+    }
+  };
+
+  const handleAction = async (action: 'like' | 'helpful') => {
+    const alreadyActioned = action === 'like' ? hasLiked : hasBeenHelpful;
+    if (alreadyActioned) return; // Prevent multiple clicks
+
+    const postRef = doc(db, 'posts', postId);
+    const simplePostRef = doc(db, 'simple-posts', postId);
+    const batch = writeBatch(db);
+
+    if (action === 'like') {
+      setCurrentLikes(prev => prev + 1);
+      setHasLiked(true);
+      localStorage.setItem(`liked_${postId}`, 'true');
+      batch.update(postRef, { likeCount: increment(1) });
+      batch.update(simplePostRef, { likeCount: increment(1) });
+    } else {
+      setCurrentHelpfuls(prev => prev + 1);
+      setHasBeenHelpful(true);
+      localStorage.setItem(`helpful_${postId}`, 'true');
+      batch.update(postRef, { helpfulCount: increment(1) });
+      batch.update(simplePostRef, { helpfulCount: increment(1) });
+    }
+
+    try {
+      await batch.commit();
+    } catch (error) {
+      console.error("Error updating counts: ", error);
+      // Revert state if firestore update fails
+      if (action === 'like') {
+        setCurrentLikes(prev => prev - 1);
+        setHasLiked(false);
+        localStorage.removeItem(`liked_${postId}`);
+      } else {
+        setCurrentHelpfuls(prev => prev - 1);
+        setHasBeenHelpful(false);
+        localStorage.removeItem(`helpful_${postId}`);
+      }
     }
   };
 
@@ -37,13 +91,21 @@ export default function PostActions({ likeCount, match }: PostActionsProps) {
 
   return (
     <div className="flex justify-center items-center gap-6 mt-6 text-[11px] text-gray-700 dark:text-gray-400">
-      {/* Like button (display only) */}
-      <div className="flex flex-col items-center">
+      {/* Helpful button */}
+      <button onClick={() => handleAction('helpful')} disabled={hasBeenHelpful} className="flex flex-col items-center disabled:opacity-50 disabled:cursor-not-allowed">
         <div className="flex items-center gap-1">
-          <span className="text-[14px]">♡</span>
-          <span className="text-[12px]">{likeCount || 0}</span>
+          <span className="text-sm">参考になった</span>
+          <span className="text-xs">{currentHelpfuls || 0}</span>
         </div>
-      </div>
+      </button>
+
+      {/* Like button */}
+      <button onClick={() => handleAction('like')} disabled={hasLiked} className="flex flex-col items-center disabled:opacity-50 disabled:cursor-not-allowed">
+        <div className="flex items-center gap-1">
+          <span className="text-lg">♡</span>
+          <span className="text-xs">{currentLikes || 0}</span>
+        </div>
+      </button>
 
       {/* Copy button */}
       <button

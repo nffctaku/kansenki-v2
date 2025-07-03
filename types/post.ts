@@ -31,6 +31,8 @@ export interface Post {
   createdAt: any; // Consider using Timestamp type
   updatedAt: any; // Consider using Timestamp type
   parentPostId?: string | null;
+  likeCount?: number;
+  helpfulCount?: number;
 
   // Fields from PostFormData to be included in Post
   postType: 'new' | 'additional';
@@ -50,6 +52,8 @@ export interface SectionProps {
   formData: PostFormData;
   setFormData: React.Dispatch<React.SetStateAction<PostFormData>>;
   user?: User | null;
+  likeCount?: number;
+  helpfulCount?: number;
 }
 
 export interface PostFormData {

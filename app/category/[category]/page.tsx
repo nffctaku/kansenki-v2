@@ -14,6 +14,7 @@ type Travel = {
   category?: string;
   season?: string;
   likeCount?: number;
+  helpfulCount?: number;
   matches?: {
     teamA?: string;
     teamB?: string;
@@ -83,6 +84,7 @@ export default function CategoryPage() {
             category: (postData.categories && postData.categories[0]) || '',
             season: match.season || '',
             likeCount: postData.likeCount || 0,
+            helpfulCount: postData.helpfulCount || 0,
             matches: normalizedMatches,
           } as Travel;
         });

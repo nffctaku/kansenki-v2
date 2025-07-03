@@ -37,6 +37,7 @@ export default function HomePage() {
             league: d.match?.competition ?? '',
             matches: d.match ? [d.match] : [],
             likeCount: d.likeCount ?? 0,
+            helpfulCount: d.helpfulCount ?? 0,
             createdAt: d.createdAt?.toDate() || new Date(0),
           } as SimplePost;
         });
@@ -61,6 +62,7 @@ export default function HomePage() {
             league: matchesWithCompat[0]?.competition ?? '',
             matches: matchesWithCompat,
             likeCount: d.likeCount ?? 0,
+            helpfulCount: d.helpfulCount ?? 0,
             createdAt: d.createdAt?.toDate() || new Date(0),
           } as SimplePost;
         });

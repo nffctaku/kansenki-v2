@@ -8,6 +8,7 @@ import { Post, Hotel, SimpleTravel, IndividualCost, Transport } from '@/types/ma
 import Link from 'next/link';
 import Image from 'next/image';
 import { Swiper, SwiperSlide } from 'swiper/react';
+import PostActions from '@/components/PostActions';
 import { Navigation, Pagination, A11y } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -122,6 +123,7 @@ export default function PostDetailPage() {
         outboundTotalDuration,
         inboundTotalDuration,
         likeCount: data.likeCount || 0,
+        helpfulCount: data.helpfulCount || 0,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
         postType: data.postType || 'new',
@@ -186,6 +188,7 @@ export default function PostDetailPage() {
     authorId,
 
     likeCount,
+    helpfulCount,
     outboundTotalDuration,
     inboundTotalDuration,
   } = post;
@@ -249,6 +252,16 @@ export default function PostDetailPage() {
             <span className="ml-1 text-slate-700 dark:text-slate-300">{likeCount || 0}</span>
           </div>
         </div>
+      </div>
+
+      {/* Post Actions */}
+      <div className="my-8 py-6 border-y border-slate-200 dark:border-slate-700">
+        <PostActions
+          postId={id}
+          likeCount={likeCount || 0}
+          helpfulCount={helpfulCount || 0}
+          match={match}
+        />
       </div>
 
       {/* Match Details */}
