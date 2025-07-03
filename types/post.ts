@@ -61,7 +61,7 @@ export interface SectionProps {
 export interface PostFormData {
   id: string | null;
   authorNickname: string;
-  postType: 'new' | 'additional';
+  postType: 'new' | 'additional' | 'simple';
   parentPostId?: string | null;
   title: string;
   isPublic: boolean;
