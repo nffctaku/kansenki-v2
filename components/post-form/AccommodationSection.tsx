@@ -22,7 +22,8 @@ const ratingCategories: RatingCategory[] = [
 
 type StarRatingProps = {
   rating: number;
-  setRating?: (_value: number) => void;
+  // eslint-disable-next-line no-unused-vars
+  setRating?: (value: number) => void;
   readOnly?: boolean;
 };
 

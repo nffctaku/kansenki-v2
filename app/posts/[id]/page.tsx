@@ -99,14 +99,7 @@ export default function PostDetailPage() {
         seatReview: data.matches[0].seatReview || '',
       } : undefined;
 
-      const outboundTotalDuration = data.outboundTotalDuration || '';
-      const inboundTotalDuration = data.inboundTotalDuration || '';
 
-      const costs = data.cost ? Object.entries(data.cost).map(([category, amount]) => ({
-        id: `${category}-${Date.now()}`,
-        category,
-        amount: Number(amount) || 0,
-      })) : [];
 
       return {
         id: docId,
