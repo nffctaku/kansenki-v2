@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function BottomTabBar() {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between border-t border-gray-200 bg-white px-5 py-2.5">
+            <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center border-t border-gray-200 bg-white py-2.5">
             <Tab icon="/tab-home.png" label="ホーム" href="/" />
       <Tab icon="/新聞のフリーアイコン.png" label="特集" />
       <Tab icon="/tab-plus.png" label="投稿" href="/form" />
@@ -38,7 +38,7 @@ function Tab({ icon, label, href }: TabProps) {
   );
 
   const commonClasses =
-    'flex flex-col items-center border-none bg-transparent text-[11px] text-gray-500';
+    'flex w-1/5 flex-col items-center border-none bg-transparent text-[11px] text-gray-500';
 
   return href ? (
     <Link href={href} className={`${commonClasses} cursor-pointer`}>
