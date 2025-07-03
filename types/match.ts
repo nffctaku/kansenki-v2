@@ -102,32 +102,7 @@ export interface Travel {
   individualCosts?: IndividualCost[];
 }
 
-export interface Post {
-  parentPostId?: string;
-  id: string;
-  authorId: string;
-  authorNickname: string;
-  title: string;
-  content: string; // 観戦記
-  isPublic: boolean;
-  imageUrls: string[];
-  likeCount: number;
-  helpfulCount: number;
-  createdAt: any; // Firestore Timestamp
-  updatedAt: any; // Firestore Timestamp
-  match?: MatchInfo;
-  travelId?: string;
-  costs?: IndividualCost[];
-  totalCost?: number;
-  hotels?: Hotel[];
-  spots?: Spot[];
-  goods?: string;
-  firstAdvice?: string; // これから行く人へのアドバイス
-  transports?: Transport[];
-  outboundTotalDuration?: string;
-  inboundTotalDuration?: string;
-  youtubeUrl?: string;
-}
+
 
 // For data from 'simple-travels' collection
 export interface SimpleTravel {

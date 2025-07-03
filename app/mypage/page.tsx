@@ -16,13 +16,12 @@ import {
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
-import { PostFormData } from '@/types/post';
+import { Post, PostFormData, MatchInfo } from '@/types/post';
+import CollapsibleSection from '@/components/post-form/CollapsibleSection';
 import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
 
 
-type Post = PostFormData & {
-  authorId?: string;
-};
+
 
 export default function MyPage() {
   useTheme();
@@ -76,10 +75,10 @@ export default function MyPage() {
         const newPostsData = newPostsSnapshot.docs.map((doc) => {
           const data = doc.data();
           return {
-            id: doc.id,
             ...data,
-            existingImageUrls: (data.imageUrls || []).slice().reverse(),
-          } as Post;
+            id: doc.id,
+            imageUrls: data.imageUrls || data.existingImageUrls || [],
+          } as unknown as Post;
         });
 
         // Fetch old posts from 'simple-posts' collection
@@ -87,56 +86,74 @@ export default function MyPage() {
         const oldPostsSnapshot = await getDocs(oldPostsQuery);
         const oldPostsData = oldPostsSnapshot.docs.map((doc) => {
           const data = doc.data();
-          // Normalize old data structure to the new PostFormData structure
-          const matchInfo = data.matches && data.matches[0] ? {
-            competition: data.matches[0].competition || '',
-            season: data.matches[0].season || data.season || '',
-            date: data.matches[0].date || '',
-            kickoff: data.matches[0].kickoff || '',
-            homeTeam: data.matches[0].homeTeam || data.matches[0].teamA || '',
-            awayTeam: data.matches[0].awayTeam || data.matches[0].teamB || '',
-            homeScore: data.matches[0].homeScore || '',
-            awayScore: data.matches[0].awayScore || '',
-            stadium: data.matches[0].stadium || '',
-            ticketPrice: '',
+          const matchData = data.matches && data.matches[0] ? data.matches[0] : {};
+          const ticketData = data.ticket || {};
+
+          const matchInfo: MatchInfo = {
+            competition: matchData.competition || '',
+            season: matchData.season || data.season || '',
+            date: matchData.date || '',
+            kickoff: matchData.kickoff || '',
+            homeTeam: matchData.homeTeam || matchData.teamA || '',
+            awayTeam: matchData.awayTeam || matchData.teamB || '',
+            homeScore: matchData.homeScore || '',
+            awayScore: matchData.awayScore || '',
+            stadium: matchData.stadium || '',
+            ticketPrice: ticketData.price || '',
             ticketPurchaseRoute: '',
+            isTour: ticketData.isTour || false,
             seat: '',
             seatReview: '',
-          } : undefined;
+          };
 
           return {
             id: doc.id,
             authorId: data.uid,
             authorNickname: data.nickname || '',
-            title: data.title || '',
             isPublic: data.isPublic !== undefined ? data.isPublic : true,
-            postType: 'new',
+            title: data.title || data.text?.substring(0, 30) || '無題の投稿',
+            content: data.text || '',
+            firstAdvice: '',
+            goods: '',
+            imageUrls: (data.imageUrls || []).slice().reverse(),
+            categories: data.tags || [],
             match: matchInfo,
-            existingImageUrls: (data.imageUrls || []).slice().reverse(),
-            travelStartDate: data.travelStartDate || '',
-            travelEndDate: data.travelEndDate || '',
-            visitedCities: data.visitedCities || [],
-            transports: data.transports || [],
-            imageFiles: [],
-            categories: [],
-          } as Post;
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt || data.createdAt,
+            postType: 'new',
+            likeCount: data.likeCount || 0,
+            helpfulCount: data.helpfulCount || 0,
+            travelStartDate: '',
+            travelEndDate: '',
+            visitedCities: [],
+            transports: [],
+            hotels: [],
+            spots: [],
+            costs: [],
+            belongings: '',
+            youtubeUrl: '',
+          } as unknown as Post;
         });
-        
-        const tempCollectionMap = new Map<string, string>();
-        oldPostsData.forEach(p => p.id && tempCollectionMap.set(p.id, 'simple-posts'));
-        newPostsData.forEach(p => p.id && tempCollectionMap.set(p.id, 'posts'));
-        setPostCollectionMap(tempCollectionMap);
 
-        // Combine and remove duplicates, preferring new posts over old ones
-        const combinedPosts = [...oldPostsData, ...newPostsData];
+        const combinedPosts = [...newPostsData, ...oldPostsData];
         const uniquePosts = Array.from(new Map(combinedPosts.map(p => [p.id, p])).values());
-        
+        uniquePosts.sort((a, b) => {
+          const dateA = (a as any).createdAt?.toDate ? (a as any).createdAt.toDate() : new Date(0);
+          const dateB = (b as any).createdAt?.toDate ? (b as any).createdAt.toDate() : new Date(0);
+          return dateB.getTime() - dateA.getTime();
+        });
+
         setPosts(uniquePosts);
 
+        const newMap = new Map<string, string>();
+        newPostsData.forEach(p => p.id && newMap.set(p.id, 'posts'));
+        oldPostsData.forEach(p => p.id && newMap.set(p.id, 'simple-posts'));
+        setPostCollectionMap(newMap);
+
+        setLoading(false);
       } else {
         router.push('/login');
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -147,17 +164,16 @@ export default function MyPage() {
       try {
         await deleteDoc(doc(db, collectionName, postId));
         setPosts(posts.filter((post) => post.id !== postId));
-        setMessage('投稿を削除しました。');
+        alert('投稿を削除しました。');
       } catch (error) {
-        console.error('削除エラー:', error);
-        setMessage('削除中にエラーが発生しました。');
+        console.error('Error deleting post: ', error);
+        alert('投稿の削除に失敗しました。');
       }
     }
   };
 
   const handleSave = async () => {
     if (!uid) return;
-
     setMessage('保存中...');
 
     let newAvatarUrl = avatarUrl;
@@ -165,14 +181,14 @@ export default function MyPage() {
     const uploadImage = async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, {
+      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'default_preset');
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, {
         method: 'POST',
         body: formData,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error.message || 'Cloudinary upload failed');
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error.message || 'Image upload failed');
       }
       return data.secure_url;
     };
@@ -180,11 +196,10 @@ export default function MyPage() {
     try {
       if (avatarFile) {
         newAvatarUrl = await uploadImage(avatarFile);
-        setAvatarUrl(newAvatarUrl);
       }
 
       const userRef = doc(db, 'users', uid);
-      const dataToUpdate = {
+      await updateDoc(userRef, {
         nickname,
         id: userId,
         xLink,
@@ -192,29 +207,26 @@ export default function MyPage() {
         youtubeUrl: youtubeLink,
         instagramLink,
         bio,
+        avatarUrl: newAvatarUrl,
         travelFrequency,
         residence,
         overseasMatchCount,
         visitedCountries,
-        avatarUrl: newAvatarUrl,
-      };
-      await updateDoc(userRef, dataToUpdate);
-      setMessage('プロフィールを更新しました。');
-      setAvatarFile(null);
-      setAvatarPreview(null);
+      });
+      setMessage('プロフィールを更新しました！');
+      setAvatarFile(null); // Clear the file input after save
     } catch (error) {
-      console.error('更新エラー:', error);
-      setMessage(`エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('Error updating profile: ', error);
+      setMessage('プロフィールの更新に失敗しました。');
     }
   };
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      router.push('/login');
+      router.push('/');
     } catch (error) {
-      console.error('ログアウトエラー:', error);
-      alert('ログアウトに失敗しました。');
+      console.error('Logout failed', error);
     }
   };
 
@@ -226,132 +238,100 @@ export default function MyPage() {
         <h1 className="text-lg font-bold dark:text-white">マイページ</h1>
       </div>
 
-      {/* 編集フォーム */}
-      <div className="m-4 p-6 bg-white dark:bg-gray-800 rounded-xl shadow space-y-5">
-        <h1 className="text-xl font-bold mb-6 dark:text-white">プロフィール設定</h1>
+      <CollapsibleSection title="プロフィール設定">
+        <div className="p-6 space-y-6">
 
-        {/* 行ったことのある国 表示エリア */}
-        <div className="mb-4 p-4 border rounded-md dark:border-gray-600">
-          <label className="text-sm font-semibold dark:text-gray-300">行ったことのある国</label>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {visitedCountries.length > 0 ? (
-              visitedCountries.map((country) => (
-                <span
-                  key={country}
-                  className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full dark:bg-blue-200 dark:text-blue-800"
-                >
-                  #{countryOptions.find((c) => c.value === country)?.label || country}
-                </span>
-              ))
-            ) : (
-              <p className="text-sm text-gray-500">未設定</p>
-            )}
-          </div>
-        </div>
-
-        {/* 各種設定項目 */}
-        {/* プロフィール画像 */}
-        <div className="mb-6">
-          <label className="block text-sm font-bold mb-2 dark:text-gray-300">プロフィール画像</label>
-          <div className="flex items-center gap-4">
-            <div style={{ position: 'relative', width: '96px', height: '96px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
-              <Image
-                src={avatarPreview || avatarUrl || '/no-image.png'}
-                alt="Avatar"
-                fill
-                style={{ objectFit: 'cover' }}
+          {/* プロフィール画像 */}
+          <div className="space-y-2">
+            <label className="block text-sm font-bold dark:text-gray-300">プロフィール画像</label>
+            <div className="flex items-center gap-4">
+              <div style={{ position: 'relative', width: '96px', height: '96px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+                <Image
+                  src={avatarPreview || avatarUrl || '/no-image.png'}
+                  alt="Avatar"
+                  fill
+                  style={{ objectFit: 'cover' }}
+                />
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    setAvatarFile(file);
+                    setAvatarPreview(URL.createObjectURL(file));
+                  }
+                }}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
             </div>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  const file = e.target.files[0];
-                  setAvatarFile(file);
-                  setAvatarPreview(URL.createObjectURL(file));
-                }
-              }}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-            />
           </div>
-        </div>
 
-        <div className="space-y-4">
           {/* ニックネーム */}
-          <div className="flex justify-between items-center">
+          <div className="space-y-2">
             <label className="text-sm font-semibold dark:text-gray-300">ニックネーム</label>
-            <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
+            <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
           </div>
+          
           {/* ユーザーID */}
-          <div className="flex justify-between items-center">
+          <div className="space-y-2">
             <label className="text-sm font-semibold dark:text-gray-300">ユーザーID（@ID）</label>
-            <input type="text" value={userId} disabled className="w-2/3 text-right bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-1 text-gray-500 dark:text-gray-400 border-none" />
+            <div className="flex items-center w-full">
+              <span className="text-gray-500 dark:text-gray-400 mr-1">@</span>
+              <input type="text" value={userId} readOnly className="rounded-lg px-3 py-2 bg-gray-200 dark:bg-gray-800 dark:text-gray-400 focus:outline-none border-none w-full cursor-not-allowed" />
+            </div>
           </div>
-          {/* X(Twitter)リンク */}
-          <div className="flex justify-between items-center">
-            <label className="text-sm font-semibold dark:text-gray-300">X</label>
-            <input type="url" placeholder="https://x.com/..." value={xLink} onChange={(e) => setXLink(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+
+          {/* 自己紹介 */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold dark:text-gray-300">自己紹介</label>
+            <textarea value={bio} onChange={(e) => setBio(e.target.value)} className="w-full mt-1 rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" rows={4}></textarea>
           </div>
-          {/* noteリンク */}
-          <div className="flex justify-between items-center">
-            <label className="text-sm font-semibold dark:text-gray-300">note</label>
-            <input type="url" placeholder="https://note.com/..." value={noteLink} onChange={(e) => setNoteLink(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+
+          {/* SNSリンク */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold dark:text-gray-300">X (Twitter)</label>
+            <input type="text" value={xLink} onChange={(e) => setXLink(e.target.value)} placeholder="https://twitter.com/your_id" className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
           </div>
-          {/* YouTubeリンク */}
-          <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <label className="text-sm font-semibold dark:text-gray-300">Note</label>
+            <input type="text" value={noteLink} onChange={(e) => setNoteLink(e.target.value)} placeholder="https://note.com/your_id" className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
+          </div>
+          <div className="space-y-2">
             <label className="text-sm font-semibold dark:text-gray-300">YouTube</label>
-            <input type="url" placeholder="https://youtube.com/..." value={youtubeLink} onChange={(e) => setYoutubeLink(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+            <input type="text" value={youtubeLink} onChange={(e) => setYoutubeLink(e.target.value)} placeholder="https://youtube.com/channel/your_id" className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
           </div>
-          {/* Instagramリンク */}
-          <div className="flex justify-between items-center">
+          <div className="space-y-2">
             <label className="text-sm font-semibold dark:text-gray-300">Instagram</label>
-            <input type="text" value={instagramLink} onChange={(e) => setInstagramLink(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="例: kansenki.jp" />
+            <input type="text" value={instagramLink} onChange={(e) => setInstagramLink(e.target.value)} placeholder="https://instagram.com/your_id" className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
           </div>
 
-          {/* 自己紹介文 */}
-          <div className="mb-4">
-            <label className="block text-sm font-bold mb-2 dark:text-gray-300">自己紹介</label>
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              maxLength={160}
-              className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              placeholder="160文字以内で自己紹介を記入できます"
-              rows={4}
-            />
-            <p className="text-right text-sm text-gray-500 dark:text-gray-400">
-              {bio.length}/160
-            </p>
-          </div>
-
-          {/* 渡航回数 */}
-          <div className="flex justify-between items-center">
-            <label className="text-sm font-semibold dark:text-gray-300">海外渡航回数</label>
-            <select value={travelFrequency} onChange={(e) => setTravelFrequency(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-              {travelFrequencyOptions.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
+          {/* 海外観戦歴 */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold dark:text-gray-300">海外観戦歴</label>
+            <select value={travelFrequency} onChange={(e) => setTravelFrequency(e.target.value)} className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none">
+              {travelFrequencyOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </div>
-          {/* 居住地 */}
-          <div className="flex justify-between items-center">
+          <div className="space-y-2">
             <label className="text-sm font-semibold dark:text-gray-300">居住地</label>
-            <select value={residence} onChange={(e) => setResidence(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-              {countryOptions.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
+            <select value={residence} onChange={(e) => setResidence(e.target.value)} className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none">
+              {countryOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </div>
-          {/* 海外観戦試合数 */}
-          <div className="flex justify-between items-center">
-            <label className="text-sm font-semibold dark:text-gray-300">海外観戦試合数</label>
-            <select value={overseasMatchCount} onChange={(e) => setOverseasMatchCount(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-              {overseasMatchCountOptions.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold dark:text-gray-300">海外観戦回数</label>
+            <select value={overseasMatchCount} onChange={(e) => setOverseasMatchCount(e.target.value)} className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none">
+              {overseasMatchCountOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </div>
 
-          {/* 行ったことのある国 編集エリア */}
-          <div className="flex flex-col pt-4">
-            <label className="text-sm font-semibold dark:text-gray-300 mb-2">行ったことのある国（複数選択可）</label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border rounded-md max-h-48 overflow-y-auto dark:border-gray-600">
-              {countryOptions.filter(opt => opt.value !== '未選択').map((option) => (
+          {/* 行ったことのある国 */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold dark:text-gray-300">行ったことのある国（複数選択可）</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2 p-4 border rounded-md dark:border-gray-600">
+              {countryOptions.map(option => (
                 <div key={option.value} className="flex items-center">
                   <input
                     type="checkbox"
@@ -373,20 +353,20 @@ export default function MyPage() {
               ))}
             </div>
           </div>
-        </div>
 
-        {/* ボタン */}
-        <div className="text-right space-x-4 pt-4">
-          <button onClick={handleSave} className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition">
-            保存する
-          </button>
-          <button onClick={handleLogout} className="bg-gray-500 text-white px-5 py-2 rounded-md hover:bg-gray-600 transition">
-            ログアウト
-          </button>
-        </div>
+          {/* ボタン */}
+          <div className="flex justify-end items-center space-x-4 pt-4">
+            <button onClick={handleSave} className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition">
+              保存する
+            </button>
+            <button onClick={handleLogout} className="bg-gray-500 text-white px-5 py-2 rounded-md hover:bg-gray-600 transition">
+              ログアウト
+            </button>
+          </div>
 
-        {message && <p className="text-sm text-green-600 dark:text-green-400 text-center pt-2">{message}</p>}
-      </div>
+          {message && <p className="text-sm text-green-600 dark:text-green-400 text-center pt-2">{message}</p>}
+        </div>
+      </CollapsibleSection>
 
       {/* あなたの投稿一覧 */}
       <div className="p-4">
@@ -398,7 +378,7 @@ export default function MyPage() {
             <div key={post.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden flex flex-col">
               <a href={`/posts/${post.id}`}>
                 <Image
-                  src={post.existingImageUrls?.[0] || '/no-image.png'}
+                  src={post.imageUrls?.[0] || '/no-image.png'}
                   alt="観戦画像"
                   width={400}
                   height={400}
