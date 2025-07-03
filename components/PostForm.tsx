@@ -64,6 +64,7 @@ const initialFormData: PostFormData = {
   imageFiles: [],
   existingImageUrls: [],
   categories: [],
+  youtubeUrl: '',
 };
 
 interface PostFormProps {
@@ -513,29 +514,30 @@ export default function PostForm({ postId }: PostFormProps) {
       const finalImageUrls = [...formData.existingImageUrls, ...newImageUrls];
 
       // Map form data to the Firestore Post schema
-      const postData = {
+      const postData: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'likeCount' | 'helpfulCount'> & { updatedAt: any; createdAt?: any } = {
         authorId: user.uid,
         authorNickname: formData.authorNickname,
         postType: formData.postType,
         parentPostId: formData.parentPostId || null,
         title: formData.title,
         isPublic: formData.isPublic,
-        match: formData.match,
+        match: formData.match || undefined,
         travelStartDate: formData.travelStartDate,
         travelEndDate: formData.travelEndDate,
-      outboundTotalDuration: formData.outboundTotalDuration || '',
-      inboundTotalDuration: formData.inboundTotalDuration || '',
+        outboundTotalDuration: formData.outboundTotalDuration || '',
+        inboundTotalDuration: formData.inboundTotalDuration || '',
         visitedCities: formData.visitedCities,
         transports: formData.transports,
         hotels: formData.hotels,
         spots: formData.spots,
         costs: formData.costs,
-        belongings: formData.belongings,
-        goods: formData.goods,
-        content: formData.memories, // Map 'memories' back to 'content'
-        firstAdvice: formData.message, // Map 'message' back to 'firstAdvice'
+        belongings: formData.belongings ?? '',
+        goods: formData.goods ?? '',
+        content: formData.memories ?? '', // Map 'memories' back to 'content'
+        firstAdvice: formData.message ?? '', // Map 'message' back to 'firstAdvice'
         imageUrls: finalImageUrls,
         categories: formData.categories,
+        youtubeUrl: formData.youtubeUrl ?? '',
         updatedAt: serverTimestamp(),
       };
 
@@ -565,15 +567,6 @@ export default function PostForm({ postId }: PostFormProps) {
     }
   };
 
-  if (authLoading || isFetching) {
-    return <div className="text-center p-10">読み込み中...</div>;
-  }
-
-  if (!user) {
-    // Redirect will happen in useEffect, this is a fallback
-    return null;
-  }
-
   const selectStyles = {
     control: (base: any) => ({
       ...base,
@@ -583,6 +576,9 @@ export default function PostForm({ postId }: PostFormProps) {
       borderRadius: '4px',
       border: '1px solid #ccc',
       boxShadow: 'none',
+      '&:hover': {
+        borderColor: '#999',
+      },
     }),
     option: (base: any, state: any) => ({
       ...base,
@@ -593,19 +589,21 @@ export default function PostForm({ postId }: PostFormProps) {
     }),
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl mx-auto p-4 sm:p-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">{isEditMode ? '投稿を編集' : '観戦記を投稿'}</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-2">観戦の記録を共有しましょう！</p>
-      </div>
+  if (authLoading || isFetching) {
+    return <div className="text-center p-10">読み込み中...</div>;
+  }
 
+  if (!user) {
+    return <div className="text-center p-10">ログインしてください。</div>;
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
       {!isEditMode && (
-        <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg space-y-4">
-          <div className="flex items-center justify-center space-x-4">
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">投稿の種類</p>
-            <div className="flex items-center space-x-4">
-              <label className="flex items-center">
+        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl shadow-sm">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center">
+              <label className="flex items-center cursor-pointer">
                 <input
                   type="radio"
                   name="postType"
@@ -616,7 +614,9 @@ export default function PostForm({ postId }: PostFormProps) {
                 />
                 <span className="ml-2 text-gray-700 dark:text-gray-300">新規投稿</span>
               </label>
-              <label className="flex items-center">
+            </div>
+            <div className="flex items-center">
+              <label className="flex items-center cursor-pointer">
                 <input
                   type="radio"
                   name="postType"
@@ -631,7 +631,7 @@ export default function PostForm({ postId }: PostFormProps) {
           </div>
 
           {formData.postType === 'additional' && (
-            <div className="w-full">
+            <div className="w-full mt-4">
               <label htmlFor="parentPost-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 追加元の投稿を選択
               </label>

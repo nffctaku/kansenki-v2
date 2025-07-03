@@ -31,6 +31,8 @@ export default function MyPage() {
   const [uid, setUid] = useState('');
   const [xLink, setXLink] = useState('');
   const [noteLink, setNoteLink] = useState('');
+  const [youtubeLink, setYoutubeLink] = useState('');
+  const [instagramLink, setInstagramLink] = useState('');
   const [message, setMessage] = useState('');
   const router = useRouter();
   const [showXInput, setShowXInput] = useState(true);
@@ -50,6 +52,8 @@ export default function MyPage() {
           setUserId(userData.id || '');
           setXLink(userData.xLink || '');
           setNoteLink(userData.noteLink || '');
+          setYoutubeLink(userData.youtubeUrl || '');
+          setInstagramLink(userData.instagramLink || '');
         }
 
         // Fetch new posts from 'posts' collection
@@ -151,6 +155,8 @@ export default function MyPage() {
         nickname,
         xLink,
         noteLink,
+        youtubeUrl: youtubeLink,
+        instagramLink: instagramLink,
       });
       setMessage('✅ プロフィールを更新しました');
     } catch (err) {
@@ -180,88 +186,92 @@ return (
     {/* 編集フォーム */}
     <div className="mb-10 p-6 bg-white dark:bg-gray-800 rounded-xl shadow space-y-5">
       {/* ニックネーム */}
-      <div className="flex justify-between items-center">
-        <label className="text-sm font-semibold dark:text-gray-300">ニックネーム</label>
-        <input
-          type="text"
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none"
-        />
-      </div>
+        <div className="flex justify-between items-center">
+          <label className="text-sm font-semibold dark:text-gray-300">ニックネーム</label>
+          <input
+            type="text"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none"
+          />
+        </div>
 
-      {/* ユーザーID */}
-      <div className="flex justify-between items-center">
-        <label className="text-sm font-semibold dark:text-gray-300">ユーザーID（@ID）</label>
-        <input
-          type="text"
-          value={userId}
-          disabled
-          className="w-2/3 text-right bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-1 text-gray-500 dark:text-gray-400 border-none"
-        />
-      </div>
+        {/* ユーザーID */}
+        <div className="flex justify-between items-center">
+          <label className="text-sm font-semibold dark:text-gray-300">ユーザーID（@ID）</label>
+          <input
+            type="text"
+            value={userId}
+            disabled
+            className="w-2/3 text-right bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-1 text-gray-500 dark:text-gray-400 border-none"
+          />
+        </div>
 
-      {/* Xリンク */}
-      <div className="flex justify-between items-center">
-        <label className="text-sm font-semibold dark:text-gray-300">X</label>
-        {showXInput ? (
+        {/* X(Twitter)リンク */}
+        <div className="flex justify-between items-center">
+          <label className="text-sm font-semibold dark:text-gray-300">X</label>
           <input
             type="url"
             placeholder="https://x.com/..."
             value={xLink}
             onChange={(e) => setXLink(e.target.value)}
-            className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 dark:bg-gray-700 dark:text-white border-none"
+            className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowXInput(true)}
-            className="text-blue-600 hover:underline text-sm"
-          >
-            リンクを設定
-          </button>
-        )}
-      </div>
+        </div>
 
-      {/* Noteリンク */}
-      <div className="flex justify-between items-center">
-        <label className="text-sm font-semibold dark:text-gray-300">Note</label>
-        {showNoteInput ? (
+        {/* noteリンク */}
+        <div className="flex justify-between items-center">
+          <label className="text-sm font-semibold dark:text-gray-300">note</label>
           <input
             type="url"
             placeholder="https://note.com/..."
             value={noteLink}
             onChange={(e) => setNoteLink(e.target.value)}
-            className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 dark:bg-gray-700 dark:text-white border-none"
+            className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
-        ) : (
+        </div>
+
+        {/* YouTubeリンク */}
+        <div className="flex justify-between items-center">
+          <label className="text-sm font-semibold dark:text-gray-300">YouTube</label>
+          <input
+            type="url"
+            placeholder="https://youtube.com/..."
+            value={youtubeLink}
+            onChange={(e) => setYoutubeLink(e.target.value)}
+            className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          />
+        </div>
+
+        {/* Instagramリンク */}
+        <div className="flex justify-between items-center">
+          <label className="text-sm font-semibold dark:text-gray-300">Instagram</label>
+          <input
+            type="url"
+            placeholder="https://instagram.com/..."
+            value={instagramLink}
+            onChange={(e) => setInstagramLink(e.target.value)}
+            className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          />
+        </div>
+
+        {/* ボタン */}
+        <div className="text-right space-x-4">
           <button
-            type="button"
-            onClick={() => setShowNoteInput(true)}
-            className="text-green-600 hover:underline text-sm"
+            onClick={handleSave}
+            className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition"
           >
-            リンクを設定
+            保存する
           </button>
-        )}
-      </div>
+          <button
+            onClick={handleLogout}
+            className="bg-gray-500 text-white px-5 py-2 rounded-md hover:bg-gray-600 transition"
+          >
+            ログアウト
+          </button>
+        </div>
 
-      {/* ボタン */}
-      <div className="text-right space-x-4">
-        <button
-          onClick={handleSave}
-          className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition"
-        >
-          保存する
-        </button>
-        <button
-          onClick={handleLogout}
-          className="bg-gray-500 text-white px-5 py-2 rounded-md hover:bg-gray-600 transition"
-        >
-          ログアウト
-        </button>
-      </div>
-
-      {message && <p className="text-sm text-green-600 dark:text-green-400">{message}</p>}
+        {message && <p className="text-sm text-green-600 dark:text-green-400">{message}</p>}
     </div>
 
     {/* あなたの投稿一覧 */}

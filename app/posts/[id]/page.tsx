@@ -8,12 +8,13 @@ import { Post, Hotel, SimpleTravel, IndividualCost, Transport } from '@/types/ma
 import Link from 'next/link';
 import Image from 'next/image';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import PostActions from '@/components/PostActions';
+
 import { Navigation, Pagination, A11y } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import { airlineOptions, seatClassOptions } from '@/components/data';
+import LikeButton from '@/components/LikeButton';
 
 // Helper component for star ratings
 const StarRating = ({ rating }: { rating: number }) => (
@@ -247,21 +248,13 @@ export default function PostDetailPage() {
               {post.createdAt && typeof post.createdAt.toDate === 'function' ? new Date(post.createdAt.toDate()).toLocaleDateString() : '日付不明'}
             </span>
           </div>
-          <div className="flex items-center text-red-500">
-            <span>❤️</span>
-            <span className="ml-1 text-slate-700 dark:text-slate-300">{likeCount || 0}</span>
-          </div>
+
         </div>
       </div>
 
       {/* Post Actions */}
-      <div className="my-8 py-6 border-y border-slate-200 dark:border-slate-700">
-        <PostActions
-          postId={id}
-          likeCount={likeCount || 0}
-          helpfulCount={helpfulCount || 0}
-          match={match}
-        />
+      <div className="my-8 py-6 border-y border-slate-200 dark:border-slate-700 flex justify-center">
+        <LikeButton postId={id} />
       </div>
 
       {/* Match Details */}
@@ -287,6 +280,8 @@ export default function PostDetailPage() {
           </div>
         </DetailSection>
       )}
+
+
 
       {/* Ticket Details */}
       {match && (match.ticketPrice || match.ticketPurchaseRoute || match.seat || match.seatReview || match.isTour || match.isHospitality) && (

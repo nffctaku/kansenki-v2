@@ -126,6 +126,7 @@ export interface Post {
   transports?: Transport[];
   outboundTotalDuration?: string;
   inboundTotalDuration?: string;
+  youtubeUrl?: string;
 }
 
 // For data from 'simple-travels' collection

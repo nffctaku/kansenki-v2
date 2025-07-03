@@ -7,11 +7,14 @@ import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
+import LikeButton from '@/components/LikeButton';
 
 type UserInfo = {
   nickname: string;
   xLink?: string;
   noteLink?: string;
+  youtubeUrl?: string;
+  instagramLink?: string;
   avatarUrl?: string;
   coverUrl?: string;
 };
@@ -131,6 +134,28 @@ export default function UserPostsPage() {
               />
             </Link>
           )}
+          {userInfo.youtubeUrl && (
+            <Link href={userInfo.youtubeUrl} target="_blank" rel="noopener noreferrer">
+              <Image
+                src="/yt_logo_rgb_light.png"
+                alt="YouTubeリンク"
+                width={70}
+                height={35}
+                className="hover:opacity-80 rounded object-contain"
+              />
+            </Link>
+          )}
+          {userInfo.instagramLink && (
+            <Link href={userInfo.instagramLink} target="_blank" rel="noopener noreferrer">
+              <Image
+                src="/Instagram_Glyph_Gradient.png"
+                alt="Instagramリンク"
+                width={32}
+                height={32}
+                className="hover:opacity-80 rounded"
+              />
+            </Link>
+          )}
         </div>
       </div>
 
@@ -161,12 +186,12 @@ export default function UserPostsPage() {
                 ? `${post.matches[0].homeTeam || post.matches[0].teamA} vs ${post.matches[0].awayTeam || post.matches[0].teamB}`
                 : '試合情報なし'}
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {post.season || 'シーズン未設定'}
-            </p>
-            <p className="text-xs text-red-500 mt-1">
-              ♡ {post.likeCount || 0}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {post.season || 'シーズン未設定'}
+              </p>
+              <LikeButton postId={post.id} size="xs" />
+            </div>
           </div>
         </div>
       ))}

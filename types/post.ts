@@ -46,6 +46,7 @@ export interface Post {
   spots?: Spot[];
   costs?: IndividualCost[];
   belongings?: string;
+  youtubeUrl?: string;
 }
 
 export interface SectionProps {
@@ -83,6 +84,7 @@ export interface PostFormData {
   goods?: string;
   memories?: string;
   message?: string;
+  youtubeUrl?: string;
 
   // Images & Categories
   imageFiles: File[];

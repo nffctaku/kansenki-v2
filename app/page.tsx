@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { teamsByCountry } from '../lib/teamData';
-import { Heart } from 'lucide-react';
+
 import { SimplePost } from '../types/match';
+import LikeButton from '@/components/LikeButton';
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -202,9 +203,11 @@ export default function HomePage() {
                       </p>
                     </>
                   </Link>
-                  <div className="mt-1 flex items-center text-xs text-gray-500 dark:text-gray-400">
-                    <Heart className="h-3 w-3 mr-1 flex-shrink-0 text-blue-500 dark:text-blue-400" fill="currentColor" />
-                    <span className="truncate">{post.likeCount ?? 0} {post.author}</span>
+                  <div className="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    <span className="truncate font-medium text-gray-700 dark:text-gray-300">{post.author}</span>
+                    <LikeButton postId={post.id} size="xs" />
+                    {post.season && <span className="mx-1">·</span>}
+                    {post.season && <span className="truncate">{post.season}</span>}
                   </div>
                 </div>
                 <div className="w-24 h-16 flex-shrink-0">

@@ -4,7 +4,7 @@ import { PostFormData, SectionProps } from '@/types/post';
 import CollapsibleSection from './CollapsibleSection';
 
 function OtherInfoSection({ formData, setFormData }: SectionProps) {
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev: PostFormData) => ({ ...prev, [name]: value }));
   };
@@ -12,6 +12,17 @@ function OtherInfoSection({ formData, setFormData }: SectionProps) {
   return (
     <CollapsibleSection title="その他の情報">
       <div className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">YouTubeリンク</label>
+          <input
+            type="url"
+            name="youtubeUrl"
+            placeholder="https://www.youtube.com/watch?v=..."
+            value={formData.youtubeUrl || ''}
+            onChange={handleChange}
+            className="form-input w-full"
+          />
+        </div>
         <div>
           <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">持ち物リスト</label>
           <textarea
