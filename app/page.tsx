@@ -35,6 +35,7 @@ export default function HomePage() {
             season: d.match?.season ?? '',
             episode: d.title ?? '', // Using title as episode for consistency
             author: d.authorNickname ?? '',
+            authorId: d.authorId ?? '',
             league: d.match?.competition ?? '',
             matches: d.match ? [d.match] : [],
             likeCount: d.likeCount ?? 0,
@@ -60,6 +61,7 @@ export default function HomePage() {
             season: d.season ?? '',
             episode: d.episode ?? '',
             author: d.nickname ?? '',
+            authorId: d.uid ?? '',
             league: matchesWithCompat[0]?.competition ?? '',
             matches: matchesWithCompat,
             likeCount: d.likeCount ?? 0,
@@ -206,13 +208,19 @@ export default function HomePage() {
                       </>
                     </Link>
                     <div className="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                      <span className="truncate font-medium text-gray-700 dark:text-gray-300">{post.author}</span>
+                      {post.authorId ? (
+                        <Link href={`/user/${post.authorId}`} className="truncate font-medium text-gray-700 dark:text-gray-300 hover:underline">
+                          {post.author}
+                        </Link>
+                      ) : (
+                        <span className="truncate font-medium text-gray-700 dark:text-gray-300">{post.author}</span>
+                      )}
                       <LikeButton postId={post.id} size="xs" />
                       {displayDate && (
                         <>
                           <span className="mx-1">·</span>
                           <span className="truncate">{displayDate}</span>
-                        </>
+                        </> 
                       )}
                     </div>
                   </div>

@@ -152,6 +152,7 @@ export interface SimplePost {
   season: string;
   episode: string;
   author: string; // authorNickname
+  authorId?: string; // Add authorId
   league: string; // competition name
   matches: {
     homeTeam: string;

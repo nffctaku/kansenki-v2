@@ -2,10 +2,12 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import Image from 'next/image';
+import { FaInstagram, FaYoutube, FaXTwitter } from 'react-icons/fa6';
+import { FaStickyNote } from 'react-icons/fa';
 import { useTheme } from 'next-themes';
 import LikeButton from '@/components/LikeButton';
 import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
@@ -34,36 +36,44 @@ export default function UserPostsPage() {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    const fetchUserPosts = async (userId: string) => {
+    const fetchUserAndPosts = async (userId: string) => {
+      setLoading(true);
       try {
+        // Fetch user information using the userId as the document ID
         const userRef = doc(db, 'users', userId);
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
           setNotFound(true);
+          setLoading(false);
           return;
         }
+        
+        setUserInfo({ id: userSnap.id, ...userSnap.data() } as UserInfo);
 
-        const userData = userSnap.data();
-        setUserInfo(userData as UserInfo);
-
-        // Fetch from 'posts' (new format)
+        // Fetch from 'posts' (new format) - orderBy removed to prevent index error
         const postsCollection = collection(db, 'posts');
-        const qNew = query(postsCollection, where("authorId", "==", userId), where("isPublic", "==", true));
+        const qNew = query(
+            postsCollection, 
+            where("authorId", "==", userId),
+            where("isPublic", "==", true)
+        );
         const snapshotNew = await getDocs(qNew);
         const newPosts = snapshotNew.docs.map((doc) => {
             const d = doc.data();
             return {
                 id: doc.id,
                 ...d,
-                // ensure consistency for fields used in render
                 matches: d.match ? [d.match] : [],
             };
         });
 
-        // Fetch from 'simple-posts' (legacy format)
+        // Fetch from 'simple-posts' (legacy format) - orderBy removed to prevent index error
         const simplePostsCollection = collection(db, 'simple-posts');
-        const qLegacy = query(simplePostsCollection, where('uid', '==', userId));
+        const qLegacy = query(
+            simplePostsCollection, 
+            where('uid', '==', userId)
+        );
         const snapshotLegacy = await getDocs(qLegacy);
         const legacyPosts = snapshotLegacy.docs.map((doc) => ({
             id: doc.id,
@@ -78,6 +88,7 @@ export default function UserPostsPage() {
         uniquePosts.sort((a: any, b: any) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
 
         setPosts(uniquePosts);
+
       } catch (err) {
         console.error('データ取得エラー:', err);
         setNotFound(true);
@@ -87,9 +98,8 @@ export default function UserPostsPage() {
     };
 
     if (id && typeof id === 'string') {
-      fetchUserPosts(id);
-    } else if (id) {
-      // Handle cases where id is string[] if necessary, or mark as not found
+      fetchUserAndPosts(id);
+    } else {
       setNotFound(true);
       setLoading(false);
     }
@@ -117,25 +127,25 @@ export default function UserPostsPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{userInfo.nickname}</h1>
             
             {/* Social Links */}
-            <div className="flex items-center justify-center sm:justify-start gap-4 mt-2">
+            <div className="flex items-center justify-center sm:justify-start gap-4 mt-4">
               {userInfo.xLink && (
-                <a href={userInfo.xLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-500">
-                  X
-                </a>
-              )}
-              {userInfo.noteLink && (
-                <a href={userInfo.noteLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-green-500">
-                  Note
-                </a>
-              )}
-              {userInfo.youtubeUrl && (
-                <a href={userInfo.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-red-500">
-                  YouTube
+                <a href={userInfo.xLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700">
+                  <FaXTwitter size={24} />
                 </a>
               )}
               {userInfo.instagramLink && (
-                <a href={userInfo.instagramLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-pink-500">
-                  Instagram
+                <a href={userInfo.instagramLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700">
+                  <FaInstagram size={24} />
+                </a>
+              )}
+              {userInfo.youtubeUrl && (
+                <a href={userInfo.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700">
+                  <FaYoutube size={24} />
+                </a>
+              )}
+              {userInfo.noteLink && (
+                <a href={userInfo.noteLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700">
+                  <FaStickyNote size={24} />
                 </a>
               )}
             </div>
