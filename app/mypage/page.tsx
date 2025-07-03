@@ -17,6 +17,8 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import { PostFormData } from '@/types/post';
+import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
+
 
 type Post = PostFormData & {
   authorId?: string;
@@ -34,6 +36,10 @@ export default function MyPage() {
   const [youtubeLink, setYoutubeLink] = useState('');
   const [instagramLink, setInstagramLink] = useState('');
   const [message, setMessage] = useState('');
+  const [travelFrequency, setTravelFrequency] = useState('');
+  const [residence, setResidence] = useState('');
+  const [overseasMatchCount, setOverseasMatchCount] = useState('');
+  const [visitedCountries, setVisitedCountries] = useState<string[]>([]);
   const router = useRouter();
 
   const [postCollectionMap, setPostCollectionMap] = useState(new Map<string, string>());
@@ -52,6 +58,10 @@ export default function MyPage() {
           setNoteLink(userData.noteLink || '');
           setYoutubeLink(userData.youtubeUrl || '');
           setInstagramLink(userData.instagramLink || '');
+          setTravelFrequency(userData.travelFrequency || '0');
+          setResidence(userData.residence || '未選択');
+          setOverseasMatchCount(userData.overseasMatchCount || '0');
+          setVisitedCountries(userData.visitedCountries || []);
         }
 
         // Fetch new posts from 'posts' collection
@@ -126,14 +136,8 @@ export default function MyPage() {
     return () => unsubscribe();
   }, [router]);
 
-  const handleDelete = async (postId: string) => {
+  const handleDelete = async (postId: string, collectionName: string) => {
     if (window.confirm('本当にこの投稿を削除しますか？')) {
-      const collectionName = postCollectionMap.get(postId);
-      if (!collectionName) {
-        setMessage('エラー: 投稿のコレクションが見つかりません。');
-        console.error('Could not find collection for post ID:', postId);
-        return;
-      }
       try {
         await deleteDoc(doc(db, collectionName, postId));
         setPosts(posts.filter((post) => post.id !== postId));
@@ -149,13 +153,19 @@ export default function MyPage() {
     if (!uid) return;
     try {
       const userRef = doc(db, 'users', uid);
-      await updateDoc(userRef, {
+      const updatedData = {
         nickname,
+        id: userId,
         xLink,
         noteLink,
         youtubeUrl: youtubeLink,
-        instagramLink: instagramLink,
-      });
+        instagramLink,
+        travelFrequency,
+        residence,
+        overseasMatchCount,
+        visitedCountries,
+      };
+      await updateDoc(userRef, updatedData);
       setMessage('✅ プロフィールを更新しました');
     } catch (err) {
       console.error('❌ 更新エラー:', err);
@@ -175,177 +185,186 @@ export default function MyPage() {
 
   if (loading) return <div className="p-6 dark:text-white">読み込み中...</div>;
 
-return (
-  <div className="min-h-screen bg-[#f9f9f9] dark:bg-gray-900 font-sans pb-48">
-    <div className="flex justify-between items-center px-4 py-3 border-b bg-white dark:bg-gray-800 dark:border-gray-700">
-      <h1 className="text-lg font-bold dark:text-white">マイページ</h1>
-    </div>
+  return (
+    <div className="min-h-screen bg-[#f9f9f9] dark:bg-gray-900 font-sans pb-48">
+      <div className="flex justify-between items-center px-4 py-3 border-b bg-white dark:bg-gray-800 dark:border-gray-700">
+        <h1 className="text-lg font-bold dark:text-white">マイページ</h1>
+      </div>
 
-    {/* 編集フォーム */}
-    <div className="mb-10 p-6 bg-white dark:bg-gray-800 rounded-xl shadow space-y-5">
-      {/* ニックネーム */}
-        <div className="flex justify-between items-center">
-          <label className="text-sm font-semibold dark:text-gray-300">ニックネーム</label>
-          <input
-            type="text"
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-            className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none"
-          />
+      {/* 編集フォーム */}
+      <div className="m-4 p-6 bg-white dark:bg-gray-800 rounded-xl shadow space-y-5">
+        <h1 className="text-xl font-bold mb-6 dark:text-white">プロフィール設定</h1>
+
+        {/* 行ったことのある国 表示エリア */}
+        <div className="mb-4 p-4 border rounded-md dark:border-gray-600">
+          <label className="text-sm font-semibold dark:text-gray-300">行ったことのある国</label>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {visitedCountries.length > 0 ? (
+              visitedCountries.map((country) => (
+                <span
+                  key={country}
+                  className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full dark:bg-blue-200 dark:text-blue-800"
+                >
+                  #{countryOptions.find((c) => c.value === country)?.label || country}
+                </span>
+              ))
+            ) : (
+              <p className="text-sm text-gray-500">未設定</p>
+            )}
+          </div>
         </div>
 
-        {/* ユーザーID */}
-        <div className="flex justify-between items-center">
-          <label className="text-sm font-semibold dark:text-gray-300">ユーザーID（@ID）</label>
-          <input
-            type="text"
-            value={userId}
-            disabled
-            className="w-2/3 text-right bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-1 text-gray-500 dark:text-gray-400 border-none"
-          />
-        </div>
+        {/* 各種設定項目 */}
+        <div className="space-y-4">
+          {/* ニックネーム */}
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-semibold dark:text-gray-300">ニックネーム</label>
+            <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-2/3 text-right rounded-lg px-3 py-1 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
+          </div>
+          {/* ユーザーID */}
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-semibold dark:text-gray-300">ユーザーID（@ID）</label>
+            <input type="text" value={userId} disabled className="w-2/3 text-right bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-1 text-gray-500 dark:text-gray-400 border-none" />
+          </div>
+          {/* X(Twitter)リンク */}
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-semibold dark:text-gray-300">X</label>
+            <input type="url" placeholder="https://x.com/..." value={xLink} onChange={(e) => setXLink(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+          </div>
+          {/* noteリンク */}
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-semibold dark:text-gray-300">note</label>
+            <input type="url" placeholder="https://note.com/..." value={noteLink} onChange={(e) => setNoteLink(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+          </div>
+          {/* YouTubeリンク */}
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-semibold dark:text-gray-300">YouTube</label>
+            <input type="url" placeholder="https://youtube.com/..." value={youtubeLink} onChange={(e) => setYoutubeLink(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+          </div>
+          {/* Instagramリンク */}
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-semibold dark:text-gray-300">Instagram</label>
+            <input type="url" placeholder="https://instagram.com/..." value={instagramLink} onChange={(e) => setInstagramLink(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+          </div>
+          {/* 渡航回数 */}
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-semibold dark:text-gray-300">海外渡航回数</label>
+            <select value={travelFrequency} onChange={(e) => setTravelFrequency(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              {travelFrequencyOptions.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
+            </select>
+          </div>
+          {/* 居住地 */}
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-semibold dark:text-gray-300">居住地</label>
+            <select value={residence} onChange={(e) => setResidence(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              {countryOptions.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
+            </select>
+          </div>
+          {/* 海外観戦試合数 */}
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-semibold dark:text-gray-300">海外観戦試合数</label>
+            <select value={overseasMatchCount} onChange={(e) => setOverseasMatchCount(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              {overseasMatchCountOptions.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
+            </select>
+          </div>
 
-        {/* X(Twitter)リンク */}
-        <div className="flex justify-between items-center">
-          <label className="text-sm font-semibold dark:text-gray-300">X</label>
-          <input
-            type="url"
-            placeholder="https://x.com/..."
-            value={xLink}
-            onChange={(e) => setXLink(e.target.value)}
-            className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-        </div>
-
-        {/* noteリンク */}
-        <div className="flex justify-between items-center">
-          <label className="text-sm font-semibold dark:text-gray-300">note</label>
-          <input
-            type="url"
-            placeholder="https://note.com/..."
-            value={noteLink}
-            onChange={(e) => setNoteLink(e.target.value)}
-            className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-        </div>
-
-        {/* YouTubeリンク */}
-        <div className="flex justify-between items-center">
-          <label className="text-sm font-semibold dark:text-gray-300">YouTube</label>
-          <input
-            type="url"
-            placeholder="https://youtube.com/..."
-            value={youtubeLink}
-            onChange={(e) => setYoutubeLink(e.target.value)}
-            className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-        </div>
-
-        {/* Instagramリンク */}
-        <div className="flex justify-between items-center">
-          <label className="text-sm font-semibold dark:text-gray-300">Instagram</label>
-          <input
-            type="url"
-            placeholder="https://instagram.com/..."
-            value={instagramLink}
-            onChange={(e) => setInstagramLink(e.target.value)}
-            className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
+          {/* 行ったことのある国 編集エリア */}
+          <div className="flex flex-col pt-4">
+            <label className="text-sm font-semibold dark:text-gray-300 mb-2">行ったことのある国（複数選択可）</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border rounded-md max-h-48 overflow-y-auto dark:border-gray-600">
+              {countryOptions.filter(opt => opt.value !== '未選択').map((option) => (
+                <div key={option.value} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id={`country-${option.value}`}
+                    value={option.value}
+                    checked={visitedCountries.includes(option.value)}
+                    onChange={(e) => {
+                      const country = e.target.value;
+                      setVisitedCountries(prev => 
+                        prev.includes(country) 
+                          ? prev.filter(c => c !== country) 
+                          : [...prev, country]
+                      );
+                    }}
+                    className="mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label htmlFor={`country-${option.value}`} className="text-sm dark:text-gray-300">{option.label}</label>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* ボタン */}
-        <div className="text-right space-x-4">
-          <button
-            onClick={handleSave}
-            className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition"
-          >
+        <div className="text-right space-x-4 pt-4">
+          <button onClick={handleSave} className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition">
             保存する
           </button>
-          <button
-            onClick={handleLogout}
-            className="bg-gray-500 text-white px-5 py-2 rounded-md hover:bg-gray-600 transition"
-          >
+          <button onClick={handleLogout} className="bg-gray-500 text-white px-5 py-2 rounded-md hover:bg-gray-600 transition">
             ログアウト
           </button>
         </div>
 
-        {message && <p className="text-sm text-green-600 dark:text-green-400">{message}</p>}
-    </div>
+        {message && <p className="text-sm text-green-600 dark:text-green-400 text-center pt-2">{message}</p>}
+      </div>
 
-    {/* あなたの投稿一覧 */}
-<div className="p-4">
-  <div className="mb-6">
-    <h2 className="text-lg font-bold mb-4 dark:text-white">あなたの投稿</h2>
-
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-      {posts.filter(p => p.id).map((post) => (
-        <div
-          key={post.id}
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden flex flex-col"
-        >
-          <a href={`/posts/${post.id}`}>
-            <Image
-              src={post.existingImageUrls?.[0] || '/no-image.png'}
-              alt="観戦画像"
-              width={400}
-              height={400}
-              className="w-full aspect-square object-cover hover:opacity-90 transition"
-            />
-          </a>
-
-          <div className="p-4 text-sm flex-grow leading-[1.1] space-y-[2px]">
-            <p className="text-[12px] text-gray-400 dark:text-gray-500 leading-[1.1] m-0">
-              {post.match?.season || 'シーズン未設定'}
-            </p>
-            <p className="text-[13px] font-bold dark:text-gray-200 leading-[1.1] m-0">
-              {post.match?.competition || '大会名未入力'}
-            </p>
-            <p className="text-[13px] text-gray-800 dark:text-gray-300 leading-[1.1] m-0">
-              {post.match?.homeTeam || 'チームA'} vs {post.match?.awayTeam || 'チームB'}
-            </p>
-          </div>
-
-          <div className="flex justify-between items-center px-4 pb-4">
-            <a
-              href={`/edit/${post.id}`}
-              className="flex items-center gap-[4px] text-green-600 text-[12px] hover:underline"
-            >
-              <Image
-                src="/えんぴつのアイコン素材.png"
-                alt="編集"
-                width={10}
-                height={10}
-                className="w-[10px] h-[10px] object-contain dark:invert"
-              />
-              編集
-            </a>
-            <button
-              onClick={() => {
-              if (post.id) {
-                handleDelete(post.id);
-              }
-            }}
-              className="flex items-center gap-[4px] text-red-600 text-[12px] hover:underline"
-            >
-              <Image
-                src="/ゴミ箱の無料アイコン.png"
-                alt="削除"
-                width={10}
-                height={10}
-                className="w-[10px] h-[10px] object-contain dark:invert"
-              />
-               削除
+      {/* あなたの投稿一覧 */}
+      <div className="p-4">
+        <div className="mb-6">
+          <h2 className="text-lg font-bold mb-4 dark:text-white">あなたの投稿</h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {posts.filter(p => p.id).map((post) => (
+            <div key={post.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden flex flex-col">
+              <a href={`/posts/${post.id}`}>
+                <Image
+                  src={post.existingImageUrls?.[0] || '/no-image.png'}
+                  alt="観戦画像"
+                  width={400}
+                  height={400}
+                  className="w-full aspect-square object-cover hover:opacity-90 transition"
+                />
+              </a>
+              <div className="p-4 text-sm flex-grow leading-[1.1] space-y-[2px]">
+                <p className="text-[12px] text-gray-400 dark:text-gray-500 leading-[1.1] m-0">
+                  {post.match?.season || post.match?.date || '日付未設定'}
+                </p>
+                <p className="text-[13px] font-bold dark:text-gray-200 leading-[1.1] m-0">
+                  {post.match?.competition || '大会名未入力'}
+                </p>
+                <p className="text-[13px] text-gray-800 dark:text-gray-300 leading-[1.1] m-0">
+                  {post.match?.homeTeam || 'チームA'} vs {post.match?.awayTeam || 'チームB'}
+                </p>
+              </div>
+              <div className="flex justify-between items-center px-4 pb-4">
+                <a href={`/edit/${post.id}?collection=${postCollectionMap.get(post.id!) || ''}`} className="flex items-center gap-[4px] text-green-600 text-[12px] hover:underline">
+                  <Image src="/えんぴつのアイコン素材.png" alt="編集" width={10} height={10} className="w-[10px] h-[10px] object-contain dark:invert" />
+                  編集
+                </a>
+                <button
+                  onClick={() => {
+                    if (post.id) {
+                      const collectionName = postCollectionMap.get(post.id);
+                      if (collectionName) {
+                        handleDelete(post.id, collectionName);
+                      }
+                    }
+                  }}
+                  className="flex items-center gap-[4px] text-red-600 text-[12px] hover:underline"
+                >
+                  <Image src="/ゴミ箱の無料アイコン.png" alt="削除" width={10} height={10} className="w-[10px] h-[10px] object-contain dark:invert" />
+                  削除
                 </button>
               </div>
             </div>
           ))}
         </div>
       </div>
-    </div>
 
-       {/* がっつり余白 */}
-    <div className="h-48" />
-  </div>
+      {/* がっつり余白 */}
+      <div className="h-48" />
+    </div>
   );
 }
 

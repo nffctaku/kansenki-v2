@@ -157,6 +157,7 @@ export interface SimplePost {
     homeTeam: string;
     awayTeam: string;
     competition: string;
+    date?: string;
   }[];
   likeCount: number;
   helpfulCount: number;

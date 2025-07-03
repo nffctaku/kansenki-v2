@@ -20,6 +20,7 @@ type Travel = {
     teamB?: string;
     homeTeam?: string;
     awayTeam?: string;
+    date?: string;
   }[];
 };
 
@@ -111,6 +112,7 @@ export default function CategoryPage() {
           const normalizedMatches = [{
               homeTeam: match.homeTeam,
               awayTeam: match.awayTeam,
+              date: match.date,
           }];
           
           return {
@@ -208,7 +210,7 @@ export default function CategoryPage() {
                 )}
 
                 <div className="text-xs text-gray-500 px-1">
-                  {post.season || 'シーズン未設定'}
+                  {post.season || (post.matches && post.matches[0]?.date) || '日付未設定'}
                 </div>
 
                 <div className="text-xs text-red-500 px-1 mt-1">

@@ -226,3 +226,47 @@ export const travelDurationOptions = Array.from({ length: 80 }, (_, i) => {
   const value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   return { value: value, label: `${hourText}${minuteText}` };
 });
+
+export const travelFrequencyOptions = [
+  { value: '0', label: '未選択' },
+  { value: '1-5', label: '1〜5回' },
+  { value: '6-10', label: '6〜10回' },
+  { value: '11-20', label: '11〜20回' },
+  { value: '21-30', label: '21〜30回' },
+  { value: '31-50', label: '31〜50回' },
+  { value: '51+', label: '51回以上' },
+];
+
+export const countryOptions = [
+  { value: '未選択', label: '未選択' },
+  { value: 'Japan', label: '日本' },
+  { value: 'United Kingdom', label: 'イギリス' },
+  { value: 'Spain', label: 'スペイン' },
+  { value: 'Germany', label: 'ドイツ' },
+  { value: 'Italy', label: 'イタリア' },
+  { value: 'France', label: 'フランス' },
+  { value: 'Portugal', label: 'ポルトガル' },
+  { value: 'Netherlands', label: 'オランダ' },
+  { value: 'Belgium', label: 'ベルギー' },
+  { value: 'United States', label: 'アメリカ' },
+  { value: 'Brazil', label: 'ブラジル' },
+  { value: 'Argentina', label: 'アルゼンチン' },
+  { value: 'South Korea', label: '韓国' },
+  { value: 'China', label: '中国' },
+  { value: 'Australia', label: 'オーストラリア' },
+  { value: 'Thailand', label: 'タイ' },
+  { value: 'Singapore', label: 'シンガポール' },
+  { value: 'Malaysia', label: 'マレーシア' },
+  { value: 'Other', label: 'その他' },
+];
+
+export const overseasMatchCountOptions = [
+  { value: '0', label: '未選択' },
+  { value: '1-5', label: '1〜5試合' },
+  { value: '6-10', label: '6〜10試合' },
+  { value: '11-20', label: '11〜20試合' },
+  { value: '21-30', label: '21〜30試合' },
+  { value: '31-50', label: '31〜50試合' },
+  { value: '51-100', label: '51〜100試合' },
+  { value: '101+', label: '101試合以上' },
+];

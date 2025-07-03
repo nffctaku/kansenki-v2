@@ -189,43 +189,50 @@ export default function HomePage() {
           {searchQuery.trim() === '' ? '最新の投稿' : '検索結果'}
         </h2>
         <div className="divide-y divide-gray-200 dark:divide-gray-700">
-          {displayedPosts.map((post) => (
-            <div key={post.id} className="py-4">
-              <div className="flex items-start justify-between space-x-4">
-                <div className="flex-1 min-w-0">
-                  <Link href={`/posts/${post.id}`} className="no-underline">
-                    <>
-                      <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-200">
-                        {post.episode}
-                      </p>
-                      <p className="truncate text-xs text-gray-500 dark:text-gray-400">
-                        {post.matches[0]?.homeTeam || ''} vs {post.matches[0]?.awayTeam || ''}
-                      </p>
-                    </>
-                  </Link>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                    <span className="truncate font-medium text-gray-700 dark:text-gray-300">{post.author}</span>
-                    <LikeButton postId={post.id} size="xs" />
-                    {post.season && <span className="mx-1">·</span>}
-                    {post.season && <span className="truncate">{post.season}</span>}
+          {displayedPosts.map((post) => {
+            const displayDate = post.season || (post.matches && post.matches[0]?.date);
+            return (
+              <div key={post.id} className="py-4">
+                <div className="flex items-start justify-between space-x-4">
+                  <div className="flex-1 min-w-0">
+                    <Link href={`/posts/${post.id}`} className="no-underline">
+                      <>
+                        <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-200">
+                          {post.episode}
+                        </p>
+                        <p className="truncate text-xs text-gray-500 dark:text-gray-400">
+                          {post.matches[0]?.homeTeam || ''} vs {post.matches[0]?.awayTeam || ''}
+                        </p>
+                      </>
+                    </Link>
+                    <div className="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                      <span className="truncate font-medium text-gray-700 dark:text-gray-300">{post.author}</span>
+                      <LikeButton postId={post.id} size="xs" />
+                      {displayDate && (
+                        <>
+                          <span className="mx-1">·</span>
+                          <span className="truncate">{displayDate}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="w-24 h-16 flex-shrink-0">
+                    {post.imageUrls && post.imageUrls.length > 0 && (
+                      <Link href={`/posts/${post.id}`}>
+                        <Image
+                          src={post.imageUrls[0]}
+                          alt={post.episode || 'Post image'}
+                          width={96}
+                          height={64}
+                          className="h-full w-full rounded-md object-cover"
+                        />
+                      </Link>
+                    )}
                   </div>
                 </div>
-                <div className="w-24 h-16 flex-shrink-0">
-                  {post.imageUrls && post.imageUrls.length > 0 && (
-                    <Link href={`/posts/${post.id}`}>
-                      <Image
-                        src={post.imageUrls[0]}
-                        alt={post.episode || 'Post image'}
-                        width={96}
-                        height={64}
-                        className="h-full w-full rounded-md object-cover"
-                      />
-                    </Link>
-                  )}
-                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </>
