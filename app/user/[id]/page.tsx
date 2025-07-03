@@ -2,12 +2,12 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, doc, getDoc, orderBy } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import Image from 'next/image';
 import { FaInstagram, FaYoutube, FaXTwitter } from 'react-icons/fa6';
-import { FaStickyNote } from 'react-icons/fa';
+
 import { useTheme } from 'next-themes';
 import LikeButton from '@/components/LikeButton';
 import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
@@ -145,7 +145,7 @@ export default function UserPostsPage() {
               )}
               {userInfo.noteLink && (
                 <a href={userInfo.noteLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700">
-                  <FaStickyNote size={24} />
+                  <Image src="/icon.png" alt="Note icon" width={24} height={24} className="opacity-60 hover:opacity-100 transition" />
                 </a>
               )}
             </div>

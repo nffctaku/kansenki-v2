@@ -22,7 +22,7 @@ const ratingCategories: RatingCategory[] = [
 
 type StarRatingProps = {
   rating: number;
-  setRating?: (_rating: number) => void;
+    setRating?: (rating: number) => void;
   readOnly?: boolean;
 };
 
