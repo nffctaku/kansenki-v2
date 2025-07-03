@@ -138,15 +138,23 @@ export default function PostForm({ postId }: PostFormProps) {
     }));
 
     return {
+      id: oldData.id,
       title: oldData.title || '',
       isPublic: oldData.isPublic !== undefined ? oldData.isPublic : true,
       match: matchInfo,
-      memories: oldData.content || '',
-      message: oldData.firstAdvice || '',
-      goods: oldData.goods || '',
+      travelStartDate: oldData.travelStartDate || oldData.travel_start_date || '',
+      travelEndDate: oldData.travelEndDate || oldData.travel_end_date || '',
+      visitedCities: oldData.visitedCities || [],
+      outboundTotalDuration: oldData.outboundTotalDuration || '',
+      inboundTotalDuration: oldData.inboundTotalDuration || '',
+      transports: oldData.transports || [],
       hotels: hotels,
       spots: spots,
       costs: costs,
+      belongings: oldData.belongings || '',
+      goods: oldData.goods || '',
+      memories: oldData.content || '',
+      message: oldData.firstAdvice || '',
       existingImageUrls: oldData.imageUrls || [],
     };
   };
@@ -293,31 +301,47 @@ export default function PostForm({ postId }: PostFormProps) {
 
   useEffect(() => {
     const fetchUserPosts = async () => {
-      if (!user) return;
+      if (!user || isEditMode) return;
+
       setLoadingUserPosts(true);
       try {
         const postsQuery = query(
           collection(db, 'posts'),
-          where('authorId', '==', user.uid),
-          orderBy('match.date', 'desc')
+          where('authorId', '==', user.uid)
         );
         const postsSnapshot = await getDocs(postsQuery);
         const newPosts = postsSnapshot.docs.map(doc => normalizeNewPostToFormData({ id: doc.id, ...doc.data() } as Post));
 
-        const legacyPostsQuery = query(
+        const legacyPostsQueryByUid = query(
           collection(db, 'simple-posts'),
-          where('uid', '==', user.uid),
-          orderBy('match_date', 'desc')
+          where('uid', '==', user.uid)
         );
-        const legacyPostsSnapshot = await getDocs(legacyPostsQuery);
-        const legacyPosts = legacyPostsSnapshot.docs.map(doc => normalizeOldPostToFormData({ id: doc.id, ...doc.data() }));
+        const legacyPostsQueryByAuthorId = query(
+          collection(db, 'simple-posts'),
+          where('authorId', '==', user.uid)
+        );
 
-        const allPosts = [...newPosts, ...legacyPosts];
+        const [legacyPostsSnapshotByUid, legacyPostsSnapshotByAuthorId] = await Promise.all([
+          getDocs(legacyPostsQueryByUid),
+          getDocs(legacyPostsQueryByAuthorId),
+        ]);
+
+        const legacyPostsByUid = legacyPostsSnapshotByUid.docs.map(doc => normalizeOldPostToFormData({ id: doc.id, ...doc.data() }));
+        const legacyPostsByAuthorId = legacyPostsSnapshotByAuthorId.docs.map(doc => normalizeOldPostToFormData({ id: doc.id, ...doc.data() }));
+
+        const allPosts = [...newPosts, ...legacyPostsByUid, ...legacyPostsByAuthorId];
         const uniquePosts = allPosts.filter((post, index, self) =>
-          index === self.findIndex((p) => (
-            p.id === post.id
-          ))
+          index === self.findIndex((p) => p.id === post.id)
         );
+
+        // Sort posts by date on the client side
+        uniquePosts.sort((a, b) => {
+          const dateA = a.match?.date || '';
+          const dateB = b.match?.date || '';
+          if (dateA < dateB) return 1;
+          if (dateA > dateB) return -1;
+          return 0;
+        });
 
         setUserPosts(uniquePosts);
       } catch (error) {
@@ -328,8 +352,10 @@ export default function PostForm({ postId }: PostFormProps) {
       }
     };
 
-    if (formData.postType === 'additional' && !isEditMode) {
+    if (formData.postType === 'additional') {
       fetchUserPosts();
+    } else {
+      setUserPosts([]); // Clear posts if switching back to 'new'
     }
   }, [formData.postType, user, isEditMode]);
 
@@ -382,43 +408,89 @@ export default function PostForm({ postId }: PostFormProps) {
   };
 
   const handleParentPostChange = (option: { value: string; label: string } | null) => {
-      setSelectedParentPostId(option ? option.value : null);
+    setSelectedParentPostId(option ? option.value : null);
+
+    if (option) {
+      const parentPost = userPosts.find(p => p.id === option.value);
+      console.log("Selected Parent Post Data:", parentPost); // For debugging
+      if (parentPost) {
+        const parentHotels = (parentPost.hotels || []).map((h: any) => ({ ...h, id: uuidv4() }));
+        const parentSpots = (parentPost.spots || []).map((s: any) => ({ ...s, id: uuidv4() }));
+        const parentCosts = (parentPost.costs || []).map((c: any) => ({ ...c, id: uuidv4() }));
+        const parentTransports = (parentPost.transports || []).map((t: any) => ({ ...t, id: uuidv4() }));
+        const parentVisitedCities = (parentPost.visitedCities || []).map((city: any) => ({ ...city, id: uuidv4() }));
+
+        setFormData(prevData => ({
+          ...initialFormData,
+          travelStartDate: parentPost.travelStartDate || '',
+          travelEndDate: parentPost.travelEndDate || '',
+          visitedCities: parentVisitedCities,
+          outboundTotalDuration: parentPost.outboundTotalDuration || '',
+          inboundTotalDuration: parentPost.inboundTotalDuration || '',
+          transports: parentTransports,
+          costs: parentCosts,
+          belongings: parentPost.belongings || '',
+          goods: parentPost.goods || '',
+          hotels: parentHotels,
+          spots: parentSpots,
+
+          id: null,
+          postType: 'additional',
+          parentPostId: parentPost.id,
+          authorNickname: prevData.authorNickname,
+          isPublic: prevData.isPublic,
+          title: '',
+          match: initialFormData.match,
+          memories: '',
+          message: '',
+          imageFiles: [],
+          existingImageUrls: [],
+          categories: [],
+        }));
+      }
+    } else {
+      setFormData(prevData => ({
+        ...initialFormData,
+        postType: 'additional',
+        authorNickname: prevData.authorNickname,
+      }));
+    }
   };
 
   const uploadImagesToCloudinary = async (files: File[]): Promise<string[]> => {
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-      if (!cloudName || !uploadPreset) {
-        setMessage('Cloudinaryの設定がされていません。');
-        throw new Error('Cloudinary configuration is missing.');
-      }
-    
-      const uploadedImageUrls: string[] = [];
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', uploadPreset);
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+    if (!cloudName || !uploadPreset) {
+      setMessage('Cloudinaryの設定がされていません。');
+      throw new Error('Cloudinary configuration is missing.');
+    }
+  
+    const uploadedImageUrls: string[] = [];
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', uploadPreset);
 
-        try {
-          const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-            method: 'POST',
-            body: formData,
-          });
+      try {
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+          method: 'POST',
+          body: formData,
+        });
 
-          if (!response.ok) {
-            const errorData = await response.json();
-            console.error('Cloudinary upload error:', errorData);
-            throw new Error(`Cloudinary image upload failed: ${errorData.error.message}`);
-          }
-
-          const data = await response.json();
-          uploadedImageUrls.push(data.secure_url);
-        } catch (error) {
-          console.error('Error uploading image:', error);
-          setMessage(`画像のアップロードに失敗しました: ${file.name}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Cloudinary upload error:', errorData);
+          throw new Error(`Cloudinary image upload failed: ${errorData.error.message}`);
         }
+
+        const data = await response.json();
+        uploadedImageUrls.push(data.secure_url);
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        setMessage(`画像のアップロードに失敗しました: ${file.name}`);
       }
-      return uploadedImageUrls;
+    }
+    return uploadedImageUrls;
   };
 
   const handleSubmit = async (e: FormEvent) => {
