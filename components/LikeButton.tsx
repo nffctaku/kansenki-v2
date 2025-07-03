@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db, auth } from '@/lib/firebase';
 import { User, onAuthStateChanged } from 'firebase/auth';
+import { FaHeart, FaRegHeart } from 'react-icons/fa';
 import { doc, getDoc, runTransaction } from 'firebase/firestore';
 
 interface LikeButtonProps {
@@ -90,19 +91,25 @@ const LikeButton: React.FC<LikeButtonProps> = ({ postId, size = 'md' }) => {
   };
 
   const sizeStyles = {
-    xs: 'px-2 py-0.5 text-[11px]',
+    xs: 'px-1.5 py-0 text-[9px] leading-tight',
     sm: 'px-2.5 py-1 text-xs',
     md: 'px-4 py-2 text-base',
   };
 
   const iconStyles = {
-    xs: 'text-base',
+    xs: 'text-xs',
     sm: 'text-xl',
     md: 'text-2xl',
   };
 
+  const gapStyles = {
+    xs: 'gap-px',
+    sm: 'gap-1',
+    md: 'gap-1',
+  };
+
   const loadingStyles = {
-    xs: 'h-6 w-12',
+    xs: 'h-4 w-9',
     sm: 'h-7 w-14',
     md: 'h-10 w-20',
   };
@@ -115,15 +122,17 @@ const LikeButton: React.FC<LikeButtonProps> = ({ postId, size = 'md' }) => {
     <button
       onClick={handleLike}
       disabled={loading || !user}
-      className={`flex items-center justify-center gap-1 rounded-full transition-colors duration-200 ease-in-out ${sizeStyles[size]} ${
+      className={`flex items-center justify-center ${gapStyles[size]} rounded-full transition-colors duration-200 ease-in-out ${sizeStyles[size]} ${
         liked
           ? 'bg-pink-500 text-white'
           : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
       } disabled:opacity-50 disabled:cursor-not-allowed`}
     >
-      <span className={`${iconStyles[size]} ${liked ? 'text-red-500' : 'text-gray-400'}`}>
-        {liked ? '❤️' : '🤍'}
-      </span>
+      {liked ? (
+        <FaHeart className={`${iconStyles[size]} text-red-500`} />
+      ) : (
+        <FaRegHeart className={`${iconStyles[size]} text-gray-400`} />
+      )}
       <span className="font-semibold text-gray-800 dark:text-gray-200">{likeCount}</span>
     </button>
   );
