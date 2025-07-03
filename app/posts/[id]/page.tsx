@@ -188,8 +188,6 @@ export default function PostDetailPage() {
     authorNickname,
     authorId,
 
-    likeCount,
-    helpfulCount,
     outboundTotalDuration,
     inboundTotalDuration,
   } = post;

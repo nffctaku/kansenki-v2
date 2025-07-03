@@ -35,10 +35,8 @@ export default function MyPage() {
   const [instagramLink, setInstagramLink] = useState('');
   const [message, setMessage] = useState('');
   const router = useRouter();
-  const [showXInput, setShowXInput] = useState(true);
-  const [showNoteInput, setShowNoteInput] = useState(true);
-  const [postCollectionMap, setPostCollectionMap] = useState(new Map<string, string>());
 
+  const [postCollectionMap, setPostCollectionMap] = useState(new Map<string, string>());
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {

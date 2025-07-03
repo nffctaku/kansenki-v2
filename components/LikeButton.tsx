@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db, auth } from '@/lib/firebase';
 import { User, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, deleteDoc, runTransaction } from 'firebase/firestore';
+import { doc, getDoc, runTransaction } from 'firebase/firestore';
 
 interface LikeButtonProps {
   postId: string;
