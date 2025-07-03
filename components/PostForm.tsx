@@ -412,7 +412,6 @@ export default function PostForm({ postId }: PostFormProps) {
 
     if (option) {
       const parentPost = userPosts.find(p => p.id === option.value);
-      console.log("Selected Parent Post Data:", parentPost); // For debugging
       if (parentPost) {
         const parentHotels = (parentPost.hotels || []).map((h: any) => ({ ...h, id: uuidv4() }));
         const parentSpots = (parentPost.spots || []).map((s: any) => ({ ...s, id: uuidv4() }));
@@ -464,9 +463,8 @@ export default function PostForm({ postId }: PostFormProps) {
       setMessage('Cloudinaryの設定がされていません。');
       throw new Error('Cloudinary configuration is missing.');
     }
-  
-    const uploadedImageUrls: string[] = [];
-    for (const file of files) {
+
+    const uploadPromises = files.map(async (file) => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', uploadPreset);
@@ -484,13 +482,16 @@ export default function PostForm({ postId }: PostFormProps) {
         }
 
         const data = await response.json();
-        uploadedImageUrls.push(data.secure_url);
+        return data.secure_url;
       } catch (error) {
         console.error('Error uploading image:', error);
         setMessage(`画像のアップロードに失敗しました: ${file.name}`);
+        return null;
       }
-    }
-    return uploadedImageUrls;
+    });
+
+    const results = await Promise.all(uploadPromises);
+    return results.filter((url): url is string => url !== null);
   };
 
   const handleSubmit = async (e: FormEvent) => {
