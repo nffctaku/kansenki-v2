@@ -35,7 +35,11 @@ export default function MyPage() {
   const [noteLink, setNoteLink] = useState('');
   const [youtubeLink, setYoutubeLink] = useState('');
   const [instagramLink, setInstagramLink] = useState('');
+  const [bio, setBio] = useState('');
   const [message, setMessage] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [travelFrequency, setTravelFrequency] = useState('');
   const [residence, setResidence] = useState('');
   const [overseasMatchCount, setOverseasMatchCount] = useState('');
@@ -58,10 +62,12 @@ export default function MyPage() {
           setNoteLink(userData.noteLink || '');
           setYoutubeLink(userData.youtubeUrl || '');
           setInstagramLink(userData.instagramLink || '');
+          setBio(userData.bio || '');
           setTravelFrequency(userData.travelFrequency || '0');
           setResidence(userData.residence || '未選択');
           setOverseasMatchCount(userData.overseasMatchCount || '0');
           setVisitedCountries(userData.visitedCountries || []);
+          setAvatarUrl(userData.avatarUrl || '');
         }
 
         // Fetch new posts from 'posts' collection
@@ -151,25 +157,54 @@ export default function MyPage() {
 
   const handleSave = async () => {
     if (!uid) return;
+
+    setMessage('保存中...');
+
+    let newAvatarUrl = avatarUrl;
+
+    const uploadImage = async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error.message || 'Cloudinary upload failed');
+      }
+      return data.secure_url;
+    };
+
     try {
+      if (avatarFile) {
+        newAvatarUrl = await uploadImage(avatarFile);
+        setAvatarUrl(newAvatarUrl);
+      }
+
       const userRef = doc(db, 'users', uid);
-      const updatedData = {
+      const dataToUpdate = {
         nickname,
         id: userId,
         xLink,
         noteLink,
         youtubeUrl: youtubeLink,
         instagramLink,
+        bio,
         travelFrequency,
         residence,
         overseasMatchCount,
         visitedCountries,
+        avatarUrl: newAvatarUrl,
       };
-      await updateDoc(userRef, updatedData);
-      setMessage('✅ プロフィールを更新しました');
-    } catch (err) {
-      console.error('❌ 更新エラー:', err);
-      setMessage('❌ 更新に失敗しました');
+      await updateDoc(userRef, dataToUpdate);
+      setMessage('プロフィールを更新しました。');
+      setAvatarFile(null);
+      setAvatarPreview(null);
+    } catch (error) {
+      console.error('更新エラー:', error);
+      setMessage(`エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -215,6 +250,33 @@ export default function MyPage() {
         </div>
 
         {/* 各種設定項目 */}
+        {/* プロフィール画像 */}
+        <div className="mb-6">
+          <label className="block text-sm font-bold mb-2 dark:text-gray-300">プロフィール画像</label>
+          <div className="flex items-center gap-4">
+            <div style={{ position: 'relative', width: '96px', height: '96px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+              <Image
+                src={avatarPreview || avatarUrl || '/no-image.png'}
+                alt="Avatar"
+                fill
+                style={{ objectFit: 'cover' }}
+              />
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  const file = e.target.files[0];
+                  setAvatarFile(file);
+                  setAvatarPreview(URL.createObjectURL(file));
+                }
+              }}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            />
+          </div>
+        </div>
+
         <div className="space-y-4">
           {/* ニックネーム */}
           <div className="flex justify-between items-center">
@@ -244,8 +306,25 @@ export default function MyPage() {
           {/* Instagramリンク */}
           <div className="flex justify-between items-center">
             <label className="text-sm font-semibold dark:text-gray-300">Instagram</label>
-            <input type="url" placeholder="https://instagram.com/..." value={instagramLink} onChange={(e) => setInstagramLink(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+            <input type="text" value={instagramLink} onChange={(e) => setInstagramLink(e.target.value)} className="w-3/4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="例: kansenki.jp" />
           </div>
+
+          {/* 自己紹介文 */}
+          <div className="mb-4">
+            <label className="block text-sm font-bold mb-2 dark:text-gray-300">自己紹介</label>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              maxLength={160}
+              className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              placeholder="160文字以内で自己紹介を記入できます"
+              rows={4}
+            />
+            <p className="text-right text-sm text-gray-500 dark:text-gray-400">
+              {bio.length}/160
+            </p>
+          </div>
+
           {/* 渡航回数 */}
           <div className="flex justify-between items-center">
             <label className="text-sm font-semibold dark:text-gray-300">海外渡航回数</label>

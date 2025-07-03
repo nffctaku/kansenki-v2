@@ -8,15 +8,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
 import LikeButton from '@/components/LikeButton';
+import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
 
 type UserInfo = {
   nickname: string;
+  id: string;
   xLink?: string;
   noteLink?: string;
   youtubeUrl?: string;
   instagramLink?: string;
   avatarUrl?: string;
-  coverUrl?: string;
+  bio?: string;
+  travelFrequency?: string;
+  residence?: string;
+  overseasMatchCount?: string;
+  visitedCountries?: string[];
 };
 
 export default function UserPostsPage() {
@@ -94,68 +100,96 @@ export default function UserPostsPage() {
 
   return (
     <div className="max-w-screen-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-      {/* カバー画像 */}
-      {userInfo.coverUrl && (
-        <div className="relative h-40 w-full bg-gray-200 dark:bg-gray-700">
-          <Image
-            src={userInfo.coverUrl}
-            alt="cover"
-            fill
-            className="object-cover"
-          />
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col items-center sm:flex-row sm:items-start sm:gap-6">
+          {/* Avatar */}
+          <div className="relative h-24 w-24 sm:h-32 sm:w-32 rounded-full bg-gray-300 dark:bg-gray-600 overflow-hidden flex-shrink-0 border-4 border-white dark:border-gray-800 shadow-md">
+            <Image
+              src={userInfo.avatarUrl || '/no-image.png'}
+              alt="avatar"
+              fill
+              className="object-cover"
+            />
+          </div>
+
+          {/* User Info (Name, Links, Bio) */}
+          <div className="mt-4 sm:mt-0 text-center sm:text-left flex-grow">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{userInfo.nickname}</h1>
+            
+            {/* Social Links */}
+            <div className="flex items-center justify-center sm:justify-start gap-4 mt-2">
+              {userInfo.xLink && (
+                <a href={userInfo.xLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-500">
+                  X
+                </a>
+              )}
+              {userInfo.noteLink && (
+                <a href={userInfo.noteLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-green-500">
+                  Note
+                </a>
+              )}
+              {userInfo.youtubeUrl && (
+                <a href={userInfo.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-red-500">
+                  YouTube
+                </a>
+              )}
+              {userInfo.instagramLink && (
+                <a href={userInfo.instagramLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-pink-500">
+                  Instagram
+                </a>
+              )}
+            </div>
+
+            {/* Bio */}
+            {userInfo.bio && (
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-4 whitespace-pre-wrap">
+                {userInfo.bio}
+              </p>
+            )}
+          </div>
         </div>
-      )}
-
-      <div className="px-4 pt-4 pb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{userInfo.nickname}</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">@{id}</p>
-
-        {/* XリンクとNoteリンク */}
-        <div className="flex items-center gap-4">
-          {userInfo.xLink && (
-            <Link href={userInfo.xLink} target="_blank" rel="noopener noreferrer">
-              <Image
-                src="/X.png"
-                alt="Xリンク"
-                width={32}
-                height={32}
-                className="hover:opacity-80 rounded dark:invert"
-              />
-            </Link>
-          )}
-          {userInfo.noteLink && (
-            <Link href={userInfo.noteLink} target="_blank" rel="noopener noreferrer">
-              <Image
-                src="/note.png"
-                alt="Noteリンク"
-                width={80}
-                height={40}
-                className="hover:opacity-80 rounded"
-              />
-            </Link>
-          )}
-          {userInfo.youtubeUrl && (
-            <Link href={userInfo.youtubeUrl} target="_blank" rel="noopener noreferrer">
-              <Image
-                src="/yt_logo_rgb_light.png"
-                alt="YouTubeリンク"
-                width={70}
-                height={35}
-                className="hover:opacity-80 rounded object-contain"
-              />
-            </Link>
-          )}
-          {userInfo.instagramLink && (
-            <Link href={userInfo.instagramLink} target="_blank" rel="noopener noreferrer">
-              <Image
-                src="/Instagram_Glyph_Gradient.png"
-                alt="Instagramリンク"
-                width={32}
-                height={32}
-                className="hover:opacity-80 rounded"
-              />
-            </Link>
-          )}
+        
+        {/* Profile Details */}
+        <div className="mt-6 border-t dark:border-gray-700 pt-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">プロフィール</h3>
+            <div className="space-y-4">
+              {userInfo.residence && userInfo.residence !== '未選択' && (
+                  <div className="flex items-center">
+                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400">居住地</span>
+                      <span className="text-sm text-gray-800 dark:text-gray-200">{countryOptions.find(o => o.value === userInfo.residence)?.label || userInfo.residence}</span>
+                  </div>
+              )}
+              {userInfo.travelFrequency && userInfo.travelFrequency !== '0' && (
+                  <div className="flex items-center">
+                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400">海外渡航回数</span>
+                      <span className="text-sm text-gray-800 dark:text-gray-200">{travelFrequencyOptions.find(o => o.value === userInfo.travelFrequency)?.label || userInfo.travelFrequency}</span>
+                  </div>
+              )}
+              {userInfo.overseasMatchCount && userInfo.overseasMatchCount !== '0' && (
+                  <div className="flex items-center">
+                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400">海外観戦試合数</span>
+                      <span className="text-sm text-gray-800 dark:text-gray-200">{overseasMatchCountOptions.find(o => o.value === userInfo.overseasMatchCount)?.label || userInfo.overseasMatchCount}</span>
+                  </div>
+              )}
+              {userInfo.visitedCountries && userInfo.visitedCountries.length > 0 && (
+                  <div className="flex items-start">
+                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400 pt-1">行ったことのある国</span>
+                      <div className="flex flex-wrap gap-2 flex-1">
+                          {userInfo.visitedCountries.map((country) => (
+                              <span
+                                  key={country}
+                                  className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-gray-600 dark:text-gray-300"
+                              >
+                                  {countryOptions.find((c) => c.value === country)?.label || country}
+                              </span>
+                          ))}
+                      </div>
+                  </div>
+              )}
+              {!(userInfo.residence && userInfo.residence !== '未選択') && !(userInfo.travelFrequency && userInfo.travelFrequency !== '0') && !(userInfo.overseasMatchCount && userInfo.overseasMatchCount !== '0') && !(userInfo.visitedCountries && userInfo.visitedCountries.length > 0) && (
+                <p className="text-sm text-gray-500 dark:text-gray-400">プロフィールはまだ設定されていません。</p>
+              )}
+            </div>
         </div>
       </div>
 
