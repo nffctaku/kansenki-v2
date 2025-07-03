@@ -16,6 +16,7 @@ import {
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
+import { FaInstagram, FaYoutube, FaXTwitter } from 'react-icons/fa6';
 import { Post, MatchInfo } from '@/types/post';
 import CollapsibleSection from '@/components/post-form/CollapsibleSection';
 import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
@@ -69,14 +70,18 @@ export default function MyPage() {
           setAvatarUrl(userData.avatarUrl || '');
         }
 
+        const newMap = new Map<string, string>();
+
         // Fetch new posts from 'posts' collection
         const newPostsQuery = query(collection(db, 'posts'), where('authorId', '==', user.uid));
         const newPostsSnapshot = await getDocs(newPostsQuery);
         const newPostsData = newPostsSnapshot.docs.map((doc) => {
+          newMap.set(doc.id, 'posts');
           const data = doc.data();
           return {
             ...data,
             id: doc.id,
+            postType: 'new',
             imageUrls: data.imageUrls || data.existingImageUrls || [],
           } as unknown as Post;
         });
@@ -85,6 +90,7 @@ export default function MyPage() {
         const oldPostsQuery = query(collection(db, 'simple-posts'), where('uid', '==', user.uid));
         const oldPostsSnapshot = await getDocs(oldPostsQuery);
         const oldPostsData = oldPostsSnapshot.docs.map((doc) => {
+          newMap.set(doc.id, 'simple-posts');
           const data = doc.data();
           const matchData = data.matches && data.matches[0] ? data.matches[0] : {};
           const ticketData = data.ticket || {};
@@ -96,61 +102,48 @@ export default function MyPage() {
             kickoff: matchData.kickoff || '',
             homeTeam: matchData.homeTeam || matchData.teamA || '',
             awayTeam: matchData.awayTeam || matchData.teamB || '',
-            homeScore: matchData.homeScore || '',
-            awayScore: matchData.awayScore || '',
+            homeScore: matchData.homeScore ?? '',
+            awayScore: matchData.awayScore ?? '',
             stadium: matchData.stadium || '',
             ticketPrice: ticketData.price || '',
-            ticketPurchaseRoute: '',
+            ticketPurchaseRoute: ticketData.purchaseRoute || '',
+            ticketPurchaseRouteUrl: ticketData.purchaseRouteUrl || '',
+            ticketTeam: ticketData.team || '',
             isTour: ticketData.isTour || false,
-            seat: '',
-            seatReview: '',
+            isHospitality: ticketData.isHospitality || false,
+            hospitalityDetail: ticketData.hospitalityDetail || '',
+            seat: ticketData.seat || '',
+            seatReview: ticketData.seatReview || '',
           };
 
-          return {
+          const post: Post = {
             id: doc.id,
             authorId: data.uid,
             authorNickname: data.nickname || '',
             isPublic: data.isPublic !== undefined ? data.isPublic : true,
-            title: data.title || data.text?.substring(0, 30) || '無題の投稿',
-            content: data.text || '',
-            firstAdvice: '',
-            goods: '',
-            imageUrls: (data.imageUrls || []).slice().reverse(),
-            categories: data.tags || [],
+            title: data.title || '',
+            content: data.content || '',
+            firstAdvice: data.firstAdvice || '',
+            goods: data.goods || '',
+            imageUrls: data.imageUrls || [],
+            categories: data.categories || [],
             match: matchInfo,
             createdAt: data.createdAt,
             updatedAt: data.updatedAt || data.createdAt,
-            postType: 'new',
+            postType: 'simple',
             likeCount: data.likeCount || 0,
             helpfulCount: data.helpfulCount || 0,
-            travelStartDate: '',
-            travelEndDate: '',
-            visitedCities: [],
-            transports: [],
-            hotels: [],
-            spots: [],
-            costs: [],
-            belongings: '',
-            youtubeUrl: '',
-          } as unknown as Post;
+          };
+
+          return post;
         });
-
-        const combinedPosts = [...newPostsData, ...oldPostsData];
-        const uniquePosts = Array.from(new Map(combinedPosts.map(p => [p.id, p])).values());
-        uniquePosts.sort((a, b) => {
-          const dateA = (a as any).createdAt?.toDate ? (a as any).createdAt.toDate() : new Date(0);
-          const dateB = (b as any).createdAt?.toDate ? (b as any).createdAt.toDate() : new Date(0);
-          return dateB.getTime() - dateA.getTime();
-        });
-
-        setPosts(uniquePosts);
-
-        const newMap = new Map<string, string>();
-        newPostsData.forEach(p => p.id && newMap.set(p.id, 'posts'));
-        oldPostsData.forEach(p => p.id && newMap.set(p.id, 'simple-posts'));
+        
+        const combined = [...newPostsData, ...oldPostsData];
+        combined.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        setPosts(combined);
         setPostCollectionMap(newMap);
-
         setLoading(false);
+
       } else {
         router.push('/login');
       }
@@ -238,7 +231,84 @@ export default function MyPage() {
         <h1 className="text-lg font-bold dark:text-white">マイページ</h1>
       </div>
 
-      <CollapsibleSection title="プロフィール設定">
+      {/* Public Profile View */}
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col items-center sm:flex-row sm:items-start sm:gap-6">
+          {/* Avatar */}
+          <div className="relative h-24 w-24 sm:h-32 sm:w-32 rounded-full bg-gray-300 dark:bg-gray-600 overflow-hidden flex-shrink-0 border-4 border-white dark:border-gray-800 shadow-md">
+            <Image
+              src={avatarUrl || '/default-avatar.png'}
+              alt="User Avatar"
+              fill
+              className="object-cover"
+            />
+          </div>
+          {/* User Info */}
+          <div className="flex-1 text-center sm:text-left mt-4 sm:mt-0">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{nickname}</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">@{userId}</p>
+            {/* Social Links */}
+            <div className="flex items-center justify-center sm:justify-start gap-4 mt-2">
+              {xLink && (
+                <a href={xLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
+                  <FaXTwitter size={20} />
+                </a>
+              )}
+              {instagramLink && (
+                <a href={instagramLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
+                  <FaInstagram size={20} />
+                </a>
+              )}
+              {youtubeLink && (
+                <a href={youtubeLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
+                  <FaYoutube size={20} />
+                </a>
+              )}
+              {noteLink && (
+                <a href={noteLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
+                  <span className="font-bold text-lg">note</span>
+                </a>
+              )}
+            </div>
+            {/* Bio */}
+            {bio && <p className="mt-4 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap text-left">{bio}</p>}
+          </div>
+        </div>
+        
+        {/* Travel Stats */}
+        <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+            <div className="space-y-4">
+              {residence && residence !== '未選択' && (
+                  <div className="flex items-center">
+                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400">居住地</span>
+                      <span className="text-sm text-gray-800 dark:text-gray-200">{residence}</span>
+                  </div>
+              )}
+              {travelFrequency && travelFrequency !== '0' && (
+                  <div className="flex items-center">
+                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400">観戦頻度</span>
+                      <span className="text-sm text-gray-800 dark:text-gray-200">{travelFrequencyOptions.find(o => o.value === travelFrequency)?.label || travelFrequency}</span>
+                  </div>
+              )}
+              {overseasMatchCount && overseasMatchCount !== '0' && (
+                  <div className="flex items-center">
+                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400">海外観戦試合数</span>
+                      <span className="text-sm text-gray-800 dark:text-gray-200">{overseasMatchCountOptions.find(o => o.value === overseasMatchCount)?.label || overseasMatchCount}</span>
+                  </div>
+              )}
+              {visitedCountries && visitedCountries.length > 0 && (
+                  <div className="flex items-start">
+                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400 pt-1">行ったことのある国</span>
+                      <span className="text-sm text-gray-800 dark:text-gray-200 flex-1">
+                        {visitedCountries.map(country => countryOptions.find(c => c.value === country)?.label || country).join('、')}
+                      </span>
+                  </div>
+              )}
+            </div>
+        </div>
+      </div>
+
+      <CollapsibleSection title="プロフィールを編集する">
         <div className="p-6 space-y-6">
 
           {/* プロフィール画像 */}

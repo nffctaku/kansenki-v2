@@ -36,7 +36,7 @@ export interface Post {
   helpfulCount?: number;
 
   // Fields from PostFormData to be included in Post
-  postType: 'new' | 'additional';
+  postType: 'new' | 'additional' | 'simple';
   travelStartDate?: string;
   travelEndDate?: string;
   visitedCities?: { id: string; name: string }[];
