@@ -58,50 +58,56 @@ export default function PostDetailPage() {
       return;
     }
 
-    const handlePostData = (postData: Post): Promise<Post> => {
+    const handlePostData = async (postData: Post): Promise<Post> => {
+      console.log('[Debug] Step 3: Handling post data (checking for travelId)', postData);
       if (postData.travelId) {
         const travelRef = doc(db, 'simple-travels', postData.travelId);
-        return getDoc(travelRef)
-          .then(travelSnap => {
-            if (travelSnap.exists()) {
-              const travelData = travelSnap.data() as SimpleTravel;
-              return { ...postData, ...travelData };
-            }
-            return postData;
-          })
-          .catch(error => {
-            console.error("Could not fetch travel details, possibly due to permissions:", error);
-            return postData;
-          });
+        try {
+          const travelSnap = await getDoc(travelRef);
+          if (travelSnap.exists()) {
+            console.log('[Debug] Step 4: Found and merging travel data.');
+            const travelData = travelSnap.data() as SimpleTravel;
+            return { ...postData, ...travelData };
+          }
+          console.log('[Debug] Step 4: Travel data not found or no permission.');
+          return postData;
+        } catch (error) {
+          console.error("[Debug] Error fetching travel details:", error);
+          return postData;
+        }
       }
-      return Promise.resolve(postData);
+      console.log('[Debug] Step 4: No travelId found, returning post data as is.');
+      return postData;
     };
 
     const normalizePostData = (data: DocumentData, docId: string): Post => {
-      const matchInfo = data.matches && data.matches[0] ? {
-        competition: data.matches[0].competition || '',
-        season: data.matches[0].season || data.season || '',
-        date: data.matches[0].date || '',
-        kickoff: data.matches[0].kickoff || '',
-        homeTeam: data.matches[0].homeTeam || data.matches[0].teamA || '',
-        awayTeam: data.matches[0].awayTeam || data.matches[0].teamB || '',
-        homeScore: String(data.matches[0].homeScore ?? ''),
-        awayScore: String(data.matches[0].awayScore ?? ''),
-        stadium: data.matches[0].stadium || '',
-        ticketPrice: data.matches[0].ticketPrice || '',
-        ticketPurchaseRoute: data.matches[0].ticketPurchaseRoute || '',
-        ticketPurchaseRouteUrl: data.matches[0].ticketPurchaseRouteUrl || '',
-        ticketTeam: data.matches[0].ticketTeam || '',
-        isTour: data.matches[0].isTour || false,
-        isHospitality: data.matches[0].isHospitality || false,
-        hospitalityDetail: data.matches[0].hospitalityDetail || '',
-        seat: data.matches[0].seat || '',
-        seatReview: data.matches[0].seatReview || '',
-      } : undefined;
 
+      const matchSource = (data.matches && data.matches[0]) ? data.matches[0] : data.match;
 
+      const matchInfo = matchSource ? {
+        competition: matchSource.competition || '',
+        season: matchSource.season || data.season || '',
+        date: matchSource.date || '',
+        kickoff: matchSource.kickoff || '',
+        homeTeam: matchSource.homeTeam || matchSource.teamA || '',
+        awayTeam: matchSource.awayTeam || matchSource.teamB || '',
+        homeScore: String(matchSource.homeScore ?? ''),
+        awayScore: String(matchSource.awayScore ?? ''),
+        stadium: matchSource.stadium || '',
+        ticketPrice: matchSource.ticketPrice || '',
+        ticketPurchaseRoute: matchSource.ticketPurchaseRoute || '',
+        ticketPurchaseRouteUrl: matchSource.ticketPurchaseRouteUrl || '',
+        ticketTeam: matchSource.ticketTeam || '',
+        isTour: matchSource.isTour || false,
+        isHospitality: matchSource.isHospitality || false,
+        hospitalityDetail: matchSource.hospitalityDetail || '',
+        seat: matchSource.seat || '',
+        seatReview: matchSource.seatReview || '',
+      } : {
+        competition: '', season: '', date: '', kickoff: '', homeTeam: '', awayTeam: '', homeScore: '', awayScore: '', stadium: '', ticketPrice: '', ticketPurchaseRoute: '', ticketPurchaseRouteUrl: '', ticketTeam: '', isTour: false, isHospitality: false, hospitalityDetail: '', seat: '', seatReview: '',
+      };
 
-      return {
+      const normalized = {
         id: docId,
         authorId: data.authorId || data.uid || '',
         authorNickname: data.authorNickname || data.nickname || '',
@@ -132,39 +138,51 @@ export default function PostDetailPage() {
         belongings: data.belongings || '',
         youtubeUrl: data.youtubeUrl || '',
       } as unknown as Post;
+      return normalized;
     };
 
-    const postRef = doc(db, 'posts', id);
-    const unsubscribe = onSnapshot(postRef, async (postSnap) => {
-      try {
-        setLoading(true);
-        if (postSnap.exists()) {
-          const postData = postSnap.data();
-          let normalizedPost = normalizePostData(postData, postSnap.id);
-          normalizedPost = await handlePostData(normalizedPost);
-          setPost(normalizedPost);
-        } else {
-          const oldPostRef = doc(db, 'simple-posts', id);
-          const oldPostSnap = await getDoc(oldPostRef);
-          if (oldPostSnap.exists()) {
-            const oldPostData = oldPostSnap.data();
-            let normalizedPost = normalizePostData(oldPostData, oldPostSnap.id);
-            normalizedPost = await handlePostData(normalizedPost);
-            setPost(normalizedPost);
+    const unsub = onSnapshot(doc(db, 'posts', id), async (docSnap) => {
+      setLoading(true);
+      let postData: Post | null = null;
+
+      if (docSnap.exists()) {
+        console.log('[Debug] Step 1: Post found in "posts" collection. Raw data:', docSnap.data());
+        postData = normalizePostData(docSnap.data(), docSnap.id);
+      } else {
+        const simpleDocRef = doc(db, 'simple-posts', id);
+        try {
+          const simpleDocSnap = await getDoc(simpleDocRef);
+          if (simpleDocSnap.exists()) {
+            console.log('[Debug] Step 1: Post found in "simple-posts" collection. Raw data:', simpleDocSnap.data());
+            postData = normalizePostData(simpleDocSnap.data(), simpleDocSnap.id);
           } else {
             setError('投稿が見つかりません。');
+            setLoading(false);
+            return;
           }
+        } catch (err) {
+          console.error("Error fetching from simple-posts:", err);
+          setError('投稿の読み込み中にエラーが発生しました。');
+          setLoading(false);
+          return;
         }
-      } catch (e) {
-        console.error("Error fetching post:", e);
-        setError('投稿の読み込み中にエラーが発生しました。');
-      } finally {
-        setLoading(false);
       }
+
+      if (postData) {
+        const finalPost = await handlePostData(postData);
+        console.log('[Debug] Step 5: Final post data being set to state', finalPost);
+        setPost(finalPost);
+      }
+
+      setLoading(false);
+    }, (err) => {
+      console.error("Error fetching post:", err);
+      setError('投稿の読み込み中にエラーが発生しました。');
+      setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [id]);
+    return () => unsub();
+  }, [id, router]);
 
   useEffect(() => {
     if (post) {

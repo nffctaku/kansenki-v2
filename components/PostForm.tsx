@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { doc, getDoc, serverTimestamp, setDoc, collection, DocumentData, query, where, getDocs } from 'firebase/firestore';
@@ -69,9 +69,10 @@ const initialFormData: PostFormData = {
 
 interface PostFormProps {
   postId?: string;
+  collectionName?: string;
 }
 
-export default function PostForm({ postId }: PostFormProps) {
+export default function PostForm({ postId, collectionName }: PostFormProps) {
   const [user, authLoading] = useAuthState(auth);
   const router = useRouter();
   const isEditMode = !!postId;
@@ -222,7 +223,10 @@ export default function PostForm({ postId }: PostFormProps) {
 
   useEffect(() => {
     const fetchUserDataAndPost = async () => {
-      if (authLoading) return;
+      if (authLoading) {
+        setIsFetching(true);
+        return;
+      }
       if (!user) {
         router.push('/login');
         return;
@@ -238,71 +242,57 @@ export default function PostForm({ postId }: PostFormProps) {
         return;
       }
 
+      if (!collectionName) {
+        console.error("Collection name is missing in edit mode.");
+        setMessage('投稿情報の読み込みに失敗しました。URLが正しくありません。');
+        setIsFetching(false);
+        return;
+      }
+
       setIsFetching(true);
       try {
-        let normalizedData: Partial<PostFormData> | null = null;
-        let postExists = false;
-
-        const postRef = doc(db, 'posts', postId);
+        const postRef = doc(db, collectionName, postId);
         const postSnap = await getDoc(postRef);
+
         if (postSnap.exists()) {
-          postExists = true;
-          setIsLegacyPost(false);
-          const post = postSnap.data() as Post;
-          if (post.authorId !== user.uid) {
+          const postData = postSnap.data();
+          
+          const authorId = collectionName === 'posts' ? postData.authorId : postData.uid;
+          if (authorId !== user.uid) {
             setMessage('この投稿を編集する権限がありません。');
-            router.push('/');
+            router.push('/mypage');
             return;
           }
-          normalizedData = normalizeNewPostToFormData(post);
-        } else {
-          const legacyPostRef = doc(db, 'simple-posts', postId);
-          const legacyPostSnap = await getDoc(legacyPostRef);
-          if (legacyPostSnap.exists()) {
-            postExists = true;
-            setIsLegacyPost(true);
-            const legacyPost = legacyPostSnap.data();
-            const authorField = legacyPost.uid || legacyPost.authorId;
-            if (authorField && authorField !== user.uid) {
-              setMessage('この投稿を編集する権限がありません。');
-              router.push('/');
-              return;
-            }
-            normalizedData = normalizeOldPostToFormData(legacyPost);
-          }
-        }
 
-        if (postExists && normalizedData) {
-          const finalMatch = {
-            ...initialFormData.match!,
-            ...(normalizedData.match || {}),
-          } as MatchInfo;
+          const normalizedData = collectionName === 'posts'
+            ? normalizeNewPostToFormData(postData as Post)
+            : normalizeOldPostToFormData(postData);
 
           setFormData({
             ...initialFormData,
             ...normalizedData,
-            match: finalMatch,
             id: postId,
             authorNickname: userNickname,
-            imageFiles: [],
           });
+          setIsLegacyPost(collectionName === 'simple-posts');
+
         } else {
-          setMessage('投稿が見つかりません。');
+          setMessage('投稿が見つかりませんでした。');
         }
       } catch (error) {
-        console.error('データ取得エラー:', error);
-        setMessage('データの読み込み中にエラーが発生しました。');
+        console.error('投稿データの取得中にエラーが発生しました:', error);
+        setMessage('投稿データの読み込みに失敗しました。');
       } finally {
         setIsFetching(false);
       }
     };
 
     fetchUserDataAndPost();
-  }, [postId, isEditMode, user, authLoading, router]);
+  }, [postId, collectionName, isEditMode, user, authLoading, router]);
 
   useEffect(() => {
     const fetchUserPosts = async () => {
-      if (!user || isEditMode) return;
+      if (!user) return;
 
       setLoadingUserPosts(true);
       try {
@@ -335,7 +325,6 @@ export default function PostForm({ postId }: PostFormProps) {
           index === self.findIndex((p) => p.id === post.id)
         );
 
-        // Sort posts by date on the client side
         uniquePosts.sort((a, b) => {
           const dateA = a.match?.date || '';
           const dateB = b.match?.date || '';
@@ -356,11 +345,13 @@ export default function PostForm({ postId }: PostFormProps) {
     if (formData.postType === 'additional') {
       fetchUserPosts();
     } else {
-      setUserPosts([]); // Clear posts if switching back to 'new'
+      setUserPosts([]);
     }
   }, [formData.postType, user, isEditMode]);
 
   useEffect(() => {
+    if (isEditMode) return;
+
     if (selectedParentPostId) {
       const parentPost = userPosts.find(p => p.id === selectedParentPostId);
       if (parentPost) {
@@ -398,7 +389,7 @@ export default function PostForm({ postId }: PostFormProps) {
         authorNickname: formData.authorNickname,
       });
     }
-  }, [selectedParentPostId, userPosts, formData.postType, formData.authorNickname]);
+  }, [selectedParentPostId, userPosts, formData.postType, formData.authorNickname, isEditMode]);
 
   const handlePostTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPostType = e.target.value as 'new' | 'additional';

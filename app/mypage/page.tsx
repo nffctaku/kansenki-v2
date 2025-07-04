@@ -193,20 +193,22 @@ export default function MyPage() {
       }
 
       const userRef = doc(db, 'users', uid);
-      await updateDoc(userRef, {
+      const dataToSave: { [key: string]: any } = {
         nickname,
-        id: userId,
-        xLink,
-        noteLink,
-        youtubeUrl: youtubeLink,
-        instagramLink,
         bio,
-        avatarUrl: newAvatarUrl,
-        travelFrequency,
+        xLink,
+        instagramLink,
+        youtubeUrl: youtubeLink,
+        noteLink,
         residence,
+        travelFrequency,
         overseasMatchCount,
         visitedCountries,
-      });
+        avatarUrl: newAvatarUrl,
+      };
+      
+      await updateDoc(userRef, dataToSave);
+
       setMessage('プロフィールを更新しました！');
       setAvatarFile(null); // Clear the file input after save
     } catch (error) {

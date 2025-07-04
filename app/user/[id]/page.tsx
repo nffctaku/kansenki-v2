@@ -3,6 +3,8 @@
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+export const dynamic = 'force-dynamic';
+
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -37,55 +39,59 @@ export default function UserPostsPage() {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    const fetchUserAndPosts = async (userId: string) => {
+    const fetchUserAndPosts = async (publicId: string) => {
       setLoading(true);
       try {
-        // Fetch user information using the userId as the document ID
-        const userRef = doc(db, 'users', userId);
-        const userSnap = await getDoc(userRef);
+        // ユーザーの公開ID（例: @username）を使って、該当するユーザーをusersコレクションから検索します。
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('id', '==', publicId));
+        const userSnapshot = await getDocs(q);
 
-        if (!userSnap.exists()) {
+        if (userSnapshot.empty) {
+          // 該当ユーザーが見つからなかった場合
           setNotFound(true);
           setLoading(false);
           return;
         }
-        
-        setUserInfo({ id: userSnap.id, ...userSnap.data() } as UserInfo);
 
-        // Fetch from 'posts' (new format) - orderBy removed to prevent index error
+        // ユーザー情報と、投稿の検索に使う内部的なID（UID）を取得します。
+        const userDoc = userSnapshot.docs[0];
+        const userData = userDoc.data();
+        const userUid = userDoc.id; // FirestoreのドキュメントIDがUIDになっています。
+
+        // 画面に表示するためのユーザー情報をセットします。
+        setUserInfo(userData as UserInfo);
+
+        // 取得したUIDを使って、そのユーザーの投稿一覧を取得します。
+        // 新しいフォーマットの投稿 ('posts'コレクション)
         const postsCollection = collection(db, 'posts');
         const qNew = query(
-            postsCollection, 
-            where("authorId", "==", userId),
-            where("isPublic", "==", true)
+          postsCollection,
+          where('authorId', '==', userUid),
+          where('isPublic', '==', true)
         );
         const snapshotNew = await getDocs(qNew);
         const newPosts = snapshotNew.docs.map((doc) => {
-            const d = doc.data();
-            return {
-                id: doc.id,
-                ...d,
-                matches: d.match ? [d.match] : [],
-            };
+          const d = doc.data();
+          return {
+            id: doc.id,
+            ...d,
+            matches: d.match ? [d.match] : [],
+          };
         });
 
-        // Fetch from 'simple-posts' (legacy format) - orderBy removed to prevent index error
+        // 古いフォーマットの投稿 ('simple-posts'コレクション)
         const simplePostsCollection = collection(db, 'simple-posts');
-        const qLegacy = query(
-            simplePostsCollection, 
-            where('uid', '==', userId)
-        );
+        const qLegacy = query(simplePostsCollection, where('uid', '==', userUid));
         const snapshotLegacy = await getDocs(qLegacy);
         const legacyPosts = snapshotLegacy.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
+          id: doc.id,
+          ...doc.data(),
         }));
 
-        // Combine and remove duplicates
+        // 新旧の投稿を結合し、重複を排除した上で、作成日時順に並び替えます。
         const combined = [...newPosts, ...legacyPosts];
-        const uniquePosts = Array.from(new Map(combined.map(p => [p.id, p])).values());
-        
-        // Sort by creation date
+        const uniquePosts = Array.from(new Map(combined.map((p) => [p.id, p])).values());
         uniquePosts.sort((a: any, b: any) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
 
         setPosts(uniquePosts);
@@ -101,6 +107,7 @@ export default function UserPostsPage() {
     if (id && typeof id === 'string') {
       fetchUserAndPosts(id);
     } else {
+      // URLにIDが含まれていない場合
       setNotFound(true);
       setLoading(false);
     }
@@ -111,6 +118,7 @@ export default function UserPostsPage() {
 
   return (
     <div className="max-w-screen-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+
       <div className="p-4 sm:p-6">
         <div className="flex flex-col items-center sm:flex-row sm:items-start sm:gap-6">
           {/* Avatar */}
@@ -153,10 +161,40 @@ export default function UserPostsPage() {
 
             {/* Bio */}
             {userInfo.bio && (
-              <p className="text-sm text-gray-600 dark:text-gray-300 mt-4 whitespace-pre-wrap">
+              <p className="mt-4 text-sm text-gray-600 dark:text-gray-300 text-center sm:text-left whitespace-pre-wrap">
                 {userInfo.bio}
               </p>
             )}
+
+            {/* Travel Info Section */}
+            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 w-full text-left">
+                <div className="space-y-3">
+                    {userInfo.residence && userInfo.residence !== '未選択' && (
+                        <div className="flex">
+                            <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400 shrink-0">居住地</span>
+                            <span className="text-sm text-gray-800 dark:text-gray-200">{countryOptions.find(o => o.value === userInfo.residence)?.label || userInfo.residence}</span>
+                        </div>
+                    )}
+                    {userInfo.travelFrequency && userInfo.travelFrequency !== '0' && (
+                        <div className="flex">
+                            <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400 shrink-0">海外渡航回数</span>
+                            <span className="text-sm text-gray-800 dark:text-gray-200">{travelFrequencyOptions.find(o => o.value === userInfo.travelFrequency)?.label || userInfo.travelFrequency}</span>
+                        </div>
+                    )}
+                    {userInfo.overseasMatchCount && userInfo.overseasMatchCount !== '0' && (
+                        <div className="flex">
+                            <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400 shrink-0">海外観戦試合数</span>
+                            <span className="text-sm text-gray-800 dark:text-gray-200">{overseasMatchCountOptions.find(o => o.value === userInfo.overseasMatchCount)?.label || userInfo.overseasMatchCount}</span>
+                        </div>
+                    )}
+                    {userInfo.visitedCountries && userInfo.visitedCountries.length > 0 && (
+                        <div className="flex items-start">
+                            <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400 pt-0.5 shrink-0">行ったことのある国</span>
+                            <span className="text-sm text-gray-800 dark:text-gray-200 flex-1">{userInfo.visitedCountries.map(country => countryOptions.find(c => c.value === country)?.label || country).join(', ')}</span>
+                        </div>
+                    )}
+                </div>
+            </div>
           </div>
         </div>
         
