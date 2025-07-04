@@ -156,11 +156,21 @@ export default function MyPage() {
   const handleDelete = async (postId: string, collectionName: string) => {
     if (window.confirm('本当にこの投稿を削除しますか？')) {
       try {
-        await deleteDoc(doc(db, collectionName, postId));
-        setPosts(posts.filter((post) => post.id !== postId));
+        const postRef = doc(db, collectionName, postId);
+
+        // Delete 'likes' subcollection
+        const likesCollectionRef = collection(postRef, 'likes');
+        const likesSnapshot = await getDocs(likesCollectionRef);
+        const deletePromises = likesSnapshot.docs.map((likeDoc) => deleteDoc(likeDoc.ref));
+        await Promise.all(deletePromises);
+
+        // Delete the post document itself
+        await deleteDoc(postRef);
+
+        setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
         alert('投稿を削除しました。');
       } catch (error) {
-        console.error('Error deleting post: ', error);
+        console.error('削除エラー:', error);
         alert('投稿の削除に失敗しました。');
       }
     }

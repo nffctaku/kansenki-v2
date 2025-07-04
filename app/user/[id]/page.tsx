@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 export const dynamic = 'force-dynamic';
 
 import { db } from '@/lib/firebase';
@@ -39,15 +39,14 @@ export default function UserPostsPage() {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    const fetchUserAndPosts = async (publicId: string) => {
+    const fetchUserAndPosts = async (userId: string) => {
       setLoading(true);
       try {
-        // ユーザーの公開ID（例: @username）を使って、該当するユーザーをusersコレクションから検索します。
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('id', '==', publicId));
-        const userSnapshot = await getDocs(q);
+        // ユーザーのUIDを使って、該当するユーザーをusersコレクションから直接取得します。
+        const userRef = doc(db, 'users', userId);
+        const userDoc = await getDoc(userRef);
 
-        if (userSnapshot.empty) {
+        if (!userDoc.exists()) {
           // 該当ユーザーが見つからなかった場合
           setNotFound(true);
           setLoading(false);
@@ -55,9 +54,8 @@ export default function UserPostsPage() {
         }
 
         // ユーザー情報と、投稿の検索に使う内部的なID（UID）を取得します。
-        const userDoc = userSnapshot.docs[0];
         const userData = userDoc.data();
-        const userUid = userDoc.id; // FirestoreのドキュメントIDがUIDになっています。
+        const userUid = userDoc.id; // This is the UID, which is what we need for posts query
 
         // 画面に表示するためのユーザー情報をセットします。
         setUserInfo(userData as UserInfo);
