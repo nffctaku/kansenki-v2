@@ -196,48 +196,6 @@ export default function UserPostsPage() {
           </div>
         </div>
         
-        {/* Profile Details */}
-        <div className="mt-6 border-t dark:border-gray-700 pt-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">プロフィール</h3>
-            <div className="space-y-4">
-              {userInfo.residence && userInfo.residence !== '未選択' && (
-                  <div className="flex items-center">
-                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400">居住地</span>
-                      <span className="text-sm text-gray-800 dark:text-gray-200">{countryOptions.find(o => o.value === userInfo.residence)?.label || userInfo.residence}</span>
-                  </div>
-              )}
-              {userInfo.travelFrequency && userInfo.travelFrequency !== '0' && (
-                  <div className="flex items-center">
-                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400">海外渡航回数</span>
-                      <span className="text-sm text-gray-800 dark:text-gray-200">{travelFrequencyOptions.find(o => o.value === userInfo.travelFrequency)?.label || userInfo.travelFrequency}</span>
-                  </div>
-              )}
-              {userInfo.overseasMatchCount && userInfo.overseasMatchCount !== '0' && (
-                  <div className="flex items-center">
-                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400">海外観戦試合数</span>
-                      <span className="text-sm text-gray-800 dark:text-gray-200">{overseasMatchCountOptions.find(o => o.value === userInfo.overseasMatchCount)?.label || userInfo.overseasMatchCount}</span>
-                  </div>
-              )}
-              {userInfo.visitedCountries && userInfo.visitedCountries.length > 0 && (
-                  <div className="flex items-start">
-                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400 pt-1">行ったことのある国</span>
-                      <div className="flex flex-wrap gap-2 flex-1">
-                          {userInfo.visitedCountries.map((country) => (
-                              <span
-                                  key={country}
-                                  className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-gray-600 dark:text-gray-300"
-                              >
-                                  {countryOptions.find((c) => c.value === country)?.label || country}
-                              </span>
-                          ))}
-                      </div>
-                  </div>
-              )}
-              {!(userInfo.residence && userInfo.residence !== '未選択') && !(userInfo.travelFrequency && userInfo.travelFrequency !== '0') && !(userInfo.overseasMatchCount && userInfo.overseasMatchCount !== '0') && !(userInfo.visitedCountries && userInfo.visitedCountries.length > 0) && (
-                <p className="text-sm text-gray-500 dark:text-gray-400">プロフィールはまだ設定されていません。</p>
-              )}
-            </div>
-        </div>
       </div>
 
       {/* 投稿一覧 */}
@@ -269,7 +227,7 @@ export default function UserPostsPage() {
             </h3>
             <div className="flex items-center gap-2 mt-1">
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {post.season || 'シーズン未設定'}
+                  {post.season || (post.matches?.[0]?.date ? new Date(post.matches[0].date).toLocaleDateString('ja-JP') : 'シーズン未設定')}
               </p>
               <LikeButton postId={post.id} size="xs" />
             </div>
