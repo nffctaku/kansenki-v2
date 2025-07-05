@@ -83,7 +83,7 @@ export default function MyPage() {
             ...data,
             id: doc.id,
             postType: 'new',
-            imageUrls: data.imageUrls || data.existingImageUrls || [],
+            images: data.imageUrls || data.existingImageUrls || [],
           } as unknown as Post;
         });
 
@@ -126,7 +126,7 @@ export default function MyPage() {
             content: data.content || '',
             firstAdvice: data.firstAdvice || '',
             goods: data.goods || '',
-            imageUrls: data.imageUrls || [],
+            images: data.imageUrls || [],
             categories: data.categories || [],
             match: matchInfo,
             createdAt: data.createdAt,
@@ -461,7 +461,7 @@ export default function MyPage() {
             <div key={post.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden flex flex-col">
               <a href={`/posts/${post.id}`}>
                 <Image
-                  src={post.imageUrls?.[0] || '/no-image.png'}
+                  src={post.images?.[0] || '/no-image.png'}
                   alt="観戦画像"
                   width={400}
                   height={400}
