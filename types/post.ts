@@ -25,7 +25,7 @@ export interface Post {
   content: string; // memories
   firstAdvice: string; // message
   goods: string;
-  imageUrls: string[];
+  images: string[];
   categories: string[];
   match?: MatchInfo;
   createdAt: any; // Consider using Timestamp type
