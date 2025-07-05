@@ -216,7 +216,7 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
       goods: post.goods || '',
       memories: post.content || '',
       message: post.firstAdvice || '',
-      existingImageUrls: post.imageUrls || [],
+      existingImageUrls: post.images || [],
       categories: post.categories || [],
     };
   };
@@ -526,7 +526,7 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
         goods: formData.goods ?? '',
         content: formData.memories ?? '', // Map 'memories' back to 'content'
         firstAdvice: formData.message ?? '', // Map 'message' back to 'firstAdvice'
-        imageUrls: finalImageUrls,
+        images: finalImageUrls,
         categories: formData.categories,
         youtubeUrl: formData.youtubeUrl ?? '',
         updatedAt: serverTimestamp(),
