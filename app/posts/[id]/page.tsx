@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, onSnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Hotel, SimpleTravel, IndividualCost, Transport } from '@/types/match';
+import { Hotel, SimpleTravel, IndividualCost, Transport, Spot } from '@/types/match';
 import { Post } from '@/types/post';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -116,7 +116,7 @@ export default function PostDetailPage() {
         content: data.content || data.memories || data.text || '',
         firstAdvice: data.firstAdvice || data.message || '',
         goods: data.goods || '',
-        imageUrls: data.imageUrls || data.existingImageUrls || [],
+        images: data.imageUrls || data.existingImageUrls || [],
         categories: data.categories || data.tags || [],
         match: matchInfo,
         createdAt: data.createdAt,
@@ -197,7 +197,7 @@ export default function PostDetailPage() {
   const {
     title,
     content,
-    imageUrls,
+    images,
     match,
     costs,
     transports,
@@ -239,10 +239,10 @@ export default function PostDetailPage() {
   return (
     <div className="max-w-2xl mx-auto p-4">
       {/* Image Carousel */}
-      {imageUrls && imageUrls.length > 0 && (
+      {images && images.length > 0 && (
         <div className="mb-4 rounded-lg overflow-hidden">
           <Swiper key={id} modules={[Navigation, Pagination, A11y]} spaceBetween={50} slidesPerView={1} navigation pagination={{ clickable: true }}>
-            {imageUrls.map((url, index) => (
+            {images.map((url: string, index: number) => (
               <SwiperSlide key={index}>
                 <div className="w-full aspect-square overflow-hidden rounded-lg shadow-lg">
                   <Image src={url} alt={`Post image ${index + 1}`} fill className="object-cover" />
@@ -404,7 +404,7 @@ export default function PostDetailPage() {
       {hotels && hotels.length > 0 && (
         <DetailSection title="宿泊したホテル">
           <div className="space-y-4">
-            {hotels.map((hotel, index) => {
+            {hotels.map((hotel: Hotel, index: number) => {
               const hasDetailedRatings = ratingCategories.some(cat => {
                 const rating = hotel[cat.key];
                 return typeof rating === 'number' && rating > 0;
@@ -468,7 +468,7 @@ export default function PostDetailPage() {
       {spots && spots.length > 0 && (
         <DetailSection title="訪れた場所">
           <div className="space-y-4">
-            {spots.map((spot, index) => (
+            {spots.map((spot: Spot, index: number) => (
               <div key={spot.id || index} className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">
                 <h3 className="font-semibold text-lg text-slate-800 dark:text-slate-200 mb-2">{spot.name}</h3>
                 {spot.city && <p className="text-sm text-slate-600 dark:text-slate-400"><strong>都市:</strong> {spot.city}</p>}
