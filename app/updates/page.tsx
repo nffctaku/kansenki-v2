@@ -1,8 +1,21 @@
 export default function UpdatesPage() {
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">更新履歴 <span className="text-lg font-normal text-gray-500 dark:text-gray-400">v0.1.2</span></h1>
-            <div className="space-y-6">
+      <h1 className="text-3xl font-bold mb-6">更新履歴 <span className="text-lg font-normal text-gray-500 dark:text-gray-400">v0.1.3</span></h1>
+                  <div className="space-y-6">
+        <div className="p-4 border bg-white dark:bg-slate-800/50 dark:border-slate-700 rounded-lg shadow-sm">
+          <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">2025-07-06</p>
+          <ul className="list-disc list-inside mt-2 space-y-1 text-slate-600 dark:text-slate-300">
+            <li><strong>SNSシェア機能の強化:</strong> X（旧Twitter）で投稿をシェアした際に、投稿の1枚目の画像がカードとして正しく表示されるように修正しました。</li>
+            <li><strong>UIの改善:</strong> 投稿詳細ページで、かかった費用の合計が0円の場合、費用セクションが自動的に非表示になるように改善しました。</li>
+            <li><strong>安定性の向上:</strong>
+              <ul className="list-disc list-inside ml-4 mt-1">
+                <li>Next.jsのビルドが失敗する問題を解決し、デプロイが安定して行えるようになりました。</li>
+                <li>その他、軽微なバグ修正とパフォーマンスの改善を行いました。</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
         <div className="p-4 border bg-white dark:bg-slate-800/50 dark:border-slate-700 rounded-lg shadow-sm">
           <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">2025-07-04</p>
           <ul className="list-disc list-inside mt-2 space-y-1 text-slate-600 dark:text-slate-300">
