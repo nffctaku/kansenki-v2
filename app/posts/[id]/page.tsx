@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, onSnapshot, DocumentData } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import type { DocumentData, DocumentSnapshot, FirestoreError } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Hotel, SimpleTravel, IndividualCost, Transport, Spot } from '@/types/match';
-import { Post } from '@/types/post';
+import type { Hotel, SimpleTravel, IndividualCost, Transport, Spot } from '@/types/match';
+import type { Post } from '@/types/post';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -116,7 +117,7 @@ export default function PostDetailPage() {
         content: data.content || data.memories || data.text || '',
         firstAdvice: data.firstAdvice || data.message || '',
         goods: data.goods || '',
-        images: data.imageUrls || data.existingImageUrls || [],
+        images: data.images || data.imageUrls || data.existingImageUrls || [],
         categories: data.categories || data.tags || [],
         match: matchInfo,
         createdAt: data.createdAt,
@@ -131,51 +132,48 @@ export default function PostDetailPage() {
         visitedCities: data.visitedCities || [],
         outboundTotalDuration: data.outboundTotalDuration || '',
         inboundTotalDuration: data.inboundTotalDuration || '',
-        transports: data.transports || [],
-        hotels: data.hotels || [],
-        spots: data.spots || [],
-        costs: data.costs || [],
+        transports: Array.isArray(data.transports) ? data.transports : [],
+        hotels: Array.isArray(data.hotels) ? data.hotels : [],
+        spots: Array.isArray(data.spots) ? data.spots : [],
+        costs: Array.isArray(data.costs) ? data.costs : [],
         belongings: data.belongings || '',
         youtubeUrl: data.youtubeUrl || '',
       } as unknown as Post;
       return normalized;
     };
 
-    const unsub = onSnapshot(doc(db, 'posts', id), async (docSnap) => {
-      setLoading(true);
-      let postData: Post | null = null;
+    const unsub = onSnapshot(doc(db, 'posts', id), async (docSnap: DocumentSnapshot<DocumentData>) => {
+      try {
+        setLoading(true);
+        let postData: Post | null = null;
 
-      if (docSnap.exists()) {
-        console.log('[Debug] Step 1: Post found in "posts" collection. Raw data:', docSnap.data());
-        postData = normalizePostData(docSnap.data(), docSnap.id);
-      } else {
-        const simpleDocRef = doc(db, 'simple-posts', id);
-        try {
+        if (docSnap.exists()) {
+          console.log('[Debug] Step 1: Post found in "posts" collection. Raw data:', docSnap.data());
+          postData = normalizePostData(docSnap.data(), docSnap.id);
+        } else {
+          const simpleDocRef = doc(db, 'simple-posts', id);
           const simpleDocSnap = await getDoc(simpleDocRef);
           if (simpleDocSnap.exists()) {
             console.log('[Debug] Step 1: Post found in "simple-posts" collection. Raw data:', simpleDocSnap.data());
             postData = normalizePostData(simpleDocSnap.data(), simpleDocSnap.id);
           } else {
             setError('投稿が見つかりません。');
-            setLoading(false);
             return;
           }
-        } catch (err) {
-          console.error("Error fetching from simple-posts:", err);
-          setError('投稿の読み込み中にエラーが発生しました。');
-          setLoading(false);
-          return;
         }
-      }
 
-      if (postData) {
-        const finalPost = await handlePostData(postData);
-        console.log('[Debug] Step 5: Final post data being set to state', finalPost);
-        setPost(finalPost);
+        if (postData) {
+          const finalPost = await handlePostData(postData);
+          console.log('[Debug] Step 5: Final post data being set to state', finalPost);
+          setPost(finalPost);
+        }
+      } catch (e) {
+        console.error("Error processing post data:", e);
+        setError('投稿データの処理中にエラーが発生しました。');
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
-    }, (err) => {
+    }, (err: FirestoreError) => {
       console.error("Error fetching post:", err);
       setError('投稿の読み込み中にエラーが発生しました。');
       setLoading(false);
@@ -483,7 +481,7 @@ export default function PostDetailPage() {
       )}
 
       {/* Cost Details */}
-      {costs && costs.length > 0 && (
+      {costs && costs.length > 0 && costs.reduce((acc: number, cur: IndividualCost) => acc + cur.amount, 0) > 0 && (
         <DetailSection title="かかった費用">
           <div className="p-6 bg-slate-100 dark:bg-slate-800 rounded-lg">
             <ul className="space-y-2 text-slate-800 dark:text-slate-200">

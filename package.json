@@ -35,8 +35,9 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@protobufjs/codegen": "^2.0.4",
     "@types/node": "^20",
-    "@types/react": "^18.2.0",
+    "@types/react": "^18.3.23",
     "@types/react-dom": "^18.2.0",
     "eslint": "8.57.0",
     "eslint-config-next": "14.2.3",
