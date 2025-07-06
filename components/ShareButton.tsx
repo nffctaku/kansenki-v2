@@ -20,10 +20,10 @@ const ShareButton: React.FC<ShareButtonProps> = ({ title, url }) => {
     <button
       onClick={handleShare}
       className="flex items-center gap-2 rounded-full bg-black px-4 py-2 text-white transition-colors hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
-      aria-label="Xで"
+      aria-label="Xでシェア"
     >
       <FaXTwitter />
-      <span className="text-sm font-semibold"></span>
+      <span className="text-sm font-semibold">シェア</span>
     </button>
   );
 };
