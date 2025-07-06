@@ -23,7 +23,7 @@ const menuConfig = [
   {
     title: '現地観戦情報',
     items: [
-      { label: '試合チケット情報', href: '#' },
+      { label: '試合チケット情報', href: '/ticket-info' },
       { label: 'おススメスポット', href: '#' },
     ],
   },
