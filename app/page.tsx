@@ -31,7 +31,7 @@ export default function HomePage() {
           const d = doc.data();
           return {
             id: doc.id,
-            imageUrls: d.imageUrls ?? [],
+            imageUrls: d.images || d.imageUrls || d.existingImageUrls || [],
             season: d.match?.season ?? '',
             episode: d.title ?? '', // Using title as episode for consistency
             author: d.authorNickname ?? '',

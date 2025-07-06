@@ -118,7 +118,7 @@ export default function CategoryPage() {
           return {
             id: doc.id,
             nickname: postData.authorNickname || '',
-            imageUrls: postData.imageUrls || [],
+            imageUrls: postData.images || postData.imageUrls || postData.existingImageUrls || [],
             category: (postData.categories && postData.categories[0]) || '',
             season: match.season || '',
             likeCount: postData.likeCount || 0,

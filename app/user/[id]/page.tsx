@@ -74,6 +74,7 @@ export default function UserPostsPage() {
           return {
             id: doc.id,
             ...d,
+            imageUrls: d.images || d.imageUrls || d.existingImageUrls || [],
             matches: d.match ? [d.match] : [],
           };
         });

@@ -83,7 +83,7 @@ export default function MyPage() {
             ...data,
             id: doc.id,
             postType: 'new',
-            images: data.imageUrls || data.existingImageUrls || [],
+            images: data.images || data.imageUrls || data.existingImageUrls || [],
           } as unknown as Post;
         });
 
