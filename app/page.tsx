@@ -10,7 +10,7 @@ import { teamsByCountry } from '../lib/teamData';
 import { SimplePost } from '../types/match';
 import LikeButton from '@/components/LikeButton';
 import { format } from 'date-fns';
-import AnnouncementBanner from '@/components/AnnouncementBanner';
+import AnnouncementBanner from './components/AnnouncementBanner';
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
