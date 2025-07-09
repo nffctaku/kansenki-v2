@@ -54,7 +54,7 @@ const AnnouncementBanner = () => {
           dynamicBullets: true,
         }}
         navigation={true}
-        className="rounded-xl"
+        className="pb-10"
         style={{
           // @ts-ignore
           '--swiper-navigation-color': '#FFFFFF',
@@ -63,18 +63,22 @@ const AnnouncementBanner = () => {
       >
         {banners.map((banner) => (
           <SwiperSlide key={banner.id}>
-            <Link href={banner.link} className="relative block w-full h-48 md:h-64">
-              <Image
-                src={banner.imageUrl}
-                alt={banner.title}
-                fill
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-black bg-opacity-10 flex flex-col justify-end p-4">
-                <h3 className="text-white text-lg font-bold">{banner.title}</h3>
-                <p className="text-white text-sm">{banner.subtitle}</p>
-              </div>
-            </Link>
+            <div className="bg-vuitton-brown rounded-xl overflow-hidden shadow-md">
+              <Link href={banner.link} className="no-underline">
+                <div className="relative w-full h-48">
+                  <Image
+                    src={banner.imageUrl}
+                    alt={banner.title}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="text-white text-md font-bold truncate">{banner.title}</h3>
+                  <p className="text-gray-200 text-sm mt-1 truncate">{banner.subtitle}</p>
+                </div>
+              </Link>
+            </div>
           </SwiperSlide>
         ))}
       </Swiper>

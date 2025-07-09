@@ -25,6 +25,9 @@ const config = {
   ],
   theme: {
     extend: {
+      colors: {
+        'vuitton-brown': '#4E3629',
+      },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic':
