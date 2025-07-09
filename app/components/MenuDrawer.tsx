@@ -28,6 +28,12 @@ const menuConfig = [
     ],
   },
   {
+    title: 'サッカー/フットサル',
+    items: [
+      { label: 'ユニフォームショップ情報', href: '#' },
+    ],
+  },
+  {
     title: 'SNS',
     items: [
       { label: 'Note', href: '#' },

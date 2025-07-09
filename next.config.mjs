@@ -8,9 +8,22 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+
       {
         protocol: 'https',
         hostname: 'firebasestorage.googleapis.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'assets.st-note.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
         pathname: '/**',
       },
     ],

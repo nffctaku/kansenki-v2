@@ -9,6 +9,8 @@ import { teamsByCountry } from '../lib/teamData';
 
 import { SimplePost } from '../types/match';
 import LikeButton from '@/components/LikeButton';
+import { format } from 'date-fns';
+import AnnouncementBanner from '@/components/AnnouncementBanner';
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -155,17 +157,17 @@ export default function HomePage() {
 
   return (
     <>
-      <div className="m-3 bg-white dark:bg-gray-800 rounded-xl shadow p-5">
+      <AnnouncementBanner />
+      <div className="m-3 bg-white dark:bg-gray-800 rounded-xl shadow p-4">
         <div className="text-center">
-          <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-200">観戦記を探す</h2>
-          <div className="mx-auto w-full max-w-[280px] relative">
+          <h2 className="text-md font-bold mb-3 text-gray-900 dark:text-gray-200">観戦記を探す</h2>
+          <div className="relative">
             <input
               type="text"
-              placeholder="チーム名または大会名を入力"
               value={searchQuery}
               onChange={handleSearchChange}
-              autoComplete="off"
-              className="w-full p-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="チーム名または大会名を入力"
+              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {Object.keys(teamNameSuggestions).length > 0 && (
               <div className="absolute mt-1 w-full z-10">
@@ -192,54 +194,46 @@ export default function HomePage() {
         <h2 className="text-lg font-bold my-3 text-center text-gray-900 dark:text-gray-200">
           {searchQuery.trim() === '' ? '最新の投稿' : '検索結果'}
         </h2>
-        <div className="divide-y divide-gray-200 dark:divide-gray-700">
+        <div className="grid grid-cols-2 gap-3">
           {displayedPosts.map((post) => {
-            const displayDate = post.season || (post.matches && post.matches[0]?.date);
+            const postDate = post.createdAt ? format(post.createdAt, 'yyyy.MM.dd') : '';
             return (
-              <div key={post.id} className="py-4">
-                <div className="flex items-start justify-between space-x-4">
-                  <div className="flex-1 min-w-0">
-                    <Link href={`/posts/${post.id}`} className="no-underline">
-                      <>
-                        <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-200">
-                          {post.episode}
-                        </p>
-                        <p className="truncate text-xs text-gray-500 dark:text-gray-400">
-                          {post.matches[0]?.homeTeam || ''} vs {post.matches[0]?.awayTeam || ''}
-                        </p>
-                      </>
-                    </Link>
-                    <div className="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                      {post.authorId ? (
-                        <Link href={`/user/${post.authorId}`} className="truncate font-medium text-gray-700 dark:text-gray-300 hover:underline">
-                          {post.author}
-                        </Link>
-                      ) : (
-                        <span className="truncate font-medium text-gray-700 dark:text-gray-300">{post.author}</span>
-                      )}
-                      <LikeButton postId={post.id} postType={post.postType} size="xs" />
-                      {displayDate && (
-                        <>
-                          <span className="mx-1">·</span>
-                          <span className="truncate">{displayDate}</span>
-                        </> 
-                      )}
-                    </div>
-                  </div>
-                  <div className="w-24 h-16 flex-shrink-0">
-                    {post.imageUrls && post.imageUrls.length > 0 && (
-                      <Link href={`/posts/${post.id}`}>
-                        <Image
-                          src={post.imageUrls[0]}
-                          alt={post.episode || 'Post image'}
-                          width={96}
-                          height={64}
-                          className="h-full w-full rounded-md object-cover"
-                        />
-                      </Link>
+              <div key={post.id} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden flex flex-col">
+                <Link href={`/posts/${post.id}`} className="no-underline flex flex-col flex-grow">
+                  <div className="w-full h-28 relative">
+                    {post.imageUrls && post.imageUrls.length > 0 ? (
+                      <Image
+                        src={post.imageUrls[0]}
+                        alt={post.episode || 'Post image'}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 dark:bg-gray-700"></div>
+                    )}
+                    {post.league && (
+                      <div className="absolute top-1 left-1 bg-black bg-opacity-60 text-white text-[10px] px-2 py-0.5 rounded-full">
+                        {post.league}
+                      </div>
                     )}
                   </div>
-                </div>
+                  <div className="p-2 flex flex-col flex-grow">
+                    <p className="text-sm font-bold text-gray-900 dark:text-gray-200 mb-1 line-clamp-2">
+                      {post.episode}
+                    </p>
+                    {post.matches && post.matches.length > 0 && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 truncate">
+                        {post.matches[0].homeTeam} vs {post.matches[0].awayTeam}
+                      </p>
+                    )}
+                    <div className="mt-auto flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <span className="truncate font-medium text-gray-700 dark:text-gray-300">
+                        {post.author}
+                      </span>
+                      <span>{postDate}</span>
+                    </div>
+                  </div>
+                </Link>
               </div>
             );
           })}
