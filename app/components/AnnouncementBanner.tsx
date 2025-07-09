@@ -19,7 +19,7 @@ const banners = [
     imageUrl: '/FOOTBALLTOP (7).png',
     title: '遂に今週開催！',
     subtitle: 'サカシャツ展の申込はこちらから',
-    link: '/news/new-feature',
+    link: 'https://note.com/football_top/n/n111e239d79a9?sub_rt=share_pw',
   },
   {
     id: 2,
@@ -30,8 +30,8 @@ const banners = [
   },
   {
     id: 3,
-    imageUrl: '/FOOTBALLTOP (5).png',
-    title: '',
+    imageUrl: '/世界中のFOOTBALL (10).png',
+    title: '海外サッカーファンにフォーカス',
     subtitle: 'ファンメディアはこちらから！',
     link: '/campaign/post-2025',
   },
@@ -73,7 +73,7 @@ const AnnouncementBanner = () => {
                     className="object-cover"
                   />
                 </div>
-                <div className="p-4">
+                <div className="p-2">
                   <h3 className="text-white text-md font-bold truncate">{banner.title}</h3>
                   <p className="text-gray-200 text-sm mt-1 truncate">{banner.subtitle}</p>
                 </div>
