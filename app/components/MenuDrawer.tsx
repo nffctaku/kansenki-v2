@@ -27,12 +27,7 @@ const menuConfig = [
       { label: 'おススメスポット', href: '#' },
     ],
   },
-  {
-    title: 'サッカー/フットサル',
-    items: [
-      { label: 'ユニフォームショップ情報', href: '#' },
-    ],
-  },
+
   {
     title: 'SNS',
     items: [
