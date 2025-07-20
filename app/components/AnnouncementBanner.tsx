@@ -39,11 +39,25 @@ const banners = [
 
 const AnnouncementBanner = () => {
   return (
-    <div className="w-full my-3 px-3">
+    <div className="w-full my-3 px-3 md:px-6 lg:px-8">
       <Swiper
         modules={[Pagination, Autoplay, Navigation]}
-        spaceBetween={30}
+        spaceBetween={20}
         slidesPerView={1}
+        breakpoints={{
+          640: {
+            slidesPerView: 1,
+            spaceBetween: 20,
+          },
+          768: {
+            slidesPerView: 2,
+            spaceBetween: 30,
+          },
+          1024: {
+            slidesPerView: 3,
+            spaceBetween: 40,
+          },
+        }}
         loop={true}
         autoplay={{
           delay: 4000,
@@ -63,9 +77,9 @@ const AnnouncementBanner = () => {
       >
         {banners.map((banner) => (
           <SwiperSlide key={banner.id}>
-            <div className="bg-vuitton-brown rounded-xl overflow-hidden shadow-md">
+            <div className="bg-vuitton-brown rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
               <Link href={banner.link} className="no-underline">
-                <div className="relative w-full h-48">
+                <div className="relative w-full h-48 sm:h-52 md:h-56 lg:h-60">
                   <Image
                     src={banner.imageUrl}
                     alt={banner.title}
@@ -73,9 +87,9 @@ const AnnouncementBanner = () => {
                     className="object-cover"
                   />
                 </div>
-                <div className="p-2">
-                  <h3 className="text-white text-md font-bold truncate">{banner.title}</h3>
-                  <p className="text-gray-200 text-sm mt-1 truncate">{banner.subtitle}</p>
+                <div className="p-3 md:p-4">
+                  <h3 className="text-white text-sm md:text-base lg:text-lg font-bold truncate">{banner.title}</h3>
+                  <p className="text-gray-200 text-xs md:text-sm lg:text-base mt-1 truncate">{banner.subtitle}</p>
                 </div>
               </Link>
             </div>

@@ -194,7 +194,7 @@ export default function HomePage() {
         <h2 className="text-lg font-bold my-3 text-center text-gray-900 dark:text-gray-200">
           {searchQuery.trim() === '' ? '最新の投稿' : '検索結果'}
         </h2>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
           {displayedPosts.map((post) => {
             const postDate = post.createdAt ? format(post.createdAt, 'yyyy.MM.dd') : '';
             return (

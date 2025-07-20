@@ -15,12 +15,14 @@ type Travel = {
   season?: string;
   likeCount?: number;
   helpfulCount?: number;
+  league?: string;
   matches?: {
     teamA?: string;
     teamB?: string;
     homeTeam?: string;
     awayTeam?: string;
     date?: string;
+    competition?: string;
   }[];
 };
 
@@ -30,6 +32,17 @@ const categoryLabelMap: Record<string, string> = {
   italy: 'イタリア',
   germany: 'ドイツ',
   france: 'フランス',
+  'club-world-cup': 'クラブワールドカップ',
+  'japan-tour': 'ジャパンツアー',
+  other: 'その他',
+};
+
+const categoryToLeagueMap: Record<string, string> = {
+  england: 'プレミアリーグ',
+  spain: 'ラ・リーガ',
+  italy: 'セリエA',
+  germany: 'ブンデスリーガ',
+  france: 'リーグ・アン',
   'club-world-cup': 'クラブワールドカップ',
   'japan-tour': 'ジャパンツアー',
   other: 'その他',
@@ -103,7 +116,12 @@ export default function CategoryPage() {
             homeTeam: match.homeTeam || match.teamA,
             awayTeam: match.awayTeam || match.teamB,
           }));
-          return { id: doc.id, ...postData, matches: matchesWithCompat } as Travel;
+          return { 
+            id: doc.id, 
+            ...postData, 
+            matches: matchesWithCompat,
+            league: matchesWithCompat[0]?.competition ?? '',
+          } as Travel;
         });
 
         const newPosts = newPostsSnap.docs.map((doc) => {
@@ -123,6 +141,7 @@ export default function CategoryPage() {
             season: match.season || '',
             likeCount: postData.likeCount || 0,
             helpfulCount: postData.helpfulCount || 0,
+            league: match.competition ?? '',
             matches: normalizedMatches,
           } as Travel;
         });
@@ -170,7 +189,7 @@ export default function CategoryPage() {
         />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[6px] w-full max-w-full">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 w-full max-w-full">
         {displayedPosts.map((post) => {
           const match = post.matches?.[0] as any;
           const homeTeam = match?.homeTeam || '';
@@ -179,45 +198,46 @@ export default function CategoryPage() {
             homeTeam && awayTeam
               ? `${homeTeam} vs ${awayTeam}`
               : homeTeam || awayTeam || '';
+          const postDate = post.season || (post.matches && post.matches[0]?.date) || '日付未設定';
 
           return (
-            <Link
-              key={post.id}
-              href={`/posts/${post.id}`}
-              className="block no-underline text-inherit"
-            >
-              <div className="bg-white rounded-lg shadow p-2 hover:opacity-90 transition">
-                <div className="relative aspect-square w-full bg-gray-200 rounded overflow-hidden">
-                  {post.imageUrls?.[0] ? (
+            <div key={post.id} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden flex flex-col">
+              <Link href={`/posts/${post.id}`} className="no-underline flex flex-col flex-grow">
+                <div className="w-full h-28 relative">
+                  {post.imageUrls && post.imageUrls.length > 0 ? (
                     <Image
                       src={post.imageUrls[0]}
-                      alt="投稿画像"
+                      alt={post.nickname || 'Post image'}
                       fill
                       className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 20vw"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
-                      No Image
+                    <div className="w-full h-full bg-gray-200 dark:bg-gray-700"></div>
+                  )}
+                  {(post.league || post.category || category) && (
+                    <div className="absolute top-1 left-1 bg-black bg-opacity-60 text-white text-[10px] px-2 py-0.5 rounded-full">
+                      {post.league || categoryToLeagueMap[category as string] || categoryToLeagueMap[post.category as string] || post.category}
                     </div>
                   )}
                 </div>
-
-                {matchTitle && (
-                  <div className="mt-2 px-1 text-sm font-semibold truncate text-gray-800 no-underline">
-                    {matchTitle}
+                <div className="p-2 flex flex-col flex-grow">
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-200 mb-1 line-clamp-2">
+                    {post.nickname || matchTitle || 'タイトルなし'}
+                  </p>
+                  {matchTitle && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 truncate">
+                      {matchTitle}
+                    </p>
+                  )}
+                  <div className="mt-auto flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <span className="truncate font-medium text-gray-700 dark:text-gray-300">
+                      {post.nickname || '投稿者'}
+                    </span>
+                    <span>{postDate}</span>
                   </div>
-                )}
-
-                <div className="text-xs text-gray-500 px-1">
-                  {post.season || (post.matches && post.matches[0]?.date) || '日付未設定'}
                 </div>
-
-                <div className="text-xs text-red-500 px-1 mt-1">
-                  ♡ {post.likeCount || 0}
-                </div>
-              </div>
-            </Link>
+              </Link>
+            </div>
           );
         })}
       </div>
