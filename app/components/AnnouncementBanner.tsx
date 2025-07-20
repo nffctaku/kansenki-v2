@@ -16,10 +16,10 @@ import 'swiper/css/navigation';
 const banners = [
   {
     id: 1,
-    imageUrl: '/FOOTBALLTOP (7).png',
-    title: '遂に今週開催！',
-    subtitle: 'サカシャツ展の申込はこちらから',
-    link: 'https://note.com/football_top/n/n111e239d79a9?sub_rt=share_pw',
+    imageUrl: '/世界中のFOOTBALL (12).png',
+    title: 'プレゼントキャンペーン開催！',
+    subtitle: '観戦記投稿でリヴァプールグッズをGET',
+    link: 'https://note.com/football_top/n/nacd67cc7aa8e?sub_rt=share_pw',
   },
   {
     id: 2,
