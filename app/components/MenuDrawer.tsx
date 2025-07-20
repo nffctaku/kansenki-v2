@@ -32,7 +32,7 @@ const menuConfig = [
     title: 'SNS',
     items: [
       { label: 'Note', href: '#' },
-      { label: 'X', href: '#' },
+      { label: 'X', href: 'https://x.com/FOOTBALLTOP2024' },
       { label: 'Youtube', href: '#' },
     ],
   },
@@ -45,7 +45,7 @@ const menuConfig = [
   {
     title: 'FOOTBALLTOP',
     items: [
-      { label: 'FOOTBALL TOP', href: '/about' },
+      { label: 'FOOTBALL TOP', href: 'https://www.locofootball.com/' },
       { label: '利用規約', href: '/terms' },
       { label: 'ご利用ガイド', href: '/guide' },
     ],
@@ -86,6 +86,28 @@ export default function MenuDrawer() {
         className={`fixed top-0 right-0 w-[70vw] h-screen z-[10000] bg-white dark:bg-gray-900 transition-transform duration-300 ease-in-out transform ${isOpen ? 'translate-x-0' : 'translate-x-full'} ${!isOpen ? 'invisible' : ''}`}
       >
         <div className="h-full overflow-y-auto pb-8 text-black dark:text-white font-sans">
+          {/* 閉じるボタンを一番上に配置 */}
+          <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-end">
+            <button 
+              onClick={toggleMenu} 
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors duration-200 focus:outline-none"
+              aria-label="メニューを閉じる"
+            >
+              <svg 
+                className="w-6 h-6 text-gray-700 dark:text-gray-300" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth="2" 
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
           {menuConfig.map((section) => (
             <div key={section.title} className="border-b border-gray-200">
               <button
