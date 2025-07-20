@@ -5,6 +5,7 @@
       "@/components/*": ["./components/*"],
       "@/lib/*": ["./lib/*"],
       "@/types/*": ["./types/*"],
+      "@/hooks/*": ["./hooks/*"],
       "@/*": ["./app/*"]
     },
     "target": "es2015",

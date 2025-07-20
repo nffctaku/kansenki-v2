@@ -5,6 +5,7 @@ import Link from 'next/link';
 
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
+import { usePostStats } from '@/hooks/usePostStats';
 
 const menuConfig = [
   {
@@ -56,6 +57,7 @@ export default function MenuDrawer() {
   const [isOpen, setIsOpen] = useState(false);
   useTheme();
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const { totalPosts, publicPosts, loading } = usePostStats();
   const toggleMenu = () => setIsOpen(!isOpen);
   const handleSectionClick = (section: string) => {
     setOpenSection(openSection === section ? null : section);
@@ -135,6 +137,76 @@ export default function MenuDrawer() {
               </div>
             </div>
           ))}
+          
+          {/* 投稿数統計セクション */}
+          <div className="mt-8 px-6 py-6 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 mx-4 rounded-xl">
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-4">
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-2 rounded-full mr-2">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <h3 className="text-sm font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 bg-clip-text text-transparent">
+                  サイト統計
+                </h3>
+              </div>
+              {loading ? (
+                <div className="flex flex-col items-center py-6">
+                  <div className="relative">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-blue-500"></div>
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 opacity-20 animate-pulse"></div>
+                  </div>
+                  <span className="mt-3 text-xs text-gray-500 dark:text-gray-400 font-medium">統計を取得中...</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-bl-full"></div>
+                    <div className="relative">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
+                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">総投稿数</span>
+                        </div>
+                        <div className="text-xs text-blue-500 font-semibold">📝</div>
+                      </div>
+                      <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent">
+                        {totalPosts.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">件の観戦記</div>
+                    </div>
+                  </div>
+                  
+                  <div className="relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-green-500/10 to-green-600/5 rounded-bl-full"></div>
+                    <div className="relative">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">公開投稿数</span>
+                        </div>
+                        <div className="text-xs text-green-500 font-semibold">🌟</div>
+                      </div>
+                      <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-500 dark:from-green-400 dark:to-green-300 bg-clip-text text-transparent">
+                        {publicPosts.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">件が公開中</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* 追加の装飾要素 */}
+              <div className="mt-4 flex justify-center">
+                <div className="flex space-x-1">
+                  <div className="w-1 h-1 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
+                  <div className="w-1 h-1 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                  <div className="w-1 h-1 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </aside>
     </>
