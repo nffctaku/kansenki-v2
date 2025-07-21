@@ -54,6 +54,13 @@ export const competitionOptions = [
     ],
   },
   {
+    label: 'デンマーク',
+    options: [
+      { label: 'スーペルリーガ', value: 'スーペルリーガ' },
+      { label: 'デンマークカップ', value: 'デンマークカップ' },
+    ],
+  },
+  {
     label: 'その他の国',
     options: [
       { label: 'エールディヴィジ', value: 'エールディヴィジ' },
