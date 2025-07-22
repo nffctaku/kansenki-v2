@@ -120,21 +120,14 @@ export default function LoginPage() {
     
     try {
       if (isMobile) {
-        // モバイル：リダイレクト方式（Cross-Origin-Opener-Policy対策）
-        console.log('📱 モバイルデバイス検出 - リダイレクト認証を開始');
-        console.log('🚫 ポップアップを回避してリダイレクト方式を使用');
-        console.log('🔍 認証前URL:', window.location.href);
+        // モバイル：専用ページにリダイレクト
+        console.log('📱 モバイルデバイス - 専用ログインページにリダイレクト');
         
-        try {
-          await signInWithRedirect(auth, provider);
-          console.log('✅ signInWithRedirect実行完了');
-          // この時点でページがリダイレクトされるため、以下のコードは実行されない
-        } catch (redirectError) {
-          console.error('❌ signInWithRedirectエラー:', redirectError);
-          throw redirectError;
-        }
+        // セッションストレージにリダイレクト状態を保存
+        sessionStorage.setItem('firebase_redirect_initiated', 'true');
         
-        // リダイレクト後の処理はuseEffectで行う
+        // モバイル専用ログインページにリダイレクト
+        router.push('/mobile-login');
         return; // 早期リターンでポップアップ処理を完全に回避
       } else {
         // デスクトップ：ポップアップ方式

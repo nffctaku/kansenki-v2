@@ -72,6 +72,19 @@ export default function MobileLoginPage() {
           router.push('/mypage');
         } else {
           addDebugLog('ℹ️ リダイレクト結果なし - 通常のページロード');
+          
+          // リダイレクト状態をチェック
+          const hasRedirectState = sessionStorage.getItem('firebase_redirect_initiated');
+          if (!hasRedirectState) {
+            addDebugLog('⚠️ リダイレクト状態が検出されません - 直接アクセスの可能性');
+            addDebugLog('🔄 メインログインページにリダイレクト中...');
+            
+            // 3秒後にメインログインページにリダイレクト
+            setTimeout(() => {
+              router.push('/login');
+            }, 3000);
+          }
+          
           setIsLoggingIn(false);
         }
       } catch (error: any) {
@@ -122,16 +135,12 @@ export default function MobileLoginPage() {
     
     try {
       // 認証前の詳細診断
-      addDebugLog('📱 signInWithRedirect実行前の診断');
-      addDebugLog(`🔍 認証前URL: ${window.location.href}`);
-      addDebugLog(`🔍 User Agent: ${navigator.userAgent}`);
-      addDebugLog(`🔍 Provider設定: ${JSON.stringify(provider)}`);
       
-      // Firebase Auth設定の確認
-      addDebugLog(`🔍 Auth設定確認: authDomain=${auth.config.authDomain}`);
-      addDebugLog(`🔍 予想されるリダイレクトURI: ${window.location.origin}/mobile-login`);
+      // リダイレクト状態をセッションストレージに保存
+      sessionStorage.setItem('firebase_redirect_initiated', 'true');
+      addDebugLog('💾 リダイレクト状態をセッションに保存');
       
-      // Providerの詳細設定
+      // Googleプロバイダーの設定を強化
       provider.setCustomParameters({
         prompt: 'select_account'
       });
@@ -143,6 +152,9 @@ export default function MobileLoginPage() {
     } catch (error: any) {
       addDebugLog(`❌ ログインエラー: ${error.code || error.message}`);
       addDebugLog(`❌ エラー詳細: ${JSON.stringify(error)}`);
+      
+      // エラー時はセッション状態をクリア
+      sessionStorage.removeItem('firebase_redirect_initiated');
       
       let errorMessage = 'ログインに失敗しました';
       if (error.code === 'auth/unauthorized-domain') {
