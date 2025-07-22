@@ -40,9 +40,16 @@ export default function MobileLoginPage() {
         addDebugLog(`🔍 URL Hash: ${window.location.hash}`);
         addDebugLog(`🔍 Referrer: ${document.referrer}`);
         
+        // URLパラメータの詳細解析
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlHash = window.location.hash;
+        addDebugLog(`🔍 URL解析: パラメータ数=${urlParams.toString().length}, ハッシュ=${urlHash}`);
+        
         // Firebase Auth状態の確認
         addDebugLog(`🔍 Auth currentUser: ${auth.currentUser ? 'ログイン済み' : 'ログインなし'}`);
         
+        // リダイレクト結果取得前の待機
+        addDebugLog('⏳ getRedirectResult実行中...');
         const result = await getRedirectResult(auth);
         addDebugLog(`🔍 getRedirectResult結果: ${result ? 'ユーザー情報あり' : 'なし'}`);
         
@@ -122,6 +129,13 @@ export default function MobileLoginPage() {
       
       // Firebase Auth設定の確認
       addDebugLog(`🔍 Auth設定確認: authDomain=${auth.config.authDomain}`);
+      addDebugLog(`🔍 予想されるリダイレクトURI: ${window.location.origin}/mobile-login`);
+      
+      // Providerの詳細設定
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      addDebugLog('🔧 Provider設定: prompt=select_account を追加');
       
       await signInWithRedirect(auth, provider);
       addDebugLog('✅ signInWithRedirect実行完了 - Googleにリダイレクト中');
