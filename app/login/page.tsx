@@ -263,11 +263,7 @@ export default function LoginPage() {
           </span>
         </button>
 
-        {isMobile && (
-          <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
-            📱 モバイル用リダイレクト認証
-          </p>
-        )}
+
 
         {error && (
           <button
