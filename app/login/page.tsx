@@ -49,23 +49,44 @@ export default function LoginPage() {
     const handleRedirectResult = async () => {
       try {
         console.log('🔄 リダイレクト結果を確認中...');
+        console.log('🔍 現在のURL:', window.location.href);
+        console.log('🔍 URLパラメータ:', window.location.search);
+        
         const result = await getRedirectResult(auth);
+        console.log('🔍 getRedirectResult結果:', result);
+        
         if (result?.user) {
-          console.log('✅ リダイレクト認証成功:', result.user.displayName);
+          console.log('✅ リダイレクト認証成功:', {
+            displayName: result.user.displayName,
+            email: result.user.email,
+            uid: result.user.uid
+          });
+          
+          setIsLoggingIn(true); // ローディング状態を設定
           await createUserProfile(result.user);
+          console.log('✅ プロフィール作成完了、マイページに遷移中...');
           router.push('/mypage');
         } else {
-          console.log('ℹ️ リダイレクト結果なし');
+          console.log('ℹ️ リダイレクト結果なし - 通常のページロード');
+          setIsLoggingIn(false);
         }
       } catch (error: any) {
-        console.error('❌ リダイレクト認証エラー:', error);
-        setError(`認証エラー: ${error.message}`);
+        console.error('❌ リダイレクト認証エラー:', {
+          code: error.code,
+          message: error.message,
+          stack: error.stack
+        });
+        setError(`認証エラー: ${error.code || error.message}`);
         setIsLoggingIn(false);
       }
     };
 
+    // モバイルの場合のみリダイレクト結果を処理
     if (isMobile) {
+      console.log('📱 モバイルデバイス - リダイレクト結果処理を開始');
       handleRedirectResult();
+    } else {
+      console.log('💻 デスクトップデバイス - リダイレクト結果処理をスキップ');
     }
   }, [isMobile, router]);
 
@@ -102,7 +123,17 @@ export default function LoginPage() {
         // モバイル：リダイレクト方式（Cross-Origin-Opener-Policy対策）
         console.log('📱 モバイルデバイス検出 - リダイレクト認証を開始');
         console.log('🚫 ポップアップを回避してリダイレクト方式を使用');
-        await signInWithRedirect(auth, provider);
+        console.log('🔍 認証前URL:', window.location.href);
+        
+        try {
+          await signInWithRedirect(auth, provider);
+          console.log('✅ signInWithRedirect実行完了');
+          // この時点でページがリダイレクトされるため、以下のコードは実行されない
+        } catch (redirectError) {
+          console.error('❌ signInWithRedirectエラー:', redirectError);
+          throw redirectError;
+        }
+        
         // リダイレクト後の処理はuseEffectで行う
         return; // 早期リターンでポップアップ処理を完全に回避
       } else {
