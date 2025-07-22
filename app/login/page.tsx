@@ -124,30 +124,56 @@ export default function LoginPage() {
   };
 
   const handleLogin = async () => {
-    if (isLoggingIn) return;
+    console.log('🚀 ログインボタンクリック検出');
+    console.log('🔍 現在の状態:', {
+      isLoggingIn,
+      isMobile,
+      currentURL: window.location.href,
+      authInitialized: !!auth,
+      providerInitialized: !!provider
+    });
+    
+    if (isLoggingIn) {
+      console.log('⚠️ ログイン処理中のためスキップ');
+      return;
+    }
     
     setIsLoggingIn(true);
     setError(null);
     
     try {
+      console.log('🔍 Firebase Auth状態確認:', {
+        authDomain: auth.config.authDomain,
+        currentDomain: window.location.hostname,
+        protocol: window.location.protocol
+      });
+      
       if (isMobile) {
         // モバイル：リダイレクト方式
-        console.log('📱 モバイルデバイス - リダイレクト認証を開始');
+        console.log('📱 モバイルデバイス検出 - リダイレクト認証を開始');
+        console.log('🔧 Provider設定前:', provider);
         
         // セッションストレージにリダイレクト状態を保存
         sessionStorage.setItem('firebase_redirect_initiated', 'true');
+        console.log('💾 セッションストレージに状態保存完了');
         
         // Googleプロバイダーの設定
         provider.setCustomParameters({
           prompt: 'select_account'
         });
+        console.log('🔧 Provider設定完了');
         
+        console.log('🚀 signInWithRedirect実行開始...');
         try {
           await signInWithRedirect(auth, provider);
           console.log('✅ signInWithRedirect実行完了 - Googleにリダイレクト中');
           // この後Googleの認証ページにリダイレクトされる
-        } catch (redirectError) {
-          console.error('❌ signInWithRedirectエラー:', redirectError);
+        } catch (redirectError: any) {
+          console.error('❌ signInWithRedirectエラー:', {
+            code: redirectError.code,
+            message: redirectError.message,
+            stack: redirectError.stack
+          });
           // エラー時はセッション状態をクリア
           sessionStorage.removeItem('firebase_redirect_initiated');
           throw redirectError;
@@ -156,15 +182,28 @@ export default function LoginPage() {
         return; // 早期リターンでポップアップ処理を完全に回避
       } else {
         // デスクトップ：ポップアップ方式
-        console.log('💻 デスクトップデバイス - ポップアップ認証を開始');
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
+        console.log('💻 デスクトップデバイス検出 - ポップアップ認証を開始');
+        console.log('🚀 signInWithPopup実行開始...');
+        
+        try {
+          const result = await signInWithPopup(auth, provider);
+          const user = result.user;
+          console.log('✅ signInWithPopup成功:', user.displayName);
 
-        if (user) {
-          await createUserProfile(user);
-          console.log('✅ ポップアップ認証成功:', user.displayName);
-          router.push('/mypage');
+          if (user) {
+            await createUserProfile(user);
+            console.log('✅ ポップアップ認証成功:', user.displayName);
+            router.push('/mypage');
+          }
+        } catch (popupError: any) {
+          console.error('❌ signInWithPopupエラー:', {
+            code: popupError.code,
+            message: popupError.message,
+            stack: popupError.stack
+          });
+          throw popupError;
         }
+        
         setIsLoggingIn(false);
       }
     } catch (error: any) {
