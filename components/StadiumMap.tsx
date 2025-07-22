@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Stadium, premierLeagueStadiums } from '@/lib/stadiumData';
+import { Stadium, premierLeagueStadiums, championshipStadiums, serieAStadiums, serieBStadiums, ligue1Stadiums, ligue2Stadiums, laLigaStadiums, segundaStadiums } from '@/lib/stadiumData';
 import { MapPin, Loader2 } from 'lucide-react';
 
 // Dynamically import map components to avoid SSR issues
@@ -28,8 +28,8 @@ const Popup = dynamic(
 
 interface StadiumMapProps {
   stadiums: Stadium[];
-  selectedStadium?: string | null;
   onStadiumSelect?: (stadiumName: string) => void;
+  selectedStadium?: string | null;
 }
 
 export default function StadiumMap({ stadiums, selectedStadium, onStadiumSelect }: StadiumMapProps) {
@@ -67,14 +67,89 @@ export default function StadiumMap({ stadiums, selectedStadium, onStadiumSelect 
   const centerPosition: [number, number] = [52.5, -1.5];
   const zoom = 6;
   
-  // Helper function to determine if stadium is Premier League
+  // Helper functions to determine stadium league
   const isPremierLeague = (stadium: Stadium) => {
     return premierLeagueStadiums.some(pl => pl.name === stadium.name);
   };
-  
-  // Helper function to get marker color based on league
-  const getMarkerColor = (stadium: Stadium) => {
-    return isPremierLeague(stadium) ? '#3B82F6' : '#10B981'; // Blue for PL, Green for Championship
+
+  const isChampionship = (stadium: Stadium) => {
+    return championshipStadiums.some(ch => ch.name === stadium.name);
+  };
+
+  const isSerieA = (stadium: Stadium) => {
+    return serieAStadiums.some(sa => sa.name === stadium.name);
+  };
+
+  const isSerieB = (stadium: Stadium) => {
+    return serieBStadiums.some(sb => sb.name === stadium.name);
+  };
+
+  const isLigue1 = (stadium: Stadium) => {
+    return ligue1Stadiums.some(l1 => l1.name === stadium.name);
+  };
+
+  const isLigue2 = (stadium: Stadium) => {
+    return ligue2Stadiums.some(l2 => l2.name === stadium.name);
+  };
+
+  const isLaLiga = (stadium: Stadium) => {
+    return laLigaStadiums.some(ll => ll.name === stadium.name);
+  };
+
+  const isSegunda = (stadium: Stadium) => {
+    return segundaStadiums.some(sg => sg.name === stadium.name);
+  };
+
+  // Get marker color based on league and selection state
+  const getMarkerColor = (stadium: Stadium, isSelected: boolean = false) => {
+    // If selected, use gold/highlight color
+    if (isSelected) return '#F59E0B'; // Bright amber/gold for selected
+    
+    // Normal league colors
+    if (isPremierLeague(stadium)) return '#3B82F6'; // Blue for Premier League
+    if (isChampionship(stadium)) return '#10B981'; // Green for Championship
+    if (isSerieA(stadium)) return '#DC2626'; // Red for Serie A
+    if (isSerieB(stadium)) return '#EA580C'; // Orange for Serie B
+    if (isLigue1(stadium)) return '#9333EA'; // Purple for Ligue 1
+    if (isLigue2(stadium)) return '#4F46E5'; // Indigo for Ligue 2
+    if (isLaLiga(stadium)) return '#CA8A04'; // Yellow for La Liga
+    if (isSegunda(stadium)) return '#D97706'; // Amber for Segunda
+    return '#6B7280'; // Gray for unknown
+  };
+
+  // Get league name for display
+  const getLeagueName = (stadium: Stadium) => {
+    if (isPremierLeague(stadium)) return 'プレミアリーグ';
+    if (isChampionship(stadium)) return 'チャンピオンシップ';
+    if (isSerieA(stadium)) return 'セリエA';
+    if (isSerieB(stadium)) return 'セリエB';
+    if (isLigue1(stadium)) return 'リーグ・アン';
+    if (isLigue2(stadium)) return 'リーグ・ドゥ';
+    if (isLaLiga(stadium)) return 'ラ・リーガ';
+    if (isSegunda(stadium)) return 'セグンダ';
+    return '不明';
+  };
+
+  // Create custom marker icon with dynamic color
+  const createCustomIcon = (color: string, isSelected: boolean = false) => {
+    if (!leafletLoaded || !window.L) return null;
+    
+    const size = isSelected ? 35 : 25; // Larger size for selected
+    const shadowSize = isSelected ? 41 : 31;
+    
+    return new window.L.Icon({
+      iconUrl: `data:image/svg+xml;base64,${btoa(`
+        <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="${color}" stroke="white" stroke-width="2"/>
+          <circle cx="12" cy="9" r="3" fill="white"/>
+        </svg>
+      `)}`,
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [size, size],
+      iconAnchor: [size/2, size],
+      popupAnchor: [1, -size + 5],
+      shadowSize: [shadowSize, shadowSize]
+    });
   };
 
   if (!isClient) {
@@ -117,46 +192,46 @@ export default function StadiumMap({ stadiums, selectedStadium, onStadiumSelect 
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
+
+        
         {stadiums.map((stadium, index) => {
-          const isPlStadium = isPremierLeague(stadium);
+          const isSelected = selectedStadium === stadium.name;
+          const markerColor = getMarkerColor(stadium, isSelected);
+          
           return (
             <Marker
               key={index}
               position={[stadium.coords.lat, stadium.coords.lng]}
+              icon={createCustomIcon(markerColor, isSelected) || undefined}
               eventHandlers={{
                 click: () => onStadiumSelect?.(stadium.name),
               }}
             >
               <Popup>
-                <div className="p-2">
+                <div className="p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-3 h-3 rounded-full ${
-                      isPlStadium ? 'bg-blue-500' : 'bg-green-500'
-                    }`}></div>
+                    <div className="w-3 h-3 rounded-full" style={{backgroundColor: markerColor}}></div>
                     <span className={`text-xs font-medium px-2 py-1 rounded ${
-                      isPlStadium 
-                        ? 'bg-blue-100 text-blue-800' 
-                        : 'bg-green-100 text-green-800'
+                      isSelected ? 'bg-amber-100 text-amber-800' :
+                      markerColor === '#3B82F6' ? 'bg-blue-100 text-blue-800' :
+                      markerColor === '#10B981' ? 'bg-green-100 text-green-800' :
+                      markerColor === '#DC2626' ? 'bg-red-100 text-red-800' :
+                      markerColor === '#EA580C' ? 'bg-orange-100 text-orange-800' :
+                      markerColor === '#9333EA' ? 'bg-purple-100 text-purple-800' :
+                      markerColor === '#4F46E5' ? 'bg-indigo-100 text-indigo-800' :
+                      markerColor === '#CA8A04' ? 'bg-yellow-100 text-yellow-800' :
+                      markerColor === '#D97706' ? 'bg-amber-100 text-amber-800' :
+                      'bg-gray-100 text-gray-800'
                     }`}>
-                      {isPlStadium ? 'プレミアリーグ' : 'チャンピオンシップ'}
+                      {getLeagueName(stadium)}
                     </span>
                   </div>
-                  <h4 className="font-semibold text-gray-900 mb-1">
-                    {stadium.name}
-                  </h4>
-                  <p className="text-sm text-gray-600 mb-1">
-                    {stadium.team}
-                  </p>
-                  {stadium.capacity && (
-                    <p className="text-xs text-gray-500">
-                      座席数: {stadium.capacity.toLocaleString()}
-                    </p>
-                  )}
-                  {stadium.opened && (
-                    <p className="text-xs text-gray-500">
-                      開場: {stadium.opened}年
-                    </p>
-                  )}
+                  <h3 className="font-bold text-lg mb-2">{stadium.name}</h3>
+                  <div className="space-y-1 text-sm">
+                    <p><span className="font-medium">チーム:</span> {stadium.team}</p>
+                    <p><span className="font-medium">収容人数:</span> {stadium.capacity?.toLocaleString()}人</p>
+                    <p><span className="font-medium">開場年:</span> {stadium.opened}年</p>
+                  </div>
                 </div>
               </Popup>
             </Marker>
