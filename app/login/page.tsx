@@ -15,13 +15,30 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   useTheme();
 
-  // デバイス検出
+  // デバイス検出（精度向上）
   useEffect(() => {
     const checkMobile = () => {
       const userAgent = navigator.userAgent.toLowerCase();
-      const mobileKeywords = ['mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'windows phone'];
-      const isMobileDevice = mobileKeywords.some(keyword => userAgent.includes(keyword)) || window.innerWidth <= 768;
-      console.log('🔍 デバイス検出:', isMobileDevice ? 'モバイル' : 'デスクトップ');
+      const mobileKeywords = [
+        'mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'windows phone',
+        'webos', 'opera mini', 'iemobile', 'wpdesktop'
+      ];
+      
+      // より厳密なモバイル検出
+      const isMobileUA = mobileKeywords.some(keyword => userAgent.includes(keyword));
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isSmallScreen = window.innerWidth <= 768;
+      const isMobileDevice = isMobileUA || (isTouchDevice && isSmallScreen);
+      
+      console.log('🔍 デバイス検出詳細:', {
+        userAgent: userAgent,
+        isMobileUA,
+        isTouchDevice,
+        isSmallScreen,
+        screenWidth: window.innerWidth,
+        final: isMobileDevice ? 'モバイル' : 'デスクトップ'
+      });
+      
       return isMobileDevice;
     };
     setIsMobile(checkMobile());
@@ -82,10 +99,12 @@ export default function LoginPage() {
     
     try {
       if (isMobile) {
-        // モバイル：リダイレクト方式
-        console.log('📱 モバイルデバイス - リダイレクト認証を開始');
+        // モバイル：リダイレクト方式（Cross-Origin-Opener-Policy対策）
+        console.log('📱 モバイルデバイス検出 - リダイレクト認証を開始');
+        console.log('🚫 ポップアップを回避してリダイレクト方式を使用');
         await signInWithRedirect(auth, provider);
         // リダイレクト後の処理はuseEffectで行う
+        return; // 早期リターンでポップアップ処理を完全に回避
       } else {
         // デスクトップ：ポップアップ方式
         console.log('💻 デスクトップデバイス - ポップアップ認証を開始');
@@ -108,9 +127,11 @@ export default function LoginPage() {
       } else if (error.code === 'auth/popup-closed-by-user') {
         errorMessage = 'ログインがキャンセルされました。';
       } else if (error.code === 'auth/unauthorized-domain') {
-        errorMessage = '認証ドメインが許可されていません。';
+        errorMessage = '認証ドメインが許可されていません。管理者にお問い合わせください。';
       } else if (error.code === 'auth/network-request-failed') {
         errorMessage = 'ネットワークエラーが発生しました。接続を確認してください。';
+      } else if (error.message && error.message.includes('Cross-Origin-Opener-Policy')) {
+        errorMessage = 'ブラウザのセキュリティポリシーによりログインできません。リダイレクト方式を使用してください。';
       }
       
       setError(errorMessage);
@@ -148,7 +169,7 @@ export default function LoginPage() {
 
         {isMobile && (
           <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
-            
+            📱 モバイル用リダイレクト認証
           </p>
         )}
 
