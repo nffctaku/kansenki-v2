@@ -21,6 +21,15 @@ export default function MobileLoginPage() {
     setDebugInfo(prev => [...prev.slice(-4), `${new Date().toLocaleTimeString()}: ${message}`]);
   };
 
+  // Firebase設定の診断
+  useEffect(() => {
+    addDebugLog('🔧 Firebase設定診断開始');
+    addDebugLog(`🔍 Auth Domain: ${auth.config.authDomain}`);
+    addDebugLog(`🔍 Project ID: ${auth.config.projectId}`);
+    addDebugLog(`🔍 現在のドメイン: ${window.location.hostname}`);
+    addDebugLog(`🔍 現在のプロトコル: ${window.location.protocol}`);
+  }, []);
+
   // リダイレクト結果の処理（モバイル専用）
   useEffect(() => {
     const handleRedirectResult = async () => {
@@ -28,12 +37,18 @@ export default function MobileLoginPage() {
         addDebugLog('📱 モバイル専用ページ - リダイレクト結果を確認中...');
         addDebugLog(`🔍 現在のURL: ${window.location.href}`);
         addDebugLog(`🔍 URLパラメータ: ${window.location.search}`);
+        addDebugLog(`🔍 URL Hash: ${window.location.hash}`);
+        addDebugLog(`🔍 Referrer: ${document.referrer}`);
+        
+        // Firebase Auth状態の確認
+        addDebugLog(`🔍 Auth currentUser: ${auth.currentUser ? 'ログイン済み' : 'ログインなし'}`);
         
         const result = await getRedirectResult(auth);
         addDebugLog(`🔍 getRedirectResult結果: ${result ? 'ユーザー情報あり' : 'なし'}`);
         
         if (result?.user) {
           addDebugLog(`✅ リダイレクト認証成功: ${result.user.displayName || result.user.email}`);
+          addDebugLog(`🔍 ユーザーUID: ${result.user.uid}`);
           
           setIsLoggingIn(true);
           await createUserProfile(result.user);
@@ -41,14 +56,20 @@ export default function MobileLoginPage() {
           
           // 少し待ってからリダイレクト
           setTimeout(() => {
+            addDebugLog('🚀 マイページにリダイレクト実行');
             router.push('/mypage');
           }, 1000);
+        } else if (auth.currentUser) {
+          addDebugLog('ℹ️ 既存のログインユーザーを検出');
+          addDebugLog(`🔍 既存ユーザー: ${auth.currentUser.displayName || auth.currentUser.email}`);
+          router.push('/mypage');
         } else {
           addDebugLog('ℹ️ リダイレクト結果なし - 通常のページロード');
           setIsLoggingIn(false);
         }
       } catch (error: any) {
         addDebugLog(`❌ リダイレクト認証エラー: ${error.code || error.message}`);
+        addDebugLog(`❌ エラー詳細: ${JSON.stringify(error)}`);
         setError(`認証エラー: ${error.code || error.message}`);
         setIsLoggingIn(false);
       }
@@ -93,18 +114,26 @@ export default function MobileLoginPage() {
     addDebugLog('🔐 モバイル専用ログイン開始');
     
     try {
-      addDebugLog('📱 signInWithRedirect実行中...');
+      // 認証前の詳細診断
+      addDebugLog('📱 signInWithRedirect実行前の診断');
       addDebugLog(`🔍 認証前URL: ${window.location.href}`);
+      addDebugLog(`🔍 User Agent: ${navigator.userAgent}`);
+      addDebugLog(`🔍 Provider設定: ${JSON.stringify(provider)}`);
+      
+      // Firebase Auth設定の確認
+      addDebugLog(`🔍 Auth設定確認: authDomain=${auth.config.authDomain}`);
       
       await signInWithRedirect(auth, provider);
       addDebugLog('✅ signInWithRedirect実行完了 - Googleにリダイレクト中');
       // この後Googleの認証ページにリダイレクトされる
     } catch (error: any) {
       addDebugLog(`❌ ログインエラー: ${error.code || error.message}`);
+      addDebugLog(`❌ エラー詳細: ${JSON.stringify(error)}`);
       
       let errorMessage = 'ログインに失敗しました';
       if (error.code === 'auth/unauthorized-domain') {
-        errorMessage = '認証ドメインが許可されていません。管理者にお問い合わせください。';
+        errorMessage = `認証ドメインエラー: ${window.location.hostname} が許可されていません。Firebase Consoleで認証ドメインを確認してください。`;
+        addDebugLog(`❌ 認証ドメインエラー詳細: 現在のドメイン ${window.location.hostname} がFirebase認証ドメインリストに含まれていません`);
       } else if (error.code === 'auth/network-request-failed') {
         errorMessage = 'ネットワークエラーが発生しました。接続を確認してください。';
       }
