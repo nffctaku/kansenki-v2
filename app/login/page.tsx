@@ -1,47 +1,120 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { auth, provider, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   useTheme();
 
-  const handleLogin = async () => {
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+  // デバイス検出
+  useEffect(() => {
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const mobileKeywords = ['mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'windows phone'];
+      const isMobileDevice = mobileKeywords.some(keyword => userAgent.includes(keyword)) || window.innerWidth <= 768;
+      console.log('🔍 デバイス検出:', isMobileDevice ? 'モバイル' : 'デスクトップ');
+      return isMobileDevice;
+    };
+    setIsMobile(checkMobile());
+  }, []);
 
-      if (user) {
-        const userRef = doc(db, 'users', user.uid);
-        const userSnap = await getDoc(userRef);
-
-        if (!userSnap.exists()) {
-          // 一意なID（ハンドル）を自動生成
-          const uniqueId = 'user' + Math.random().toString(36).substring(2, 8);
-
-          await setDoc(userRef, {
-            uid: user.uid,
-            id: uniqueId, // ← 公開ID（@◯◯）
-            nickname: user.displayName || 'no-name', // ← 表示名（後で変更可能）
-            photoURL: user.photoURL || '',
-            createdAt: new Date(),
-          });
-          console.log(`✅ Firestore にプロフィール作成: @${uniqueId}`);
+  // リダイレクト結果の処理（モバイル用）
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        console.log('🔄 リダイレクト結果を確認中...');
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          console.log('✅ リダイレクト認証成功:', result.user.displayName);
+          await createUserProfile(result.user);
+          router.push('/mypage');
         } else {
-          console.log('🔁 Firestore プロフィールは既に存在');
+          console.log('ℹ️ リダイレクト結果なし');
         }
-
-        console.log('✅ ログイン成功:', user.displayName);
-        router.push('/mypage');
+      } catch (error: any) {
+        console.error('❌ リダイレクト認証エラー:', error);
+        setError(`認証エラー: ${error.message}`);
+        setIsLoggingIn(false);
       }
-    } catch (error) {
+    };
+
+    if (isMobile) {
+      handleRedirectResult();
+    }
+  }, [isMobile, router]);
+
+  // ユーザープロフィール作成関数
+  const createUserProfile = async (user: any) => {
+    const userRef = doc(db, 'users', user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      // 一意なID（ハンドル）を自動生成
+      const uniqueId = 'user' + Math.random().toString(36).substring(2, 8);
+
+      await setDoc(userRef, {
+        uid: user.uid,
+        id: uniqueId, // ← 公開ID（@◯◯）
+        nickname: user.displayName || 'no-name', // ← 表示名（後で変更可能）
+        photoURL: user.photoURL || '',
+        createdAt: new Date(),
+      });
+      console.log(`✅ Firestore にプロフィール作成: @${uniqueId}`);
+    } else {
+      console.log('🔁 Firestore プロフィールは既に存在');
+    }
+  };
+
+  const handleLogin = async () => {
+    if (isLoggingIn) return;
+    
+    setIsLoggingIn(true);
+    setError(null);
+    
+    try {
+      if (isMobile) {
+        // モバイル：リダイレクト方式
+        console.log('📱 モバイルデバイス - リダイレクト認証を開始');
+        await signInWithRedirect(auth, provider);
+        // リダイレクト後の処理はuseEffectで行う
+      } else {
+        // デスクトップ：ポップアップ方式
+        console.log('💻 デスクトップデバイス - ポップアップ認証を開始');
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+
+        if (user) {
+          await createUserProfile(user);
+          console.log('✅ ポップアップ認証成功:', user.displayName);
+          router.push('/mypage');
+        }
+        setIsLoggingIn(false);
+      }
+    } catch (error: any) {
       console.error('❌ ログインエラー:', error);
-      alert('ログインに失敗しました');
+      
+      let errorMessage = 'ログインに失敗しました';
+      if (error.code === 'auth/popup-blocked') {
+        errorMessage = 'ポップアップがブロックされました。ブラウザの設定でポップアップを許可してください。';
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'ログインがキャンセルされました。';
+      } else if (error.code === 'auth/unauthorized-domain') {
+        errorMessage = '認証ドメインが許可されていません。';
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'ネットワークエラーが発生しました。接続を確認してください。';
+      }
+      
+      setError(errorMessage);
+      setIsLoggingIn(false);
     }
   };
 
@@ -51,9 +124,16 @@ export default function LoginPage() {
         <h1 className="text-2xl font-bold mb-4 dark:text-white">ログイン</h1>
         <p className="text-gray-600 dark:text-gray-400 mb-6">Googleアカウントでログインしてください</p>
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-md text-red-700 dark:text-red-300 text-sm">
+            {error}
+          </div>
+        )}
+
         <button
           onClick={handleLogin}
-          className="w-full flex items-center justify-center gap-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 py-2 px-4 hover:shadow-sm transition"
+          disabled={isLoggingIn}
+          className="w-full flex items-center justify-center gap-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 py-2 px-4 hover:shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Image
             src="/google-icon.svg"
@@ -61,8 +141,28 @@ export default function LoginPage() {
             width={18}
             height={18}
           />
-          <span className="text-sm text-[#3c4043] dark:text-gray-200 font-medium">Googleでログイン</span>
+          <span className="text-sm text-[#3c4043] dark:text-gray-200 font-medium">
+            {isLoggingIn ? (isMobile ? 'リダイレクト中...' : 'ログイン中...') : 'Googleでログイン'}
+          </span>
         </button>
+
+        {isMobile && (
+          <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+            
+          </p>
+        )}
+
+        {error && (
+          <button
+            onClick={() => {
+              setError(null);
+              setIsLoggingIn(false);
+            }}
+            className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            再試行
+          </button>
+        )}
       </div>
     </div>
   );
