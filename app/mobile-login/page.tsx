@@ -25,7 +25,7 @@ export default function MobileLoginPage() {
   useEffect(() => {
     addDebugLog('🔧 Firebase設定診断開始');
     addDebugLog(`🔍 Auth Domain: ${auth.config.authDomain}`);
-    addDebugLog(`🔍 Project ID: ${auth.config.projectId}`);
+    addDebugLog(`🔍 Firebase App Name: ${auth.app.name}`);
     addDebugLog(`🔍 現在のドメイン: ${window.location.hostname}`);
     addDebugLog(`🔍 現在のプロトコル: ${window.location.protocol}`);
   }, []);
