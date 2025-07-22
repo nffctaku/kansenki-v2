@@ -44,47 +44,90 @@ export default function LoginPage() {
     setIsMobile(checkMobile());
   }, []);
 
-  // リダイレクト結果の処理（統合版）
+  // リダイレクト結果の処理（直接的なアプローチ）
   useEffect(() => {
     const handleRedirectResult = async () => {
       try {
         console.log('🔄 リダイレクト結果を確認中...');
-        console.log('🔍 現在のURL:', window.location.href);
-        console.log('🔍 URLパラメータ:', window.location.search);
-        console.log('🔍 URL Hash:', window.location.hash);
-        console.log('🔍 Referrer:', document.referrer);
         
-        // Firebase Auth状態の確認
-        console.log('🔍 Auth currentUser:', auth.currentUser ? 'ログイン済み' : 'ログインなし');
+        // セッション状態の確認
+        const redirectInitiated = sessionStorage.getItem('firebase_redirect_initiated');
+        console.log('🔍 リダイレクト状態:', redirectInitiated);
         
-        const result = await getRedirectResult(auth);
-        console.log('🔍 getRedirectResult結果:', result ? 'ユーザー情報あり' : 'なし');
+        if (!redirectInitiated) {
+          console.log('ℹ️ 通常のページロード - リダイレクト処理をスキップ');
+          setIsLoggingIn(false);
+          return;
+        }
         
-        if (result?.user) {
-          console.log('✅ リダイレクト認証成功:', {
-            displayName: result.user.displayName,
-            email: result.user.email,
-            uid: result.user.uid
+        // Googleリダイレクトから戻ってきた場合の処理
+        console.log('🚀 Googleリダイレクトから復帰 - 認証結果を確認中...');
+        
+        // URLパラメータでGoogle認証の成功を確認
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasAuthCode = urlParams.has('code') || urlParams.has('state');
+        console.log('🔍 URL認証パラメータ:', { hasAuthCode, search: window.location.search });
+        
+        // Firebase Auth状態の確認（複数回試行）
+        let authResult = null;
+        let attempts = 0;
+        const maxAttempts = 5;
+        
+        while (!authResult && attempts < maxAttempts) {
+          attempts++;
+          console.log(`🔍 認証状態確認 (${attempts}/${maxAttempts})...`);
+          
+          // getRedirectResultの確認
+          authResult = await getRedirectResult(auth);
+          
+          if (authResult?.user) {
+            console.log('✅ getRedirectResultで認証成功!');
+            break;
+          }
+          
+          // currentUserの確認
+          if (auth.currentUser) {
+            console.log('✅ currentUserで認証済みユーザー検出!');
+            authResult = { user: auth.currentUser };
+            break;
+          }
+          
+          // 500ms待機してから再試行
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+        
+        // 認証結果の処理
+        if (authResult?.user) {
+          console.log('✅ 認証成功!', {
+            displayName: authResult.user.displayName,
+            email: authResult.user.email,
+            uid: authResult.user.uid
           });
           
-          setIsLoggingIn(true);
-          await createUserProfile(result.user);
-          console.log('✅ プロフィール作成完了、マイページに遷移中...');
-          
-          // セッション状態をクリア
+          // プロフィール作成とリダイレクト
+          await createUserProfile(authResult.user);
           sessionStorage.removeItem('firebase_redirect_initiated');
           
-          setTimeout(() => {
-            router.push('/mypage');
-          }, 1000);
-        } else if (auth.currentUser) {
-          console.log('ℹ️ 既存のログインユーザーを検出');
-          console.log('🔍 既存ユーザー:', auth.currentUser.displayName || auth.currentUser.email);
+          console.log('✅ プロフィール作成完了 - マイページに遷移中...');
           router.push('/mypage');
-        } else {
-          console.log('ℹ️ リダイレクト結果なし - 通常のページロード');
-          setIsLoggingIn(false);
+          return;
         }
+        
+        // 認証失敗の場合
+        console.log('❌ 認証結果を取得できませんでした');
+        console.log('🔍 詳細情報:', {
+          hasAuthCode,
+          currentUser: auth.currentUser,
+          authDomain: auth.config.authDomain,
+          currentDomain: window.location.hostname
+        });
+        
+        // エラーメッセージを表示
+        setError('認証に失敗しました。ページを再読み込みして再試行してください。');
+        sessionStorage.removeItem('firebase_redirect_initiated');
+        setIsLoggingIn(false);
       } catch (error: any) {
         console.error('❌ リダイレクト認証エラー:', {
           code: error.code,
@@ -148,63 +191,28 @@ export default function LoginPage() {
         protocol: window.location.protocol
       });
       
-      if (isMobile) {
-        // モバイル：リダイレクト方式
-        console.log('📱 モバイルデバイス検出 - リダイレクト認証を開始');
-        console.log('🔧 Provider設定前:', provider);
-        
-        // セッションストレージにリダイレクト状態を保存
-        sessionStorage.setItem('firebase_redirect_initiated', 'true');
-        console.log('💾 セッションストレージに状態保存完了');
-        
-        // Googleプロバイダーの設定
-        provider.setCustomParameters({
-          prompt: 'select_account'
-        });
-        console.log('🔧 Provider設定完了');
-        
-        console.log('🚀 signInWithRedirect実行開始...');
-        try {
-          await signInWithRedirect(auth, provider);
-          console.log('✅ signInWithRedirect実行完了 - Googleにリダイレクト中');
-          // この後Googleの認証ページにリダイレクトされる
-        } catch (redirectError: any) {
-          console.error('❌ signInWithRedirectエラー:', {
-            code: redirectError.code,
-            message: redirectError.message,
-            stack: redirectError.stack
-          });
-          // エラー時はセッション状態をクリア
-          sessionStorage.removeItem('firebase_redirect_initiated');
-          throw redirectError;
-        }
-        
-        return; // 早期リターンでポップアップ処理を完全に回避
-      } else {
-        // デスクトップ：ポップアップ方式
-        console.log('💻 デスクトップデバイス検出 - ポップアップ認証を開始');
-        console.log('🚀 signInWithPopup実行開始...');
-        
-        try {
-          const result = await signInWithPopup(auth, provider);
-          const user = result.user;
-          console.log('✅ signInWithPopup成功:', user.displayName);
+      // モバイルでもポップアップ認証を使用（リダイレクトの問題を回避）
+      console.log('🚀 ポップアップ認証を開始 (モバイル/デスクトップ統一)');
+      
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        console.log('✅ ポップアップ認証成功:', user.displayName);
 
-          if (user) {
-            await createUserProfile(user);
-            console.log('✅ ポップアップ認証成功:', user.displayName);
-            router.push('/mypage');
-          }
-        } catch (popupError: any) {
-          console.error('❌ signInWithPopupエラー:', {
-            code: popupError.code,
-            message: popupError.message,
-            stack: popupError.stack
-          });
-          throw popupError;
+        if (user) {
+          await createUserProfile(user);
+          console.log('✅ プロフィール作成完了 - マイページに遷移中...');
+          router.push('/mypage');
         }
         
         setIsLoggingIn(false);
+      } catch (popupError: any) {
+        console.error('❌ ポップアップ認証エラー:', {
+          code: popupError.code,
+          message: popupError.message,
+          stack: popupError.stack
+        });
+        throw popupError;
       }
     } catch (error: any) {
       console.error('❌ ログインエラー:', error);
