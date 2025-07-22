@@ -44,16 +44,21 @@ export default function LoginPage() {
     setIsMobile(checkMobile());
   }, []);
 
-  // リダイレクト結果の処理（モバイル用）
+  // リダイレクト結果の処理（統合版）
   useEffect(() => {
     const handleRedirectResult = async () => {
       try {
         console.log('🔄 リダイレクト結果を確認中...');
         console.log('🔍 現在のURL:', window.location.href);
         console.log('🔍 URLパラメータ:', window.location.search);
+        console.log('🔍 URL Hash:', window.location.hash);
+        console.log('🔍 Referrer:', document.referrer);
+        
+        // Firebase Auth状態の確認
+        console.log('🔍 Auth currentUser:', auth.currentUser ? 'ログイン済み' : 'ログインなし');
         
         const result = await getRedirectResult(auth);
-        console.log('🔍 getRedirectResult結果:', result);
+        console.log('🔍 getRedirectResult結果:', result ? 'ユーザー情報あり' : 'なし');
         
         if (result?.user) {
           console.log('✅ リダイレクト認証成功:', {
@@ -62,9 +67,19 @@ export default function LoginPage() {
             uid: result.user.uid
           });
           
-          setIsLoggingIn(true); // ローディング状態を設定
+          setIsLoggingIn(true);
           await createUserProfile(result.user);
           console.log('✅ プロフィール作成完了、マイページに遷移中...');
+          
+          // セッション状態をクリア
+          sessionStorage.removeItem('firebase_redirect_initiated');
+          
+          setTimeout(() => {
+            router.push('/mypage');
+          }, 1000);
+        } else if (auth.currentUser) {
+          console.log('ℹ️ 既存のログインユーザーを検出');
+          console.log('🔍 既存ユーザー:', auth.currentUser.displayName || auth.currentUser.email);
           router.push('/mypage');
         } else {
           console.log('ℹ️ リダイレクト結果なし - 通常のページロード');
@@ -81,14 +96,10 @@ export default function LoginPage() {
       }
     };
 
-    // モバイルの場合のみリダイレクト結果を処理
-    if (isMobile) {
-      console.log('📱 モバイルデバイス - リダイレクト結果処理を開始');
-      handleRedirectResult();
-    } else {
-      console.log('💻 デスクトップデバイス - リダイレクト結果処理をスキップ');
-    }
-  }, [isMobile, router]);
+    // 常にリダイレクト結果をチェック（モバイル・デスクトップ共通）
+    console.log('🚀 ログインページ初期化 - リダイレクト結果処理を開始');
+    handleRedirectResult();
+  }, [router]);
 
   // ユーザープロフィール作成関数
   const createUserProfile = async (user: any) => {
@@ -120,14 +131,28 @@ export default function LoginPage() {
     
     try {
       if (isMobile) {
-        // モバイル：専用ページにリダイレクト
-        console.log('📱 モバイルデバイス - 専用ログインページにリダイレクト');
+        // モバイル：リダイレクト方式
+        console.log('📱 モバイルデバイス - リダイレクト認証を開始');
         
         // セッションストレージにリダイレクト状態を保存
         sessionStorage.setItem('firebase_redirect_initiated', 'true');
         
-        // モバイル専用ログインページにリダイレクト
-        router.push('/mobile-login');
+        // Googleプロバイダーの設定
+        provider.setCustomParameters({
+          prompt: 'select_account'
+        });
+        
+        try {
+          await signInWithRedirect(auth, provider);
+          console.log('✅ signInWithRedirect実行完了 - Googleにリダイレクト中');
+          // この後Googleの認証ページにリダイレクトされる
+        } catch (redirectError) {
+          console.error('❌ signInWithRedirectエラー:', redirectError);
+          // エラー時はセッション状態をクリア
+          sessionStorage.removeItem('firebase_redirect_initiated');
+          throw redirectError;
+        }
+        
         return; // 早期リターンでポップアップ処理を完全に回避
       } else {
         // デスクトップ：ポップアップ方式
