@@ -137,7 +137,7 @@ useEffect(() => {
           <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #1f2937;">${stadium.name}</h3>
           <div style="font-size: 14px; color: #6b7280; line-height: 1.4;">
             <p><strong>リーグ:</strong> ${getLeagueName(stadium)}</p>
-            <p><strong>クラブ:</strong> ${stadium.club}</p>
+            <p><strong>クラブ:</strong> ${stadium.team}</p>
             <p><strong>収容人数:</strong> ${stadium.capacity?.toLocaleString()}人</p>
           </div>
         </div>
