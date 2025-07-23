@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Stadium, premierLeagueStadiums, championshipStadiums, serieAStadiums, serieBStadiums, ligue1Stadiums, ligue2Stadiums, laLigaStadiums, segundaStadiums } from '@/lib/stadiumData';
+import { Stadium, premierLeagueStadiums, championshipStadiums, serieAStadiums, serieBStadiums, ligue1Stadiums, ligue2Stadiums, laLigaStadiums, segundaStadiums, MapCategory } from '@/lib/stadiumData';
+import { HotelMapData } from '@/hooks/useHotelData';
 import { MapPin, Loader2 } from 'lucide-react';
 
 // Dynamically import map components to avoid SSR issues
@@ -28,11 +29,23 @@ const Popup = dynamic(
 
 interface StadiumMapProps {
   stadiums: Stadium[];
+  hotels?: HotelMapData[];
   onStadiumSelect?: (stadiumName: string) => void;
+  onHotelSelect?: (hotelId: string) => void;
   selectedStadium?: string | null;
+  selectedHotel?: string | null;
+  category?: MapCategory;
 }
 
-export default function StadiumMap({ stadiums, selectedStadium, onStadiumSelect }: StadiumMapProps) {
+export default function StadiumMap({ 
+  stadiums, 
+  hotels = [], 
+  selectedStadium, 
+  selectedHotel, 
+  onStadiumSelect, 
+  onHotelSelect,
+  category = 'stadium'
+}: StadiumMapProps) {
   const [isClient, setIsClient] = useState(false);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
 
@@ -130,6 +143,12 @@ export default function StadiumMap({ stadiums, selectedStadium, onStadiumSelect 
     return '不明';
   };
 
+  // Get hotel marker color
+  const getHotelMarkerColor = (hotel: HotelMapData, isSelected: boolean = false) => {
+    if (isSelected) return '#F59E0B'; // Bright amber/gold for selected
+    return '#8B5CF6'; // Purple for hotels
+  };
+
   // Create custom marker icon with dynamic color
   const createCustomIcon = (color: string, isSelected: boolean = false) => {
     if (!leafletLoaded || !window.L) return null;
@@ -194,13 +213,14 @@ export default function StadiumMap({ stadiums, selectedStadium, onStadiumSelect 
         
 
         
-        {stadiums.map((stadium, index) => {
+        {/* Stadium Markers */}
+        {category === 'stadium' && stadiums.map((stadium, index) => {
           const isSelected = selectedStadium === stadium.name;
           const markerColor = getMarkerColor(stadium, isSelected);
           
           return (
             <Marker
-              key={index}
+              key={`stadium-${index}`}
               position={[stadium.coords.lat, stadium.coords.lng]}
               icon={createCustomIcon(markerColor, isSelected) || undefined}
               eventHandlers={{
@@ -231,6 +251,53 @@ export default function StadiumMap({ stadiums, selectedStadium, onStadiumSelect 
                     <p><span className="font-medium">チーム:</span> {stadium.team}</p>
                     <p><span className="font-medium">収容人数:</span> {stadium.capacity?.toLocaleString()}人</p>
                     <p><span className="font-medium">開場年:</span> {stadium.opened}年</p>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+
+        {/* Hotel Markers */}
+        {category === 'hotel' && hotels.map((hotel, index) => {
+          if (!hotel.coords) return null;
+          
+          const isSelected = selectedHotel === hotel.id;
+          const markerColor = getHotelMarkerColor(hotel, isSelected);
+          
+          return (
+            <Marker
+              key={`hotel-${index}`}
+              position={[hotel.coords.lat, hotel.coords.lng]}
+              icon={createCustomIcon(markerColor, isSelected) || undefined}
+              eventHandlers={{
+                click: () => onHotelSelect?.(hotel.id),
+              }}
+            >
+              <Popup>
+                <div className="p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 rounded-full" style={{backgroundColor: markerColor}}></div>
+                    <span className={`text-xs font-medium px-2 py-1 rounded ${
+                      isSelected ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800'
+                    }`}>
+                      ホテル
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-lg mb-2">{hotel.name}</h3>
+                  <div className="space-y-1 text-sm">
+                    {hotel.city && <p><span className="font-medium">都市:</span> {hotel.city}</p>}
+                    {hotel.rating && <p><span className="font-medium">評価:</span> {hotel.rating}/5</p>}
+                    {hotel.price && <p><span className="font-medium">料金:</span> {hotel.price.toLocaleString()}円</p>}
+                    {hotel.nights && <p><span className="font-medium">泊数:</span> {hotel.nights}泊</p>}
+                    {hotel.bookingSite && <p><span className="font-medium">予約サイト:</span> {hotel.bookingSite}</p>}
+                    <p><span className="font-medium">投稿者:</span> {hotel.author}</p>
+                    <p><span className="font-medium">投稿:</span> {hotel.postTitle}</p>
+                    {hotel.comment && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded">
+                        <p className="text-xs text-gray-600">{hotel.comment}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </Popup>

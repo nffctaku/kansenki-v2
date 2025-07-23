@@ -48,8 +48,8 @@ service cloud.firestore {
     match /simple-travels/{travelId} {
       allow read: if true;
       allow create: if request.auth != null;
-      // Note: Legacy travels use 'uid' for author id.
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
+      // Note: Legacy travels use 'authorId' for author id.
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
     }
   }
 }

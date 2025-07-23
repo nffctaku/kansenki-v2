@@ -1,27 +1,31 @@
 'use client';
 
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { premierLeagueStadiums, championshipStadiums, serieAStadiums, serieBStadiums, ligue1Stadiums, ligue2Stadiums, laLigaStadiums, segundaStadiums, mapCategories, MapCategory } from '@/lib/stadiumData';
-import { MapPin, Navigation, Check, ChevronDown, ChevronUp, List, X } from 'lucide-react';
+import { useHotelData } from '@/hooks/useHotelData';
+import { MapPin, Navigation, Check, ChevronDown, ChevronUp, List, X, Hotel } from 'lucide-react';
 
 // Dynamically import the map component to avoid SSR issues
-const StadiumMap = dynamic(() => import('@/components/StadiumMap'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-      <div className="text-center">
-        <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4 animate-pulse" />
-        <p className="text-gray-600 dark:text-gray-400">地図を読み込み中...</p>
+const StadiumMap = dynamic(
+  () => import('@/components/StadiumMap'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+        <div className="text-center">
+          <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4 animate-pulse" />
+          <p className="text-gray-600 dark:text-gray-400">地図を読み込み中...</p>
+        </div>
       </div>
-    </div>
-  ),
-});
+    )
+  }
+);
 
 export default function MapPage() {
   const [selectedCategory, setSelectedCategory] = useState<MapCategory>('stadium');
   const [selectedStadium, setSelectedStadium] = useState<string | null>(null);
-  const listRef = useRef<HTMLDivElement>(null);
+  const [selectedHotel, setSelectedHotel] = useState<string | null>(null);
   const [showPremierLeague, setShowPremierLeague] = useState(true);
   const [showChampionship, setShowChampionship] = useState(false);
   const [showSerieA, setShowSerieA] = useState(false);
@@ -32,6 +36,10 @@ export default function MapPage() {
   const [showSegunda, setShowSegunda] = useState(false);
   const [isListExpanded, setIsListExpanded] = useState(false);
   const [showList, setShowList] = useState(true);
+  const listRef = useRef<HTMLDivElement>(null);
+  
+  // Fetch hotel data
+  const { hotels, loading: hotelsLoading, error: hotelsError } = useHotelData();
 
   // Calculate current stadiums based on selected leagues
   const currentStadiums = useMemo(() => {
@@ -46,18 +54,40 @@ export default function MapPage() {
     if (showLigue2) stadiums.push(...ligue2Stadiums);
     if (showLaLiga) stadiums.push(...laLigaStadiums);
     if (showSegunda) stadiums.push(...segundaStadiums);
+    
     return stadiums;
   }, [selectedCategory, showPremierLeague, showChampionship, showSerieA, showSerieB, showLigue1, showLigue2, showLaLiga, showSegunda]);
+
+  // Filter hotels with coordinates
+  const currentHotels = useMemo(() => {
+    if (selectedCategory !== 'hotel') return [];
+    return hotels.filter((hotel: any) => hotel.coords);
+  }, [selectedCategory, hotels]);
 
   // Handle stadium selection and scroll synchronization
   const handleStadiumSelect = useCallback((stadiumName: string) => {
     setSelectedStadium(stadiumName);
+    setSelectedHotel(null); // Clear hotel selection
     
-    // Scroll to the stadium in the list
+    // Scroll to the selected stadium in the list
     if (listRef.current) {
       const stadiumElement = listRef.current.querySelector(`[data-stadium="${stadiumName}"]`);
       if (stadiumElement) {
         stadiumElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, []);
+
+  // Handle hotel selection and scroll synchronization
+  const handleHotelSelect = useCallback((hotelId: string) => {
+    setSelectedHotel(hotelId);
+    setSelectedStadium(null); // Clear stadium selection
+    
+    // Scroll to the selected hotel in the list
+    if (listRef.current) {
+      const hotelElement = listRef.current.querySelector(`[data-hotel="${hotelId}"]`);
+      if (hotelElement) {
+        hotelElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
   }, []);
@@ -301,10 +331,12 @@ export default function MapPage() {
           {/* Map Component */}
           <StadiumMap
             stadiums={currentStadiums}
-            onStadiumSelect={(stadiumName) => 
-              setSelectedStadium(stadiumName === selectedStadium ? null : stadiumName)
-            }
+            hotels={currentHotels}
+            onStadiumSelect={handleStadiumSelect}
+            onHotelSelect={handleHotelSelect}
             selectedStadium={selectedStadium}
+            selectedHotel={selectedHotel}
+            category={selectedCategory}
           />
 
           {/* Stadium List Toggle Button */}
@@ -322,15 +354,24 @@ export default function MapPage() {
             </button>
           </div>
 
-          {/* Stadium List Sidebar - Collapsible */}
+          {/* List Sidebar - Collapsible */}
           {showList && (
             <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 w-[calc(100vw-1rem)] sm:w-80 md:max-w-sm z-10">
               {/* Header */}
               <div className="p-3 md:p-4 border-b border-gray-200 dark:border-gray-600">
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 text-sm md:text-base">
-                    <MapPin className="w-3 h-3 md:w-4 md:h-4 text-red-500" />
-                    スタジアム ({currentStadiums.length})
+                    {selectedCategory === 'stadium' ? (
+                      <>
+                        <MapPin className="w-3 h-3 md:w-4 md:h-4 text-red-500" />
+                        スタジアム ({currentStadiums.length})
+                      </>
+                    ) : (
+                      <>
+                        <Hotel className="w-3 h-3 md:w-4 md:h-4 text-purple-500" />
+                        ホテル ({currentHotels.length})
+                      </>
+                    )}
                   </h4>
                   <button
                     onClick={() => setIsListExpanded(!isListExpanded)}
@@ -351,12 +392,13 @@ export default function MapPage() {
                 </div>
               </div>
 
-              {/* Stadium List */}
+              {/* List Content */}
               <div 
                 ref={listRef}
                 className={`${isListExpanded ? 'max-h-[40vh] md:max-h-80' : 'max-h-32 md:max-h-40'} overflow-y-auto p-3 md:p-4 space-y-1.5 md:space-y-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent`}
               >
-                {currentStadiums.slice(0, isListExpanded ? currentStadiums.length : 3).map((stadium) => {
+                {/* Stadium List */}
+                {selectedCategory === 'stadium' && currentStadiums.slice(0, isListExpanded ? currentStadiums.length : 3).map((stadium) => {
                   // Determine league colors
                   const isPremierLeague = premierLeagueStadiums.some(pl => pl.name === stadium.name);
                   const isChampionship = championshipStadiums.some(ch => ch.name === stadium.name);
@@ -426,14 +468,116 @@ export default function MapPage() {
                   );
                 })}
                 
+                {/* Hotel List */}
+                {selectedCategory === 'hotel' && (
+                  hotelsLoading ? (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto mb-2"></div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">ホテル情報を読み込み中...</p>
+                    </div>
+                  ) : hotelsError ? (
+                    <div className="text-center py-4">
+                      <p className="text-xs text-red-500">{hotelsError}</p>
+                    </div>
+                  ) : currentHotels.length === 0 ? (
+                    <div className="text-center py-4">
+                      <Hotel className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-xs text-gray-500 dark:text-gray-400">表示できるホテル情報がありません</p>
+                      <p className="text-xs text-gray-400 mt-1">座標情報付きの投稿をお待ちしています</p>
+                    </div>
+                  ) : (
+                    currentHotels.slice(0, isListExpanded ? currentHotels.length : 3).map((hotel: any) => (
+                      <div
+                        key={hotel.id}
+                        data-hotel={hotel.id}
+                        className={`p-2 md:p-3 rounded-lg border cursor-pointer transition-all duration-200 hover:shadow-md ${
+                          selectedHotel === hotel.id
+                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-md'
+                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
+                        }`}
+                        onClick={() => {
+                          setSelectedHotel(hotel.id);
+                          // Center map on hotel if coordinates exist
+                          if (hotel.coords) {
+                            // This would need to be implemented in the map component
+                          }
+                        }}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full flex-shrink-0 bg-purple-500"></div>
+                              <span className="text-xs px-1 py-0.5 md:px-1.5 rounded text-white font-medium flex-shrink-0 bg-purple-500">
+                                ホテル
+                              </span>
+                            </div>
+                            <h5 className="font-medium text-gray-900 dark:text-white text-xs md:text-sm truncate">
+                              {hotel.name}
+                            </h5>
+                            {hotel.city && (
+                              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                {hotel.city}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {hotel.rating && (
+                                <p className="text-xs text-gray-500 dark:text-gray-500">
+                                  ★ {hotel.rating}/5
+                                </p>
+                              )}
+                              {hotel.price && (
+                                <p className="text-xs text-gray-500 dark:text-gray-500">
+                                  {hotel.price.toLocaleString()}円
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <Hotel className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0 ml-2 text-purple-500" />
+                        </div>
+                        {selectedHotel === hotel.id && (
+                          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 space-y-1">
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              投稿: {hotel.postTitle}
+                            </p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              投稿者: {hotel.author}
+                            </p>
+                            {hotel.nights && (
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                {hotel.nights}泊
+                              </p>
+                            )}
+                            {hotel.bookingSite && (
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                予約: {hotel.bookingSite}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )
+                )}
+                
                 {/* Show remaining count when collapsed */}
-                {!isListExpanded && currentStadiums.length > 3 && (
+                {!isListExpanded && selectedCategory === 'stadium' && currentStadiums.length > 3 && (
                   <div className="text-center py-2">
                     <button
                       onClick={() => setIsListExpanded(true)}
                       className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                     >
                       他 {currentStadiums.length - 3} スタジアムを表示
+                    </button>
+                  </div>
+                )}
+                
+                {!isListExpanded && selectedCategory === 'hotel' && currentHotels.length > 3 && (
+                  <div className="text-center py-2">
+                    <button
+                      onClick={() => setIsListExpanded(true)}
+                      className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                    >
+                      他 {currentHotels.length - 3} ホテルを表示
                     </button>
                   </div>
                 )}
