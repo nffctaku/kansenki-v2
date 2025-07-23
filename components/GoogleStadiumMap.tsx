@@ -5,10 +5,15 @@ import { Wrapper, Status } from '@googlemaps/react-wrapper';
 import { Stadium, premierLeagueStadiums, championshipStadiums, serieAStadiums, serieBStadiums, ligue1Stadiums, ligue2Stadiums, laLigaStadiums, segundaStadiums } from '@/lib/stadiumData';
 import { Loader2 } from 'lucide-react';
 
+import { Hotel } from '@/hooks/useHotelData';
+
 interface GoogleStadiumMapProps {
   stadiums: Stadium[];
-  onStadiumSelect?: (stadiumName: string) => void;
+  hotels?: Hotel[];
   selectedStadium?: string | null;
+  selectedHotel?: string | null;
+  onStadiumSelect?: (stadiumName: string) => void;
+  onHotelSelect?: (hotelId: string) => void;
 }
 
 // Helper functions to determine stadium league
