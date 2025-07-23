@@ -338,6 +338,7 @@ export default function MapPage() {
         onHotelSelect={handleHotelSelect}
       />
 
+
           {/* Stadium List Toggle Button */}
           <div className="absolute top-2 right-2 md:top-4 md:right-4 z-20">
             <button
