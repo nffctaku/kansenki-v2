@@ -7,8 +7,8 @@ import { useHotelData } from '@/hooks/useHotelData';
 import { MapPin, Navigation, Check, ChevronDown, ChevronUp, List, X, Hotel } from 'lucide-react';
 
 // Dynamically import the map component to avoid SSR issues
-const StadiumMap = dynamic(
-  () => import('@/components/StadiumMap'),
+const GoogleStadiumMap = dynamic(
+  () => import('@/components/GoogleStadiumMap'),
   { 
     ssr: false,
     loading: () => (
@@ -328,16 +328,15 @@ export default function MapPage() {
       {/* Map Container */}
       <div className="flex-1 relative">
         <div className="h-[calc(100vh-180px)] sm:h-[calc(100vh-200px)] relative">
-          {/* Map Component */}
-          <StadiumMap
-            stadiums={currentStadiums}
-            hotels={currentHotels}
-            onStadiumSelect={handleStadiumSelect}
-            onHotelSelect={handleHotelSelect}
-            selectedStadium={selectedStadium}
-            selectedHotel={selectedHotel}
-            category={selectedCategory}
-          />
+           {/* 地図表示部分をGoogleStadiumMapに差し替え */}
+      <GoogleStadiumMap
+        stadiums={selectedCategory === 'stadium' ? currentStadiums : []}
+        hotels={selectedCategory === 'hotel' ? currentHotels : []}
+        selectedStadium={selectedStadium}
+        selectedHotel={selectedHotel}
+        onStadiumSelect={handleStadiumSelect}
+        onHotelSelect={handleHotelSelect}
+      />
 
           {/* Stadium List Toggle Button */}
           <div className="absolute top-2 right-2 md:top-4 md:right-4 z-20">
