@@ -106,7 +106,7 @@ useEffect(() => {
   markers.forEach(marker => marker.setMap(null));
   
   // Create new markers
-  const newMarkers = [...(stadiums || []).map(stadium => {
+  const newMarkers = (stadiums || []).map(stadium => {
     const isSelected = selectedStadium === stadium.name;
     const color = getMarkerColor(stadium, isSelected);
     
@@ -120,7 +120,7 @@ useEffect(() => {
         fillOpacity: 1,
         strokeColor: '#ffffff',
         strokeWeight: 2,
-        scale: isSelected ? 1.8 : 1.4,
+        scale: 2,
         anchor: new (window as any).google.maps.Point(12, 24),
       },
     });
@@ -146,11 +146,10 @@ useEffect(() => {
     });
 
     return marker;
-  }), ...(hotels || []).map(hotel => {
-    // ホテルマーカーのコードもここに続く...
+  });
 
-    setMarkers(newMarkers);
-  }, [map, stadiums, selectedStadium, onStadiumSelect]);
+  setMarkers(newMarkers);
+}, [map, stadiums, selectedStadium, onStadiumSelect]);
 
   // Center map on selected stadium
   useEffect(() => {
