@@ -98,60 +98,56 @@ function MapComponent({ stadiums, onStadiumSelect, selectedStadium }: GoogleStad
     }
   }, [ref, map]);
 
-  // Update markers when stadiums or selection changes
-  useEffect(() => {
-    if (!map) return;
+// Update markers when stadiums or selection changes
+useEffect(() => {
+  if (!map) return;
 
-    // Clear existing markers
-    markers.forEach(marker => marker.setMap(null));
+  // Clear existing markers
+  markers.forEach(marker => marker.setMap(null));
+  
+  // Create new markers
+  const newMarkers = [...(stadiums || []).map(stadium => {
+    const isSelected = selectedStadium === stadium.name;
+    const color = getMarkerColor(stadium, isSelected);
     
-    // Create new markers
-    const newMarkers = stadiums.map(stadium => {
-      const isSelected = selectedStadium === stadium.name;
-      const color = getMarkerColor(stadium, isSelected);
-      
-      const marker = new (window as any).google.maps.Marker({
-        position: { lat: stadium.coords.lat, lng: stadium.coords.lng },
-        map: map,
-        title: stadium.name,
-        icon: {
-          path: (window as any).google.maps.SymbolPath.CIRCLE,
-          fillColor: color,
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 2,
-          scale: isSelected ? 12 : 8,
-        },
-      });
-
-      // Create info window
-      const infoWindow = new (window as any).google.maps.InfoWindow({
-        content: `
-          <div style="padding: 12px; min-width: 200px;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-              <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${color};"></div>
-              <span style="background-color: ${color}20; color: ${color}; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">
-                ${getLeagueName(stadium)}
-              </span>
-            </div>
-            <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #1f2937;">${stadium.name}</h3>
-            <div style="font-size: 14px; color: #6b7280; line-height: 1.4;">
-              <p><strong>チーム:</strong> ${stadium.team}</p>
-              <p><strong>収容人数:</strong> ${stadium.capacity?.toLocaleString()}人</p>
-              <p><strong>開場年:</strong> ${stadium.opened}年</p>
-            </div>
-          </div>
-        `
-      });
-
-      // Add click listener
-      marker.addListener('click', () => {
-        infoWindow.open(map, marker);
-        onStadiumSelect?.(stadium.name);
-      });
-
-      return marker;
+    const marker = new (window as any).google.maps.Marker({
+      position: { lat: stadium.coords.lat, lng: stadium.coords.lng },
+      map: map,
+      title: stadium.name,
+      icon: {
+        path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
+        fillColor: color,
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 2,
+        scale: isSelected ? 1.8 : 1.4,
+        anchor: new (window as any).google.maps.Point(12, 24),
+      },
     });
+
+    // Create info window
+    const infoWindow = new (window as any).google.maps.InfoWindow({
+      content: `
+        <div style="padding: 12px; min-width: 200px;">
+          <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #1f2937;">${stadium.name}</h3>
+          <div style="font-size: 14px; color: #6b7280; line-height: 1.4;">
+            <p><strong>リーグ:</strong> ${getLeagueName(stadium)}</p>
+            <p><strong>クラブ:</strong> ${stadium.club}</p>
+            <p><strong>収容人数:</strong> ${stadium.capacity?.toLocaleString()}人</p>
+          </div>
+        </div>
+      `
+    });
+
+    // Add click listener
+    marker.addListener('click', () => {
+      infoWindow.open(map, marker);
+      onStadiumSelect?.(stadium.name);
+    });
+
+    return marker;
+  }), ...(hotels || []).map(hotel => {
+    // ホテルマーカーのコードもここに続く...
 
     setMarkers(newMarkers);
   }, [map, stadiums, selectedStadium, onStadiumSelect]);
