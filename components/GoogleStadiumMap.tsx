@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Wrapper, Status } from '@googlemaps/react-wrapper';
-import { Stadium, premierLeagueStadiums, championshipStadiums, serieAStadiums, serieBStadiums, ligue1Stadiums, ligue2Stadiums, laLigaStadiums, segundaStadiums } from '@/lib/stadiumData';
+import { Stadium, premierLeagueStadiums, championshipStadiums, serieAStadiums, serieBStadiums, ligue1Stadiums, ligue2Stadiums, laLigaStadiums, segundaStadiums, bundesligaStadiums, bundesliga2Stadiums } from '@/lib/stadiumData';
 import { Loader2 } from 'lucide-react';
 
 import { Hotel } from '@/hooks/useHotelData';
@@ -50,6 +50,18 @@ const isSegunda = (stadium: Stadium) => {
 };
 
 // Get marker color based on league and selection state
+const isBundesliga = (stadium: Stadium) => {
+  // Bundesliga 1部
+  // NOTE: You may need to import bundesligaStadiums if not already imported
+  // import { bundesligaStadiums } from '@/lib/stadiumData';
+  return (typeof bundesligaStadiums !== 'undefined') && bundesligaStadiums.some(b1 => b1.name === stadium.name);
+};
+const isBundesliga2 = (stadium: Stadium) => {
+  // Bundesliga 2部
+  // import { bundesliga2Stadiums } from '@/lib/stadiumData';
+  return (typeof bundesliga2Stadiums !== 'undefined') && bundesliga2Stadiums.some(b2 => b2.name === stadium.name);
+};
+
 const getMarkerColor = (stadium: Stadium, isSelected: boolean = false) => {
   // If selected, use gold/highlight color
   if (isSelected) return '#F59E0B'; // Bright amber/gold for selected
@@ -57,6 +69,8 @@ const getMarkerColor = (stadium: Stadium, isSelected: boolean = false) => {
   // Normal league colors
   if (isPremierLeague(stadium)) return '#3B82F6'; // Blue for Premier League
   if (isChampionship(stadium)) return '#10B981'; // Green for Championship
+  if (isBundesliga(stadium)) return '#FACC15'; // Yellow for Bundesliga 1部 (tailwind yellow-400)
+  if (isBundesliga2(stadium)) return '#84CC16'; // Lime for Bundesliga 2部 (tailwind lime-500)
   if (isSerieA(stadium)) return '#DC2626'; // Red for Serie A
   if (isSerieB(stadium)) return '#EA580C'; // Orange for Serie B
   if (isLigue1(stadium)) return '#9333EA'; // Purple for Ligue 1

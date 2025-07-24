@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { premierLeagueStadiums, championshipStadiums, leagueOneStadiums, serieAStadiums, serieBStadiums, ligue1Stadiums, ligue2Stadiums, laLigaStadiums, segundaStadiums, mapCategories, MapCategory } from '@/lib/stadiumData';
+import { premierLeagueStadiums, championshipStadiums, leagueOneStadiums, serieAStadiums, serieBStadiums, ligue1Stadiums, ligue2Stadiums, laLigaStadiums, segundaStadiums, bundesligaStadiums, bundesliga2Stadiums, mapCategories, MapCategory } from '@/lib/stadiumData';
 import { useHotelData } from '@/hooks/useHotelData';
 import { MapPin, Navigation, Check, ChevronDown, ChevronUp, List, X, Hotel } from 'lucide-react';
 
@@ -35,6 +35,8 @@ export default function MapPage() {
   const [showLigue2, setShowLigue2] = useState(false);
   const [showLaLiga, setShowLaLiga] = useState(false);
   const [showSegunda, setShowSegunda] = useState(false);
+  const [showBundesliga, setShowBundesliga] = useState(false);
+  const [showBundesliga2, setShowBundesliga2] = useState(false);
   const [isListExpanded, setIsListExpanded] = useState(false);
   const [showList, setShowList] = useState(true);
   const listRef = useRef<HTMLDivElement>(null);
@@ -56,6 +58,8 @@ export default function MapPage() {
     if (showLigue2) stadiums.push(...ligue2Stadiums);
     if (showLaLiga) stadiums.push(...laLigaStadiums);
     if (showSegunda) stadiums.push(...segundaStadiums);
+    if (showBundesliga) stadiums.push(...bundesligaStadiums);
+    if (showBundesliga2) stadiums.push(...bundesliga2Stadiums);
     
     return stadiums;
   }, [selectedCategory, showPremierLeague, showChampionship, showLeagueOne, showSerieA, showSerieB, showLigue1, showLigue2, showLaLiga, showSegunda]);
@@ -113,7 +117,6 @@ export default function MapPage() {
                   スタジアムマップ
                 </h1>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  プレミアリーグスタジアムの位置を確認
                 </p>
               </div>
             </div>
@@ -150,6 +153,48 @@ export default function MapPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="py-2 md:py-3">
               <div className="flex flex-wrap gap-2 md:gap-4">
+  {/* Bundesliga 1部 */}
+  <label className="flex items-center gap-1.5 md:gap-2 cursor-pointer touch-manipulation">
+    <div className="relative">
+      <input
+        type="checkbox"
+        checked={showBundesliga}
+        onChange={(e) => setShowBundesliga(e.target.checked)}
+        className="sr-only"
+      />
+      <div className={`w-4 h-4 md:w-5 md:h-5 rounded border-2 flex items-center justify-center transition-colors ${
+        showBundesliga
+          ? 'bg-yellow-400 border-yellow-400 text-white'
+          : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+      }`}>
+        {showBundesliga && <Check className="w-2.5 h-2.5 md:w-3 md:h-3" />}
+      </div>
+    </div>
+    <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">
+      ブンデスリーガ ({bundesligaStadiums.length})
+    </span>
+  </label>
+  {/* Bundesliga 2部 */}
+  <label className="flex items-center gap-1.5 md:gap-2 cursor-pointer touch-manipulation">
+    <div className="relative">
+      <input
+        type="checkbox"
+        checked={showBundesliga2}
+        onChange={(e) => setShowBundesliga2(e.target.checked)}
+        className="sr-only"
+      />
+      <div className={`w-4 h-4 md:w-5 md:h-5 rounded border-2 flex items-center justify-center transition-colors ${
+        showBundesliga2
+          ? 'bg-lime-500 border-lime-500 text-white'
+          : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+      }`}>
+        {showBundesliga2 && <Check className="w-2.5 h-2.5 md:w-3 md:h-3" />}
+      </div>
+    </div>
+    <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">
+    2. ブンデスリーガ ({bundesliga2Stadiums.length})
+    </span>
+  </label>
                 <label className="flex items-center gap-1.5 md:gap-2 cursor-pointer touch-manipulation">
                   <div className="relative">
                     <input
@@ -432,12 +477,16 @@ export default function MapPage() {
                   const isLigue2 = ligue2Stadiums.some(l2 => l2.name === stadium.name);
                   const isLaLiga = laLigaStadiums.some(ll => ll.name === stadium.name);
                   const isSegunda = segundaStadiums.some(sg => sg.name === stadium.name);
+                  const isBundesliga = bundesligaStadiums.some(b1 => b1.name === stadium.name);
+                  const isBundesliga2 = bundesliga2Stadiums.some(b2 => b2.name === stadium.name);
                   
                   let leagueColor = 'bg-gray-500';
                   let leagueName = '不明';
                   
                   if (isPremierLeague) { leagueColor = 'bg-blue-500'; leagueName = 'プレミア'; }
                   else if (isChampionship) { leagueColor = 'bg-green-500'; leagueName = 'チャンピオン'; }
+                  else if (isBundesliga) { leagueColor = 'bg-yellow-400'; leagueName = 'ブンデスリーガ'; }
+                  else if (isBundesliga2) { leagueColor = 'bg-lime-500'; leagueName = '2. ブンデスリーガ'; }
                   else if (isSerieA) { leagueColor = 'bg-red-500'; leagueName = 'セリエA'; }
                   else if (isSerieB) { leagueColor = 'bg-orange-500'; leagueName = 'セリエB'; }
                   else if (isLigue1) { leagueColor = 'bg-purple-500'; leagueName = 'リーグ・アン'; }

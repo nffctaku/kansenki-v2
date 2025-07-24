@@ -234,6 +234,50 @@ export const segundaStadiums: Stadium[] = [
   { name: 'Estadio Municipal de Santo Domingo', team: 'Alcorcón', coords: { lat: 40.3459, lng: -3.8303 }, type: 'stadium', capacity: 6000, opened: 1999 },
 ];
 
+export const bundesligaStadiums: Stadium[] = [
+  // 25/26シーズン 1部
+  { name: 'Allianz Arena', team: 'FC Bayern München', coords: { lat: 48.2188, lng: 11.6247 }, type: 'stadium', capacity: 75024, opened: 2005 },
+  { name: 'Signal Iduna Park', team: 'Borussia Dortmund', coords: { lat: 51.4926, lng: 7.4517 }, type: 'stadium', capacity: 81365, opened: 1974 },
+  { name: 'BayArena', team: 'Bayer 04 Leverkusen', coords: { lat: 51.0381, lng: 7.0026 }, type: 'stadium', capacity: 30210, opened: 1958 },
+  { name: 'MHPArena', team: 'VfB Stuttgart', coords: { lat: 48.7924, lng: 9.2325 }, type: 'stadium', capacity: 60449, opened: 1933 },
+  { name: 'Red Bull Arena', team: 'RB Leipzig', coords: { lat: 51.3458, lng: 12.3482 }, type: 'stadium', capacity: 47069, opened: 2004 },
+  { name: 'Deutsche Bank Park', team: 'Eintracht Frankfurt', coords: { lat: 50.0685, lng: 8.6455 }, type: 'stadium', capacity: 51500, opened: 1925 },
+  { name: 'PreZero Arena', team: 'TSG 1899 Hoffenheim', coords: { lat: 49.2382, lng: 8.8873 }, type: 'stadium', capacity: 30150, opened: 2009 },
+  { name: 'Europa-Park Stadion', team: 'SC Freiburg', coords: { lat: 48.0128, lng: 7.7892 }, type: 'stadium', capacity: 34700, opened: 2021 },
+  { name: 'wohninvest WESERSTADION', team: 'Werder Bremen', coords: { lat: 53.0664, lng: 8.8376 }, type: 'stadium', capacity: 42358, opened: 1947 },
+  { name: 'WWK Arena', team: 'FC Augsburg', coords: { lat: 48.3233, lng: 10.9546 }, type: 'stadium', capacity: 30660, opened: 2009 },
+  { name: 'Volkswagen Arena', team: 'VfL Wolfsburg', coords: { lat: 52.4369, lng: 10.8033 }, type: 'stadium', capacity: 30000, opened: 2002 },
+  { name: 'MEWA ARENA', team: '1. FSV Mainz 05', coords: { lat: 49.9835, lng: 8.2318 }, type: 'stadium', capacity: 34000, opened: 2011 },
+  { name: 'BORUSSIA-PARK', team: 'Borussia Mönchengladbach', coords: { lat: 51.1744, lng: 6.3876 }, type: 'stadium', capacity: 54057, opened: 2004 },
+  { name: 'Stadion An der Alten Försterei', team: '1. FC Union Berlin', coords: { lat: 52.4561, lng: 13.5689 }, type: 'stadium', capacity: 22012, opened: 1920 },
+  { name: 'Vonovia Ruhrstadion', team: 'VfL Bochum', coords: { lat: 51.4862, lng: 7.2198 }, type: 'stadium', capacity: 26600, opened: 1979 },
+  { name: 'Voith-Arena', team: '1. FC Heidenheim', coords: { lat: 48.6781, lng: 10.1766 }, type: 'stadium', capacity: 15000, opened: 1972 },
+  { name: 'Millerntor-Stadion', team: 'FC St. Pauli', coords: { lat: 53.5542, lng: 9.9672 }, type: 'stadium', capacity: 29646, opened: 1963 },
+  { name: 'Holstein-Stadion', team: 'Holstein Kiel', coords: { lat: 54.3439, lng: 10.1356 }, type: 'stadium', capacity: 15634, opened: 1911 },
+];
+
+export const bundesliga2Stadiums: Stadium[] = [
+  // 25/26シーズン 2部
+  { name: 'Merkur Spiel-Arena', team: 'Fortuna Düsseldorf', coords: { lat: 51.2612, lng: 6.7339 }, type: 'stadium', capacity: 54600, opened: 2004 },
+  { name: 'Volksparkstadion', team: 'Hamburger SV', coords: { lat: 53.5872, lng: 9.8986 }, type: 'stadium', capacity: 57000, opened: 1953 },
+  { name: 'Max-Morlock-Stadion', team: '1. FC Nürnberg', coords: { lat: 49.4294, lng: 11.1245 }, type: 'stadium', capacity: 50000, opened: 1928 },
+  { name: 'Fritz-Walter-Stadion', team: '1. FC Kaiserslautern', coords: { lat: 49.4401, lng: 7.7716 }, type: 'stadium', capacity: 49850, opened: 1920 },
+  { name: 'MDCC-Arena', team: '1. FC Magdeburg', coords: { lat: 52.1278, lng: 11.6351 }, type: 'stadium', capacity: 30098, opened: 2006 },
+  { name: 'Eintracht-Stadion', team: 'Eintracht Braunschweig', coords: { lat: 52.2737, lng: 10.5326 }, type: 'stadium', capacity: 26000, opened: 1923 },
+  { name: 'Donaustadion', team: 'SSV Ulm 1846', coords: { lat: 48.4064, lng: 9.9952 }, type: 'stadium', capacity: 19500, opened: 1925 },
+  { name: 'Preußenstadion', team: 'SC Preußen Münster', coords: { lat: 51.9481, lng: 7.5958 }, type: 'stadium', capacity: 15050, opened: 1926 },
+  { name: 'Jahnstadion Regensburg', team: 'SSV Jahn Regensburg', coords: { lat: 49.0332, lng: 12.1016 }, type: 'stadium', capacity: 15210, opened: 2015 },
+  { name: 'Schauinsland-Reisen-Arena', team: 'MSV Duisburg', coords: { lat: 51.3947, lng: 6.7957 }, type: 'stadium', capacity: 31500, opened: 2004 },
+  { name: 'Stadion am Böllenfalltor', team: 'SV Darmstadt 98', coords: { lat: 49.8626, lng: 8.6636 }, type: 'stadium', capacity: 17868, opened: 1921 },
+  { name: 'Rudolf-Harbig-Stadion', team: 'Dynamo Dresden', coords: { lat: 51.0352, lng: 13.7534 }, type: 'stadium', capacity: 32066, opened: 1923 },
+  { name: 'Sportpark Ronhof | Thomas Sommer', team: 'SpVgg Greuther Fürth', coords: { lat: 49.4862, lng: 10.9814 }, type: 'stadium', capacity: 16626, opened: 1910 },
+  { name: 'Audi Sportpark', team: 'FC Ingolstadt 04', coords: { lat: 48.7842, lng: 11.4716 }, type: 'stadium', capacity: 15800, opened: 2010 },
+  { name: 'Stadion am Hardtwald', team: 'SV Sandhausen', coords: { lat: 49.3100, lng: 8.6397 }, type: 'stadium', capacity: 15000, opened: 1951 },
+  { name: 'Voith-Arena', team: '1. FC Heidenheim', coords: { lat: 48.6781, lng: 10.1766 }, type: 'stadium', capacity: 15000, opened: 1972 },
+  { name: 'Millerntor-Stadion', team: 'FC St. Pauli', coords: { lat: 53.5542, lng: 9.9672 }, type: 'stadium', capacity: 29646, opened: 1963 },
+  { name: 'Holstein-Stadion', team: 'Holstein Kiel', coords: { lat: 54.3439, lng: 10.1356 }, type: 'stadium', capacity: 15634, opened: 1911 },
+];
+
 export const mapCategories = {
   stadium: 'スタジアム',
   hotel: 'ホテル',
