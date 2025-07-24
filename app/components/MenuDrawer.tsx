@@ -26,6 +26,7 @@ const menuConfig = [
     items: [
       { label: '試合チケット情報', href: '/ticket-info' },
       { label: 'おススメスポット', href: '#' },
+      { label: 'スタジアム・ホテル地図', href: '/map' },
     ],
   },
 

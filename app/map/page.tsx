@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { premierLeagueStadiums, championshipStadiums, serieAStadiums, serieBStadiums, ligue1Stadiums, ligue2Stadiums, laLigaStadiums, segundaStadiums, mapCategories, MapCategory } from '@/lib/stadiumData';
+import { premierLeagueStadiums, championshipStadiums, leagueOneStadiums, serieAStadiums, serieBStadiums, ligue1Stadiums, ligue2Stadiums, laLigaStadiums, segundaStadiums, mapCategories, MapCategory } from '@/lib/stadiumData';
 import { useHotelData } from '@/hooks/useHotelData';
 import { MapPin, Navigation, Check, ChevronDown, ChevronUp, List, X, Hotel } from 'lucide-react';
 
@@ -28,6 +28,7 @@ export default function MapPage() {
   const [selectedHotel, setSelectedHotel] = useState<string | null>(null);
   const [showPremierLeague, setShowPremierLeague] = useState(true);
   const [showChampionship, setShowChampionship] = useState(false);
+  const [showLeagueOne, setShowLeagueOne] = useState(false);
   const [showSerieA, setShowSerieA] = useState(false);
   const [showSerieB, setShowSerieB] = useState(false);
   const [showLigue1, setShowLigue1] = useState(false);
@@ -48,6 +49,7 @@ export default function MapPage() {
     const stadiums = [];
     if (showPremierLeague) stadiums.push(...premierLeagueStadiums);
     if (showChampionship) stadiums.push(...championshipStadiums);
+    if (showLeagueOne) stadiums.push(...leagueOneStadiums);
     if (showSerieA) stadiums.push(...serieAStadiums);
     if (showSerieB) stadiums.push(...serieBStadiums);
     if (showLigue1) stadiums.push(...ligue1Stadiums);
@@ -56,7 +58,7 @@ export default function MapPage() {
     if (showSegunda) stadiums.push(...segundaStadiums);
     
     return stadiums;
-  }, [selectedCategory, showPremierLeague, showChampionship, showSerieA, showSerieB, showLigue1, showLigue2, showLaLiga, showSegunda]);
+  }, [selectedCategory, showPremierLeague, showChampionship, showLeagueOne, showSerieA, showSerieB, showLigue1, showLigue2, showLaLiga, showSegunda]);
 
   // Filter hotels with coordinates
   const currentHotels = useMemo(() => {
@@ -187,6 +189,28 @@ export default function MapPage() {
                   </div>
                   <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">
                     チャンピオンシップ ({championshipStadiums.length})
+                  </span>
+                </label>
+                
+                {/* League One Checkbox */}
+                <label className="flex items-center gap-1.5 md:gap-2 cursor-pointer touch-manipulation">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={showLeagueOne}
+                      onChange={(e) => setShowLeagueOne(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`w-4 h-4 md:w-5 md:h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                      showLeagueOne
+                        ? 'bg-yellow-500 border-yellow-500 text-white'
+                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+                    }`}>
+                      {showLeagueOne && <Check className="w-2.5 h-2.5 md:w-3 md:h-3" />}
+                    </div>
+                  </div>
+                  <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">
+                    リーグ・ワン ({leagueOneStadiums.length})
                   </span>
                 </label>
                 

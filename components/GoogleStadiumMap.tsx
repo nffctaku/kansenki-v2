@@ -139,6 +139,7 @@ useEffect(() => {
             <p><strong>リーグ:</strong> ${getLeagueName(stadium)}</p>
             <p><strong>クラブ:</strong> ${stadium.team}</p>
             <p><strong>収容人数:</strong> ${stadium.capacity?.toLocaleString()}人</p>
+${stadium.opened ? `<p><strong>開場年:</strong> ${stadium.opened}年</p>` : ''}
           </div>
         </div>
       `
