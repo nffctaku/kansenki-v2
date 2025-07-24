@@ -38,14 +38,16 @@ const SortableImage: React.FC<{ image: ImageItem; onRemove: () => void; }> = ({ 
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative group touch-none w-full h-32">
-      <Image
-        src={image.type === 'existing' ? (image.value as string) : URL.createObjectURL(image.value as File)}
-        alt={`プレビュー画像`}
-        fill
-        className="object-cover rounded-lg"
-        sizes="10rem"
-      />
+    <div ref={setNodeRef} style={style} className="relative group touch-none w-full h-32">
+      <div {...attributes} {...listeners} className="w-full h-full">
+        <Image
+          src={image.type === 'existing' ? (image.value as string) : URL.createObjectURL(image.value as File)}
+          alt={`プレビュー画像`}
+          fill
+          className="object-cover rounded-lg"
+          sizes="10rem"
+        />
+      </div>
       <button
         type="button"
         onClick={e => { e.preventDefault(); e.stopPropagation(); onRemove(); }}
