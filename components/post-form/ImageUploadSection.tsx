@@ -48,7 +48,7 @@ const SortableImage: React.FC<{ image: ImageItem; onRemove: () => void; }> = ({ 
       />
       <button
         type="button"
-        onClick={e => { e.stopPropagation(); onRemove(); }}
+        onClick={e => { e.preventDefault(); e.stopPropagation(); onRemove(); }}
         className="absolute top-1.5 right-1.5 bg-red-600/75 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-semibold transition-all z-10"
       >
         ✕
