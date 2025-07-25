@@ -65,6 +65,7 @@ const initialFormData: PostFormData = {
   existingImageUrls: [],
   categories: [],
   youtubeUrl: '',
+  isPublic: true,
 };
 
 interface PostFormProps {
