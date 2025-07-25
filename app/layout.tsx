@@ -1,6 +1,6 @@
 import './globals.css';
 import MenuDrawer from './components/MenuDrawer';
-import BottomTabBar from './components/BottomTabBar';
+
 import { Analytics } from '@vercel/analytics/react';
 import { ThemeProvider } from './components/ThemeProvider';
 
