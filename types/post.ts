@@ -48,6 +48,7 @@ export interface Post {
   costs?: IndividualCost[];
   belongings?: string;
   youtubeUrl?: string;
+  isPublic?: boolean;
 }
 
 export interface SectionProps {
@@ -91,4 +92,5 @@ export interface PostFormData {
   imageFiles: File[];
   existingImageUrls: string[];
   categories: string[];
+  isPublic: boolean;
 }
