@@ -20,7 +20,7 @@ export interface Post {
   id: string;
   authorId: string;
   authorNickname: string;
-  isPublic: boolean;
+  status: 'published' | 'draft';
   title: string;
   content: string; // memories
   firstAdvice: string; // message
@@ -64,7 +64,7 @@ export interface PostFormData {
   postType: 'new' | 'additional' | 'simple';
   parentPostId?: string | null;
   title: string;
-  isPublic: boolean;
+  status: 'published' | 'draft';
 
   // Match and Ticket Info
   match: MatchInfo | null;

@@ -122,7 +122,7 @@ export interface SimpleTravel {
 // For data from 'simple-posts' collection for list pages
 export interface SimplePost {
   id: string;
-  isPublic?: boolean;
+  status: 'published' | 'draft';
   imageUrls: string[];
   season: string;
   episode: string;

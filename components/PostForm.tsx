@@ -27,7 +27,7 @@ const initialFormData: PostFormData = {
   postType: 'new',
   parentPostId: undefined,
   title: '',
-  isPublic: true,
+  status: 'published',
   match: {
     competition: '',
     season: '',
@@ -142,7 +142,7 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
     return {
       id: oldData.id,
       title: oldData.title || '',
-      isPublic: oldData.isPublic !== undefined ? oldData.isPublic : true,
+      status: oldData.isPublic ? 'published' : 'draft',
       match: matchInfo,
       travelStartDate: oldData.travelStartDate || oldData.travel_start_date || '',
       travelEndDate: oldData.travelEndDate || oldData.travel_end_date || '',
@@ -201,7 +201,7 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
       postType: post.postType || 'new',
       parentPostId: post.parentPostId,
       title: post.title || '',
-      isPublic: post.isPublic !== undefined ? post.isPublic : true,
+      status: post.status,
       match: match,
       travelStartDate: post.travelStartDate || '',
       travelEndDate: post.travelEndDate || '',
@@ -380,6 +380,7 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
           existingImageUrls: [],
           categories: [],
           id: null,
+          status: parentPost.status ?? 'published',
         });
       }
     } else if (formData.postType === 'additional') {
@@ -429,7 +430,7 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
           postType: 'additional',
           parentPostId: parentPost.id,
           authorNickname: prevData.authorNickname,
-          isPublic: prevData.isPublic,
+          status: parentPost.status ?? 'published',
           title: '',
           match: initialFormData.match,
           memories: '',
@@ -486,8 +487,7 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
     return results.filter((url): url is string => url !== null);
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (submissionStatus: 'published' | 'draft') => {
     if (!user) {
       setMessage('ログインしてください。');
       return;
@@ -505,27 +505,27 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
       const finalImageUrls = [...formData.existingImageUrls, ...newImageUrls];
 
       // Map form data to the Firestore Post schema
-      const postData: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'likeCount' | 'helpfulCount'> & { updatedAt: any; createdAt?: any } = {
+      const postData: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'likeCount' | 'helpfulCount'> & { updatedAt: any, createdAt?: any } = {
         authorId: user.uid,
         authorNickname: formData.authorNickname,
         postType: formData.postType,
         parentPostId: formData.parentPostId || null,
         title: formData.title,
-        isPublic: formData.isPublic,
+        status: submissionStatus,
         match: formData.match || undefined,
         travelStartDate: formData.travelStartDate,
         travelEndDate: formData.travelEndDate,
-        outboundTotalDuration: formData.outboundTotalDuration || '',
-        inboundTotalDuration: formData.inboundTotalDuration || '',
         visitedCities: formData.visitedCities,
+        outboundTotalDuration: formData.outboundTotalDuration,
+        inboundTotalDuration: formData.inboundTotalDuration,
         transports: formData.transports,
         hotels: formData.hotels,
         spots: formData.spots,
         costs: formData.costs,
         belongings: formData.belongings ?? '',
         goods: formData.goods ?? '',
-        content: formData.memories ?? '', // Map 'memories' back to 'content'
-        firstAdvice: formData.message ?? '', // Map 'message' back to 'firstAdvice'
+        content: formData.memories || '', // memories
+        firstAdvice: formData.message || '', // message
         images: finalImageUrls,
         categories: formData.categories,
         youtubeUrl: formData.youtubeUrl ?? '',
@@ -589,7 +589,7 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+    <form className="space-y-8 max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
       {!isEditMode && (
         <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl shadow-sm">
           <div className="flex items-center space-x-4">
@@ -664,29 +664,23 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
       <ImageUploadSection formData={formData} setFormData={setFormData} />
       <CategorySection formData={formData} setFormData={setFormData} />
 
-      <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl shadow-sm">
-        <div className="flex items-center">
-          <input
-            id="isPublic"
-            type="checkbox"
-            checked={formData.isPublic}
-            onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
-            className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-          />
-          <label htmlFor="isPublic" className="ml-3 block text-md font-medium text-gray-700 dark:text-gray-200">
-            この投稿を公開する
-          </label>
-        </div>
-      </div>
-
       <div className="flex justify-end items-center space-x-4 pt-4">
         {message && <p className="text-sm text-red-500 dark:text-red-400">{message}</p>}
         <button
-          type="submit"
+          type="button"
+          onClick={() => handleSubmit('draft')}
+          disabled={isSubmitting || !formData.title}
+          className="inline-flex justify-center py-2 px-6 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-300 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+        >
+          {isSubmitting ? '保存中...' : '下書き保存'}
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSubmit('published')}
           disabled={isSubmitting || !formData.title}
           className="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          {isSubmitting ? '処理中...' : (isEditMode ? '更新する' : '投稿する')}
+          {isSubmitting ? '処理中...' : (isEditMode ? '更新する' : '公開する')}
         </button>
       </div>
     </form>

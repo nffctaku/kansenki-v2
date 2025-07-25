@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <main className="pt-16 pb-24">
               {children}
             </main>
-            <BottomTabBar />
+
             <Analytics />
           </div>
         </ThemeProvider>
