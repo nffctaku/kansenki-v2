@@ -119,6 +119,7 @@ export default function MyPage() {
 
           const post: Post = {
             id: doc.id,
+            status: data.status || 'published',
             authorId: data.uid,
             authorNickname: data.nickname || '',
             isPublic: data.isPublic !== undefined ? data.isPublic : true,
