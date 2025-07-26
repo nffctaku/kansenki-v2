@@ -56,7 +56,7 @@ export default function MapPage() {
   const [showBundesliga2, setShowBundesliga2] = useState(false);
   const [isListOpen, setIsListOpen] = useState(true);
   const [isLeagueListOpen, setIsLeagueListOpen] = useState(true);
-  const mapRef = useRef<any>(null);
+
 
   const leagueStates = {
     'プレミアリーグ': { show: showPremierLeague, set: setShowPremierLeague },
@@ -97,20 +97,12 @@ export default function MapPage() {
   const handleStadiumSelect = useCallback((stadiumName: string) => {
     setSelectedStadium(stadiumName);
     setSelectedHotel(null);
-    const stadium = stadiums.find(s => s.name === stadiumName);
-    if (stadium && mapRef.current) {
-      mapRef.current.panTo(stadium.coords);
-    }
-  }, [stadiums]);
+  }, []);
 
   const handleHotelSelect = useCallback((hotelName: string) => {
     setSelectedHotel(hotelName);
     setSelectedStadium(null);
-    const hotel = hotels.find(h => h.name === hotelName);
-    if (hotel && mapRef.current) {
-      mapRef.current.panTo(hotel.coords);
-    }
-  }, [hotels]);
+  }, []);
 
   const toggleAllLeagues = (show: boolean) => {
     setShowPremierLeague(show);
@@ -260,7 +252,7 @@ export default function MapPage() {
           onStadiumSelect={handleStadiumSelect}
           onHotelSelect={handleHotelSelect}
           selectedCategory={selectedCategory}
-          mapRef={mapRef}
+
         />
       </main>
     </div>
