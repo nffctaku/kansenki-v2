@@ -56,7 +56,7 @@ export default function MapPage() {
 
   // UI visibility states
   const [showList, setShowList] = useState(true);
-  const [isFiltersVisible, setIsFiltersVisible] = useState(true);
+  const [isFiltersVisible, setIsFiltersVisible] = useState(false);
   
   const listRef = useRef<HTMLDivElement>(null);
   
@@ -175,7 +175,7 @@ export default function MapPage() {
 
             <div className="flex-grow overflow-y-auto">
               {selectedCategory === 'stadium' && (
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 mt-4">
                   <div 
                     className="flex justify-between items-center cursor-pointer select-none"
                     onClick={() => setIsFiltersVisible(!isFiltersVisible)}
