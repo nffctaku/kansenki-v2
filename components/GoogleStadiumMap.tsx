@@ -156,14 +156,15 @@ useEffect(() => {
 ${stadium.opened ? `<p><strong>開場年:</strong> ${stadium.opened}年</p>` : ''}
           </div>
           <div style="margin-top: 12px;">
-            <a 
-              href="https://www.booking.com/searchresults.html?ss=${encodeURIComponent(stadium.name)}" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              style="display: inline-block; background-color: #0071c2; color: white; padding: 8px 12px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 14px;"
-            >
-              Booking.comで周辺のホテルを探す
-            </a>
+            <p style="font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #374151;">周辺ホテルを検索:</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <a href="https://www.booking.com/searchresults.html?ss=${encodeURIComponent(stadium.name)}" target="_blank" rel="noopener noreferrer" style="background-color: #003580; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Booking.com</a>
+              <a href="https://www.expedia.com/Hotel-Search?destination=${encodeURIComponent(stadium.name)}" target="_blank" rel="noopener noreferrer" style="background-color: #19529B; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Expedia</a>
+              <a href="https://www.agoda.com/search?text=${encodeURIComponent(stadium.name)}" target="_blank" rel="noopener noreferrer" style="background-color: #53B0F4; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Agoda</a>
+              <a href="https://www.trip.com/hotels/list?q=${encodeURIComponent(stadium.name)}" target="_blank" rel="noopener noreferrer" style="background-color: #2874F0; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Trip.com</a>
+              <a href="https://www.hotels.com/Hotel-Search?destination=${encodeURIComponent(stadium.name)}" target="_blank" rel="noopener noreferrer" style="background-color: #D92B2B; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Hotels.com</a>
+              <a href="https://www.airbnb.jp/s/${encodeURIComponent(stadium.name)}/homes" target="_blank" rel="noopener noreferrer" style="background-color: #FF5A5F; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Airbnb</a>
+            </div>
           </div>
         </div>
       `
