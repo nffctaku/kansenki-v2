@@ -660,17 +660,7 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 border-t border-yellow-200 dark:border-yellow-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            💡 地図機能を有効にするには、以下のコマンドを実行してください: 
-            <code className="bg-yellow-100 dark:bg-yellow-800 px-2 py-1 rounded text-xs ml-2">
-              npm install react-leaflet leaflet @types/leaflet
-            </code>
-          </p>
-        </div>
-      </div>
+
     </div>
   );
 }
