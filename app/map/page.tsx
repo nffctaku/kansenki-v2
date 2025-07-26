@@ -1,7 +1,9 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useMemo, useRef, useCallback } from 'react';
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 import { 
   premierLeagueStadiums, 
   championshipStadiums, 
@@ -21,7 +23,7 @@ import { useHotelData } from '@/hooks/useHotelData';
 import { MapPin, Navigation, ChevronDown, ChevronUp, List, X, Hotel } from 'lucide-react';
 
 // Dynamically import the map component to avoid SSR issues
-const GoogleStadiumMap = dynamic(
+const GoogleStadiumMap = nextDynamic(
   () => import('@/components/GoogleStadiumMap'),
   { 
     ssr: false,
@@ -52,166 +54,207 @@ export default function MapPage() {
   const [showSegunda, setShowSegunda] = useState(false);
   const [showBundesliga, setShowBundesliga] = useState(false);
   const [showBundesliga2, setShowBundesliga2] = useState(false);
+  const [isListOpen, setIsListOpen] = useState(true);
+  const [isLeagueListOpen, setIsLeagueListOpen] = useState(true);
 
-  const [showList, setShowList] = useState(false);
-  const listRef = useRef<HTMLDivElement>(null);
+
+  const leagueStates = {
+    'プレミアリーグ': { show: showPremierLeague, set: setShowPremierLeague },
+    'チャンピオンシップ': { show: showChampionship, set: setShowChampionship },
+    'リーグ・ワン': { show: showLeagueOne, set: setShowLeagueOne },
+    'セリエA': { show: showSerieA, set: setShowSerieA },
+    'セリエB': { show: showSerieB, set: setShowSerieB },
+    'リーグ・アン': { show: showLigue1, set: setShowLigue1 },
+    'リーグ・ドゥ': { show: showLigue2, set: setShowLigue2 },
+    'ラ・リーガ': { show: showLaLiga, set: setShowLaLiga },
+    'セグンダ': { show: showSegunda, set: setShowSegunda },
+    'ブンデスリーガ': { show: showBundesliga, set: setShowBundesliga },
+    'ブンデスリーガ2部': { show: showBundesliga2, set: setShowBundesliga2 },
+  };
+
   const { hotels, loading: hotelsLoading, error: hotelsError } = useHotelData();
 
-  const leagueFilters = [
-    { label: 'プレミア', state: showPremierLeague, setter: setShowPremierLeague },
-    { label: 'チャンピオンシップ', state: showChampionship, setter: setShowChampionship },
-    { label: 'リーグ1', state: showLeagueOne, setter: setShowLeagueOne },
-    { label: 'セリエA', state: showSerieA, setter: setShowSerieA },
-    { label: 'セリエB', state: showSerieB, setter: setShowSerieB },
-    { label: 'リーグ・アン', state: showLigue1, setter: setShowLigue1 },
-    { label: 'リーグ・ドゥ', state: showLigue2, setter: setShowLigue2 },
-    { label: 'ラ・リーガ', state: showLaLiga, setter: setShowLaLiga },
-    { label: 'セグンダ', state: showSegunda, setter: setShowSegunda },
-    { label: 'ブンデス', state: showBundesliga, setter: setShowBundesliga },
-    { label: 'ブンデス2部', state: showBundesliga2, setter: setShowBundesliga2 },
-  ];
-
-  const currentStadiums = useMemo(() => {
-    if (selectedCategory !== 'stadium') return [];
-    const stadiums = [];
-    if (showPremierLeague) stadiums.push(...premierLeagueStadiums);
-    if (showChampionship) stadiums.push(...championshipStadiums);
-    if (showLeagueOne) stadiums.push(...leagueOneStadiums);
-    if (showSerieA) stadiums.push(...serieAStadiums);
-    if (showSerieB) stadiums.push(...serieBStadiums);
-    if (showLigue1) stadiums.push(...ligue1Stadiums);
-    if (showLigue2) stadiums.push(...ligue2Stadiums);
-    if (showLaLiga) stadiums.push(...laLigaStadiums);
-    if (showSegunda) stadiums.push(...segundaStadiums);
-    if (showBundesliga) stadiums.push(...bundesligaStadiums);
-    if (showBundesliga2) stadiums.push(...bundesliga2Stadiums);
-    return stadiums;
-  }, [selectedCategory, showPremierLeague, showChampionship, showLeagueOne, showSerieA, showSerieB, showLigue1, showLigue2, showLaLiga, showSegunda, showBundesliga, showBundesliga2]);
-
-  const currentHotels = useMemo(() => {
-    if (selectedCategory !== 'hotel') return [];
-    return hotels.filter((hotel: any) => hotel.coords);
-  }, [selectedCategory, hotels]);
+  const stadiums = useMemo(() => {
+    let activeStadiums = [];
+    if (showPremierLeague) activeStadiums.push(...premierLeagueStadiums);
+    if (showChampionship) activeStadiums.push(...championshipStadiums);
+    if (showLeagueOne) activeStadiums.push(...leagueOneStadiums);
+    if (showSerieA) activeStadiums.push(...serieAStadiums);
+    if (showSerieB) activeStadiums.push(...serieBStadiums);
+    if (showLigue1) activeStadiums.push(...ligue1Stadiums);
+    if (showLigue2) activeStadiums.push(...ligue2Stadiums);
+    if (showLaLiga) activeStadiums.push(...laLigaStadiums);
+    if (showSegunda) activeStadiums.push(...segundaStadiums);
+    if (showBundesliga) activeStadiums.push(...bundesligaStadiums);
+    if (showBundesliga2) activeStadiums.push(...bundesliga2Stadiums);
+    return activeStadiums;
+  }, [
+    showPremierLeague, showChampionship, showLeagueOne,
+    showSerieA, showSerieB, showLigue1, showLigue2,
+    showLaLiga, showSegunda, showBundesliga, showBundesliga2
+  ]);
 
   const handleStadiumSelect = useCallback((stadiumName: string) => {
     setSelectedStadium(stadiumName);
     setSelectedHotel(null);
-    if (listRef.current) {
-      const stadiumElement = listRef.current.querySelector(`[data-stadium="${stadiumName}"]`);
-      if (stadiumElement) stadiumElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
   }, []);
 
-  const handleHotelSelect = useCallback((hotelId: string) => {
-    setSelectedHotel(hotelId);
+  const handleHotelSelect = useCallback((hotelName: string) => {
+    setSelectedHotel(hotelName);
     setSelectedStadium(null);
-    if (listRef.current) {
-      const hotelElement = listRef.current.querySelector(`[data-hotel="${hotelId}"]`);
-      if (hotelElement) hotelElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
   }, []);
+
+  const toggleAllLeagues = (show: boolean) => {
+    setShowPremierLeague(show);
+    setShowChampionship(show);
+    setShowLeagueOne(show);
+    setShowSerieA(show);
+    setShowSerieB(show);
+    setShowLigue1(show);
+    setShowLigue2(show);
+    setShowLaLiga(show);
+    setShowSegunda(show);
+    setShowBundesliga(show);
+    setShowBundesliga2(show);
+  };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100 dark:bg-gray-900">
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <Navigation className="w-6 h-6 text-blue-600" />
-              スタジアムマップ
-            </h1>
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      <div 
+        className={`
+          absolute md:relative z-20 h-full bg-white dark:bg-gray-800 shadow-lg 
+          transition-transform duration-300 ease-in-out
+          ${isListOpen ? 'translate-x-0' : '-translate-x-full'}
+          w-full md:w-80 lg:w-96 flex flex-col
+        `}
+      >
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">スタジアム一覧</h1>
+          <button onClick={() => setIsListOpen(false)} className="md:hidden p-2">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        
+        <div className="p-4 bg-gray-50 dark:bg-gray-700">
+          <div className="flex rounded-md shadow-sm">
             <button
-              onClick={() => setShowList(!showList)}
-              className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors lg:hidden"
+              onClick={() => setSelectedCategory('stadium')}
+              className={`
+                w-1/2 px-4 py-2 text-sm font-medium rounded-l-md
+                ${selectedCategory === 'stadium' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-500'}
+                focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors duration-200
+              `}
             >
-              {showList ? <X className="w-6 h-6" /> : <List className="w-6 h-6" />}
+              <Navigation className="w-5 h-5 inline-block mr-2" />
+              スタジアム
+            </button>
+            <button
+              onClick={() => setSelectedCategory('hotel')}
+              className={`
+                w-1/2 px-4 py-2 text-sm font-medium rounded-r-md
+                ${selectedCategory === 'hotel' 
+                  ? 'bg-purple-600 text-white' 
+                  : 'bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-500'}
+                focus:z-10 focus:ring-2 focus:ring-purple-500 focus:outline-none transition-colors duration-200
+              `}
+            >
+              <Hotel className="w-5 h-5 inline-block mr-2" />
+              ホテル
             </button>
           </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {Object.entries(mapCategories).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setSelectedCategory(key as MapCategory)}
-                className={`py-1 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${selectedCategory === key ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
-                {key === 'stadium' ? <MapPin className="w-4 h-4" /> : <Hotel className="w-4 h-4" />}
-                {label}
-              </button>
-            ))}
-          </div>
-          {selectedCategory === 'stadium' && (
-            <div className="mt-4">
-              <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">リーグ選択</h3>
-              <div className="flex flex-wrap gap-x-4 gap-y-2">
-                {leagueFilters.map(({ label, state, setter }) => (
-                  <label key={label} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={state}
-                      onChange={() => setter(!state)}
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shadow-sm"
-                    />
-                    <span className="text-xs text-gray-700 dark:text-gray-300">{label}</span>
-                  </label>
-                ))}
+        </div>
+
+        <div className="flex-grow overflow-y-auto">
+          {selectedCategory === 'stadium' ? (
+            <div>
+              <div className="p-4">
+                <button 
+                  onClick={() => setIsLeagueListOpen(!isLeagueListOpen)}
+                  className="w-full flex justify-between items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <span className="font-semibold">リーグ選択</span>
+                  {isLeagueListOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </button>
+                {isLeagueListOpen && (
+                  <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                    <div className="flex justify-around mb-2">
+                      <button onClick={() => toggleAllLeagues(true)} className="text-xs px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600">全て選択</button>
+                      <button onClick={() => toggleAllLeagues(false)} className="text-xs px-2 py-1 rounded bg-gray-500 text-white hover:bg-gray-600">全て解除</button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(leagueStates).map(([name, state]) => (
+                        <label key={name} className="flex items-center space-x-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={state.show}
+                            onChange={() => state.set(!state.show)}
+                            className="form-checkbox h-4 w-4 text-blue-600 rounded"
+                          />
+                          <span>{name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                {stadiums.map((stadium) => (
+                  <li
+                    key={stadium.name}
+                    onClick={() => handleStadiumSelect(stadium.name)}
+                    className={`p-4 cursor-pointer transition-colors duration-200 ${
+                      selectedStadium === stadium.name ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <p className="font-semibold text-gray-800 dark:text-white">{stadium.name}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{stadium.team}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div>
+              {hotelsLoading && <p className="p-4 text-center">ホテル情報を読み込み中...</p>}
+              {hotelsError && <p className="p-4 text-center text-red-500">エラー: {hotelsError}</p>}
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                {hotels.map((hotel) => (
+                  <li
+                    key={hotel.name}
+                    onClick={() => handleHotelSelect(hotel.name)}
+                    className={`p-4 cursor-pointer transition-colors duration-200 ${
+                      selectedHotel === hotel.name ? 'bg-purple-100 dark:bg-purple-900' : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <p className="font-semibold text-gray-800 dark:text-white">{hotel.name}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{hotel.city}</p>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
-      </header>
-
-      <div className="flex-grow flex overflow-hidden">
-        <div className="flex-grow h-full">
-          <GoogleStadiumMap
-            stadiums={currentStadiums}
-            hotels={currentHotels}
-            selectedCategory={selectedCategory}
-            selectedStadium={selectedStadium}
-            onStadiumSelect={handleStadiumSelect}
-            selectedHotel={selectedHotel}
-            onHotelSelect={handleHotelSelect}
-          />
-        </div>
-
-        <div ref={listRef} className={`w-full lg:w-80 flex-shrink-0 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-y-auto transition-transform duration-300 ease-in-out ${showList ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0 absolute lg:static right-0 top-0 h-full`}>
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {selectedCategory === 'stadium' ? (
-              currentStadiums.length > 0 ? (
-                currentStadiums.map(stadium => (
-                  <div
-                    key={stadium.name}
-                    data-stadium={stadium.name}
-                    onClick={() => handleStadiumSelect(stadium.name)}
-                    className={`p-3 cursor-pointer transition-colors ${selectedStadium === stadium.name ? 'bg-blue-100 dark:bg-blue-900/50' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
-                    <h4 className="font-semibold text-sm text-gray-900 dark:text-white">{stadium.name}</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">{stadium.team}</p>
-                  </div>
-                ))
-              ) : (
-                <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">表示するスタジアムがありません。</div>
-              )
-            ) : (
-              hotelsLoading ? (
-                <div className="p-4 text-center text-gray-500 dark:text-gray-400">ホテル情報を読み込み中...</div>
-              ) : hotelsError ? (
-                <div className="p-4 text-center text-red-500 dark:text-red-400">ホテルの読み込みに失敗しました。</div>
-              ) : currentHotels.length > 0 ? (
-                currentHotels.map((hotel: any) => (
-                  <div 
-                    key={hotel.id}
-                    data-hotel={hotel.id}
-                    onClick={() => handleHotelSelect(hotel.id)}
-                    className={`p-3 cursor-pointer transition-colors ${selectedHotel === hotel.id ? 'bg-purple-100 dark:bg-purple-900/50' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
-                    <h4 className="font-semibold text-sm text-gray-900 dark:text-white">{hotel.name}</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">{hotel.city}</p>
-                  </div>
-                ))
-              ) : (
-                <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">表示するホテルがありません。</div>
-              )
-            )}
-          </div>
-        </div>
       </div>
+
+      <main className="flex-1 h-full relative">
+        <button 
+          onClick={() => setIsListOpen(true)} 
+          className="absolute top-4 left-4 z-10 bg-white dark:bg-gray-800 p-2 rounded-md shadow-md md:hidden"
+        >
+          <List className="w-6 h-6" />
+        </button>
+        <GoogleStadiumMap
+          stadiums={stadiums}
+          hotels={hotels}
+          selectedStadium={selectedStadium}
+          selectedHotel={selectedHotel}
+          onStadiumSelect={handleStadiumSelect}
+          onHotelSelect={handleHotelSelect}
+          selectedCategory={selectedCategory}
+
+        />
+      </main>
     </div>
   );
 }
