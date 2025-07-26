@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Post } from '@/types/post';
 import Image from 'next/image';
@@ -11,6 +11,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import LikeButton from '@/components/LikeButton';
 import ShareButton from '@/components/ShareButton';
+
 
 
 
@@ -25,6 +26,8 @@ const DetailSection = ({ title, children }: { title: string; children: React.Rea
 export default function PostDetailClient({ initialPost }: { initialPost: Post }) {
   const router = useRouter();
   const [post] = useState<Post>(initialPost);
+
+
 
   if (!post) {
     return (
@@ -76,6 +79,7 @@ export default function PostDetailClient({ initialPost }: { initialPost: Post })
 
       <div className="my-8 py-6 border-y border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-center gap-4">
         <LikeButton postId={id} size="md" />
+
         <ShareButton title={post.title} url={`https://kansenki.footballtop.net/posts/${id}`} />
       </div>
 

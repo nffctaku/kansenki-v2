@@ -55,6 +55,8 @@ export default function PostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+
+
   useEffect(() => {
     if (!id) {
       setLoading(false);
@@ -141,6 +143,7 @@ export default function PostDetailPage() {
         costs: Array.isArray(data.costs) ? data.costs : [],
         belongings: data.belongings || '',
         youtubeUrl: data.youtubeUrl || '',
+
       } as unknown as Post;
       return normalized;
     };

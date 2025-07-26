@@ -71,13 +71,13 @@ const AnnouncementBanner = () => {
         className="pb-10"
         style={{
           // @ts-ignore
-          '--swiper-navigation-color': '#FFFFFF',
-          '--swiper-pagination-color': '#FFFFFF',
+          '--swiper-navigation-color': '#000000',
+          '--swiper-pagination-color': '#000000',
         }}
       >
         {banners.map((banner) => (
           <SwiperSlide key={banner.id}>
-            <div className="bg-vuitton-brown rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
+            <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
               <Link href={banner.link} className="no-underline">
                 <div className="relative w-full h-48 sm:h-52 md:h-56 lg:h-60">
                   <Image
@@ -88,8 +88,8 @@ const AnnouncementBanner = () => {
                   />
                 </div>
                 <div className="p-3 md:p-4">
-                  <h3 className="text-white text-sm md:text-base lg:text-lg font-bold truncate">{banner.title}</h3>
-                  <p className="text-gray-200 text-xs md:text-sm lg:text-base mt-1 truncate">{banner.subtitle}</p>
+                  <h3 className="text-gray-800 dark:text-white text-sm md:text-base lg:text-lg font-bold truncate">{banner.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-300 text-xs md:text-sm lg:text-base mt-1 truncate">{banner.subtitle}</p>
                 </div>
               </Link>
             </div>
