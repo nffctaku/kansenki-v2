@@ -233,18 +233,18 @@ export default function MenuDrawer() {
             <Button
               variant="outline"
               className="justify-start gap-2 text-base py-6"
-              onClick={() => { setIsDialogOpen(false); router.push('/create-spot?type=hotel'); }}
-            >
-              <BedDouble className="h-5 w-5" />
-              宿泊先を投稿
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start gap-2 text-base py-6"
               onClick={() => { setIsDialogOpen(false); router.push('/create-spot?type=spot'); }}
             >
               <MapPin className="h-5 w-5" />
               おススメスポットを投稿
+            </Button>
+            <Button
+              variant="outline"
+              className="justify-start gap-2 text-base py-6"
+              onClick={() => { setIsDialogOpen(false); router.push('/create-spot?type=hotel'); }}
+            >
+              <BedDouble className="h-5 w-5" />
+              宿泊先を投稿
             </Button>
           </div>
         </DialogContent>
