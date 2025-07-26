@@ -111,7 +111,7 @@ function MapComponent({
   // Initialize map
   useEffect(() => {
     if (ref.current && !map) {
-      const newMap = new (window as any).google.maps.Map(ref.current, {
+      const newMap = new window.google.maps.Map(ref.current, {
         center: { lat: 51.5074, lng: -0.1278 }, // Default to London
         zoom: 6,
         mapTypeControl: false,
@@ -121,12 +121,13 @@ function MapComponent({
     }
   }, [ref, map]);
 
-  // Update markers when data changes
+  // Update markers
   useEffect(() => {
     if (!map) return;
 
     // Clear existing markers
     markers.forEach(marker => marker.setMap(null));
+
     let newMarkers: any[] = [];
 
     if (selectedCategory === 'stadium') {
@@ -141,14 +142,15 @@ function MapComponent({
             scale: isSelected ? 8 : 6,
             fillColor: getMarkerColor(stadium, isSelected),
             fillOpacity: 1,
-            strokeColor: isSelected ? '#ffffff' : getMarkerColor(stadium, isSelected),
+            strokeColor: isSelected ? '#ffffff' : getMarkerColor(stadium),
             strokeWeight: isSelected ? 2 : 1,
           }
         });
 
         const infoWindow = new google.maps.InfoWindow({
           content: `
-            <div style="font-family: sans-serif; color: #333;">
+            <div style="font-family: sans-serif; color: #333; max-width: 250px;">
+              ${stadium.imageUrl ? `<img src="${stadium.imageUrl}" alt="${stadium.name}" style="width:100%; height:auto; margin-bottom: 10px; border-radius: 4px;">` : ''}
               <h4 style="font-weight: bold; margin: 0 0 8px;">${stadium.name}</h4>
               <p style="margin: 0 0 4px;"><strong>チーム:</strong> ${stadium.team}</p>
               <p style="margin: 0 0 4px;"><strong>リーグ:</strong> ${getLeagueName(stadium)}</p>
