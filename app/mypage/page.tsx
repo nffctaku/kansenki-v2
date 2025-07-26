@@ -18,9 +18,24 @@ import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import { FaInstagram, FaYoutube, FaXTwitter } from 'react-icons/fa6';
 
+import { Timestamp } from 'firebase/firestore';
 import { Post, MatchInfo } from '@/types/post';
 import CollapsibleSection from '@/components/post-form/CollapsibleSection';
 import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
+
+interface Spot {
+  id: string;
+  spotName: string;
+  url: string;
+  comment: string;
+  rating: number;
+  imageUrls: string[];
+  authorId: string;
+  authorNickname: string;
+  createdAt: Timestamp;
+  country: string;
+  category: string;
+}
 
 
 
@@ -28,6 +43,7 @@ import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } fro
 export default function MyPage() {
   useTheme();
   const [posts, setPosts] = useState<Post[]>([]);
+  const [spots, setSpots] = useState<Spot[]>([]);
   const [loading, setLoading] = useState(true);
   const [nickname, setNickname] = useState('');
   const [userId, setUserId] = useState('');
@@ -144,6 +160,16 @@ export default function MyPage() {
         combined.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
         setPosts(combined);
         setPostCollectionMap(newMap);
+
+        // Fetch spots from 'spots' collection
+        const spotsQuery = query(collection(db, 'spots'), where('authorId', '==', user.uid));
+        const spotsSnapshot = await getDocs(spotsQuery);
+        const spotsData = spotsSnapshot.docs.map(doc => {
+          newMap.set(doc.id, 'spots');
+          return { ...doc.data(), id: doc.id } as Spot;
+        });
+        setSpots(spotsData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()));
+
         setLoading(false);
 
       } else {
@@ -157,18 +183,25 @@ export default function MyPage() {
   const handleDelete = async (postId: string, collectionName: string) => {
     if (window.confirm('本当にこの投稿を削除しますか？')) {
       try {
+        // Firestoreのドキュメント参照
         const postRef = doc(db, collectionName, postId);
 
-        // Delete 'likes' subcollection
-        const likesCollectionRef = collection(postRef, 'likes');
-        const likesSnapshot = await getDocs(likesCollectionRef);
-        const deletePromises = likesSnapshot.docs.map((likeDoc) => deleteDoc(likeDoc.ref));
-        await Promise.all(deletePromises);
+        // 投稿に関連するコメントを削除 (一時的に無効化して原因を調査)
+        // const commentsQuery = query(collection(db, 'comments'), where('postId', '==', postId));
+        // const commentsSnapshot = await getDocs(commentsQuery);
+        // const deleteCommentPromises = commentsSnapshot.docs.map((commentDoc) => deleteDoc(commentDoc.ref));
+        // await Promise.all(deleteCommentPromises);
 
-        // Delete the post document itself
+        // 投稿ドキュメント自体を削除
         await deleteDoc(postRef);
 
-        setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
+        // UIから削除
+        if (collectionName === 'spots') {
+          setSpots((prevSpots) => prevSpots.filter((spot) => spot.id !== postId));
+        } else {
+          setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
+        }
+
         alert('投稿を削除しました。');
       } catch (error) {
         console.error('削除エラー:', error);
@@ -505,10 +538,51 @@ export default function MyPage() {
         </div>
       </div>
 
+      {/* あなたのおすすめスポット一覧 */}
+      <div className="p-4">
+        <div className="mb-6 mt-12">
+          <h2 className="text-lg font-bold mb-4 dark:text-white">あなたのおすすめスポット</h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {spots.map((spot) => (
+            <div key={spot.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden flex flex-col">
+              <a href={`/spots/${spot.id}`}>
+                <Image
+                  src={spot.imageUrls?.[0] || '/no-image.png'}
+                  alt={spot.spotName}
+                  width={400}
+                  height={400}
+                  className="w-full aspect-square object-cover hover:opacity-90 transition"
+                />
+              </a>
+              <div className="p-4 text-sm flex-grow leading-[1.1] space-y-[2px]">
+                <p className="text-[12px] text-gray-400 dark:text-gray-500 leading-[1.1] m-0">
+                  {spot.category} / {spot.country}
+                </p>
+                <p className="text-[13px] font-bold dark:text-gray-200 leading-[1.1] m-0">
+                  {spot.spotName}
+                </p>
+              </div>
+              <div className="flex justify-between items-center px-4 pb-4">
+                <a href={`/edit-spot/${spot.id}`} className="flex items-center gap-[4px] text-green-600 text-[12px] hover:underline">
+                  <Image src="/えんぴつのアイコン素材.png" alt="編集" width={10} height={10} className="w-[10px] h-[10px] object-contain dark:invert" />
+                  編集
+                </a>
+                <button
+                  onClick={() => handleDelete(spot.id, 'spots')}
+                  className="flex items-center gap-[4px] text-red-600 text-[12px] hover:underline"
+                >
+                  <Image src="/ゴミ箱の無料アイコン.png" alt="削除" width={10} height={10} className="w-[10px] h-[10px] object-contain dark:invert" />
+                  削除
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* がっつり余白 */}
       <div className="h-48" />
     </div>
   );
 }
-
-

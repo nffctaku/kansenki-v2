@@ -2,24 +2,26 @@
 
 import { useState } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { teamsByCountry } from '@/lib/teamData';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import StarRating from '@/components/StarRating';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { db, storage } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc } from 'firebase/firestore';
-import { v4 as uuidv4 } from 'uuid';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
 
 interface Spot {
   spotName: string;
   url: string;
   comment: string;
   rating: number;
+  country: string;
+  category: string;
 }
 
 const CreateSpotPage = () => {
@@ -32,17 +34,24 @@ const CreateSpotPage = () => {
     url: '',
     comment: '',
     rating: 0,
+    country: '',
+    category: '',
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mapUrl, setMapUrl] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setSpot(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleSelectChange = (name: 'country' | 'category') => (value: string) => {
+    setSpot(prev => ({ ...prev, [name]: value }));
+  };
+
   const handleRatingChange = (rating: number) => {
-    setSpot({ ...spot, rating });
+    setSpot(prev => ({ ...prev, rating }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,41 +65,89 @@ const CreateSpotPage = () => {
     setImageFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove));
   };
 
+  const uploadImagesToCloudinary = async (files: File[]): Promise<string[]> => {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+    if (!cloudName || !uploadPreset) {
+      console.error('Cloudinary configuration is missing.');
+      throw new Error('Cloudinary configuration is missing.');
+    }
+
+    const uploadPromises = files.map(async (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', uploadPreset);
+
+      try {
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Cloudinary upload error:', errorData);
+          throw new Error(`Cloudinary image upload failed: ${errorData.error.message}`);
+        }
+
+        const data = await response.json();
+        return data.secure_url;
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        return null;
+      }
+    });
+
+    const results = await Promise.all(uploadPromises);
+    return results.filter((url): url is string => url !== null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     if (!user) {
       alert('ログインが必要です。');
+      setIsSubmitting(false);
       return;
     }
 
-    if (!spot.spotName || !spot.comment || spot.rating === 0) {
+    if (!spot.spotName || !spot.comment || spot.rating === 0 || !spot.country || !spot.category) {
       alert('必須項目をすべて入力してください。');
+      setIsSubmitting(false);
       return;
     }
 
     try {
-      const imageUrls: string[] = [];
+      let imageUrls: string[] = [];
       if (imageFiles.length > 0) {
-        const uploadPromises = imageFiles.map(file => {
-                    const imageRef = ref(storage, `spot_images/${user.uid}/${uuidv4()}`);
-          return uploadBytes(imageRef, file).then(snapshot => getDownloadURL(snapshot.ref));
-        });
-        const urls = await Promise.all(uploadPromises);
-        imageUrls.push(...urls);
+        imageUrls = await uploadImagesToCloudinary(imageFiles);
+        if (imageUrls.length !== imageFiles.length) {
+          console.warn('Some images failed to upload.');
+        }
       }
 
-            await addDoc(collection(db, 'spots'), {
-        authorId: user.uid,
-        authorNickname: user.displayName || 'Anonymous',
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      const authorNickname = userDocSnap.exists() ? userDocSnap.data().nickname : user.displayName;
+
+      await addDoc(collection(db, 'spots'), {
         ...spot,
         imageUrls,
+        authorId: user.uid,
+        authorNickname: authorNickname || '匿名ユーザー',
         createdAt: new Date(),
       });
 
-      alert('スポットを投稿しました！');
-      setSpot({ spotName: '', url: '', comment: '', rating: 0 });
+      alert('投稿が完了しました！');
+      setSpot({
+        spotName: '',
+        url: '',
+        comment: '',
+        rating: 0,
+        country: '',
+        category: '',
+      });
       setImageFiles([]);
 
     } catch (error) {
@@ -110,20 +167,52 @@ const CreateSpotPage = () => {
           <CardTitle className="text-2xl font-bold">{pageTitle}</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <Label htmlFor="country" className="font-semibold">国（必須）</Label>
+                <Select onValueChange={handleSelectChange('country')} value={spot.country}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="国を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(teamsByCountry).map(country => (
+                      <SelectItem key={country} value={country}>{country}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="category" className="font-semibold">カテゴリー（必須）</Label>
+                <Select onValueChange={handleSelectChange('category')} value={spot.category}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="カテゴリーを選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['レストラン', 'カフェ', 'バー', 'パブ', '観光地', 'フォトスポット'].map(category => (
+                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div>
               <Label htmlFor="spotName" className="font-semibold">スポット名（必須）</Label>
               <Input id="spotName" name="spotName" value={spot.spotName} onChange={handleInputChange} placeholder="例：スタンフォードブリッジ周辺のカフェ" required />
             </div>
+
             <div>
-              <Label htmlFor="url" className="font-semibold">URL（任意）</Label>
-              <Input id="url" name="url" type="url" value={spot.url} onChange={handleInputChange} placeholder="Googleマップのリンクや公式サイト" />
+              <Label htmlFor="url" className="font-semibold">GoogleマップのURL（任意）</Label>
+              <Input id="url" name="url" type="url" value={spot.url} onChange={handleInputChange} placeholder="お店のウェブサイトや参考記事のURL" />
             </div>
+
             <div>
               <Label htmlFor="comment" className="font-semibold">コメント（必須・100文字以内）</Label>
               <Textarea id="comment" name="comment" value={spot.comment} onChange={handleInputChange} placeholder="ここで試合後にファンと盛り上がれた！など" maxLength={100} required className="h-32" />
               <p className="text-sm text-muted-foreground text-right mt-1">{spot.comment.length} / 100</p>
             </div>
+
             <div className="space-y-2">
               <Label className="font-semibold">サムネイル画像</Label>
               <div className="mt-2 flex flex-wrap gap-4">
@@ -146,10 +235,12 @@ const CreateSpotPage = () => {
                 </label>
               </div>
             </div>
+
             <div className="space-y-2">
               <Label className="font-semibold">評価（必須）</Label>
               <StarRating rating={spot.rating} setRating={handleRatingChange} />
             </div>
+
             <Button type="submit" disabled={loading || isSubmitting} className="w-full !mt-8 font-bold py-6 text-base">
               {isSubmitting ? '投稿中...' : '投稿する'}
             </Button>
@@ -160,20 +251,6 @@ const CreateSpotPage = () => {
   );
 };
 
-const StarRating = ({ rating, setRating }: { rating: number, setRating: (rating: number) => void }) => (
-  <div className="flex items-center">
-    {[1, 2, 3, 4, 5].map((star) => (
-      <button
-        key={star}
-        type="button"
-        onClick={() => setRating(star)}
-        className={`text-3xl cursor-pointer transition-colors ${star <= rating ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-200'}`}
-        aria-label={`${star} star`}
-      >
-        ★
-      </button>
-    ))}
-  </div>
-);
+
 
 export default CreateSpotPage;
