@@ -10,6 +10,7 @@ import { Hotel } from '@/hooks/useHotelData';
 interface GoogleStadiumMapProps {
   stadiums: Stadium[];
   hotels?: Hotel[];
+  selectedCategory: 'stadium' | 'hotel';
   selectedStadium?: string | null;
   selectedHotel?: string | null;
   onStadiumSelect?: (stadiumName: string) => void;
@@ -94,93 +95,122 @@ const getLeagueName = (stadium: Stadium) => {
 };
 
 // Map component
-function MapComponent({ stadiums, onStadiumSelect, selectedStadium }: GoogleStadiumMapProps) {
+function MapComponent({ 
+  stadiums, 
+  hotels, 
+  selectedCategory, 
+  onStadiumSelect, 
+  selectedStadium, 
+  onHotelSelect, 
+  selectedHotel 
+}: GoogleStadiumMapProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<any>();
   const [markers, setMarkers] = useState<any[]>([]);
 
   // Initialize map
   useEffect(() => {
-    if (ref.current && !map && (window as any).google) {
+    if (ref.current && !map) {
       const newMap = new (window as any).google.maps.Map(ref.current, {
-        center: { lat: 52.5, lng: -1.5 }, // Center on England
+        center: { lat: 51.5074, lng: -0.1278 }, // Default to London
         zoom: 6,
-        styles: [
-          {
-            featureType: 'poi',
-            elementType: 'labels',
-            stylers: [{ visibility: 'off' }]
-          }
-        ]
+        mapTypeControl: false,
+        streetViewControl: false,
       });
       setMap(newMap);
     }
   }, [ref, map]);
 
-// Update markers when stadiums or selection changes
-useEffect(() => {
-  if (!map) return;
+  // Update markers when data changes
+  useEffect(() => {
+    if (!map) return;
 
-  // Clear existing markers
-  markers.forEach(marker => marker.setMap(null));
-  
-  // Create new markers
-  const newMarkers = (stadiums || []).map(stadium => {
-    const isSelected = selectedStadium === stadium.name;
-    const color = getMarkerColor(stadium, isSelected);
-    
-    const marker = new (window as any).google.maps.Marker({
-      position: { lat: stadium.coords.lat, lng: stadium.coords.lng },
-      map: map,
-      title: stadium.name,
-      icon: {
-        path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
-        fillColor: color,
-        fillOpacity: 1,
-        strokeColor: '#ffffff',
-        strokeWeight: 2,
-        scale: 2,
-        anchor: new (window as any).google.maps.Point(12, 24),
-      },
-    });
+    // Clear existing markers
+    markers.forEach(marker => marker.setMap(null));
+    let newMarkers: any[] = [];
 
-    // Create info window
-    const infoWindow = new (window as any).google.maps.InfoWindow({
-      content: `
-        <div style="padding: 12px; min-width: 200px;">
-          <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #1f2937;">${stadium.name}</h3>
-          <div style="font-size: 14px; color: #6b7280; line-height: 1.4;">
-            <p><strong>リーグ:</strong> ${getLeagueName(stadium)}</p>
-            <p><strong>クラブ:</strong> ${stadium.team}</p>
-            <p><strong>収容人数:</strong> ${stadium.capacity?.toLocaleString()}人</p>
-${stadium.opened ? `<p><strong>開場年:</strong> ${stadium.opened}年</p>` : ''}
-          </div>
-          <div style="margin-top: 12px;">
-            <p style="font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #374151;">周辺ホテルを検索:</p>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-              <a href="https://www.booking.com/searchresults.html?ss=${encodeURIComponent(stadium.name)}" target="_blank" rel="noopener noreferrer" style="background-color: #003580; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Booking.com</a>
-              <a href="https://www.expedia.com/Hotel-Search?destination=${encodeURIComponent(stadium.name)}" target="_blank" rel="noopener noreferrer" style="background-color: #19529B; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Expedia</a>
-              <a href="https://www.agoda.com/search?text=${encodeURIComponent(stadium.name)}" target="_blank" rel="noopener noreferrer" style="background-color: #53B0F4; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Agoda</a>
-              <a href="https://www.trip.com/hotels/list?q=${encodeURIComponent(stadium.name)}" target="_blank" rel="noopener noreferrer" style="background-color: #2874F0; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Trip.com</a>
-              <a href="https://www.hotels.com/Hotel-Search?destination=${encodeURIComponent(stadium.name)}" target="_blank" rel="noopener noreferrer" style="background-color: #D92B2B; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Hotels.com</a>
-              <a href="https://www.airbnb.jp/s/${encodeURIComponent(stadium.name)}/homes" target="_blank" rel="noopener noreferrer" style="background-color: #FF5A5F; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Airbnb</a>
+    if (selectedCategory === 'stadium') {
+      newMarkers = stadiums.map(stadium => {
+        const isSelected = selectedStadium === stadium.name;
+        const marker = new google.maps.Marker({
+          position: stadium.coords,
+          map: map,
+          title: stadium.name,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: isSelected ? 8 : 6,
+            fillColor: getMarkerColor(stadium, isSelected),
+            fillOpacity: 1,
+            strokeColor: isSelected ? '#ffffff' : getMarkerColor(stadium, isSelected),
+            strokeWeight: isSelected ? 2 : 1,
+          }
+        });
+
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div style="font-family: sans-serif; color: #333;">
+              <h4 style="font-weight: bold; margin: 0 0 8px;">${stadium.name}</h4>
+              <p style="margin: 0 0 4px;"><strong>チーム:</strong> ${stadium.team}</p>
+              <p style="margin: 0 0 4px;"><strong>リーグ:</strong> ${getLeagueName(stadium)}</p>
+              <p style="margin: 0 0 12px;"><strong>収容人数:</strong> ${stadium.capacity ? stadium.capacity.toLocaleString() : 'N/A'}人</p>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stadium.name)}" target="_blank" rel="noopener noreferrer" style="background-color: #4285F4; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Google Maps</a>
+                <a href="https://www.booking.com/searchresults.html?ss=${encodeURIComponent(stadium.name)}" target="_blank" rel="noopener noreferrer" style="background-color: #003580; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Booking.com</a>
+                <a href="https://www.trip.com/hotels/list?q=${encodeURIComponent(stadium.name)}" target="_blank" rel="noopener noreferrer" style="background-color: #2874F0; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Trip.com</a>
+                <a href="https://www.hotels.com/Hotel-Search?destination=${encodeURIComponent(stadium.name)}" target="_blank" rel="noopener noreferrer" style="background-color: #D92B2B; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Hotels.com</a>
+                <a href="https://www.airbnb.jp/s/${encodeURIComponent(stadium.name)}/homes" target="_blank" rel="noopener noreferrer" style="background-color: #FF5A5F; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 12px;">Airbnb</a>
+              </div>
             </div>
-          </div>
-        </div>
-      `
-    });
+          `
+        });
 
-    // Add click listener
-    marker.addListener('click', () => {
-      infoWindow.open(map, marker);
-      onStadiumSelect?.(stadium.name);
-    });
+        marker.addListener('click', () => {
+          infoWindow.open(map, marker);
+          onStadiumSelect?.(stadium.name);
+        });
 
-    return marker;
-  });
+        return marker;
+      });
+    } else if (selectedCategory === 'hotel' && hotels) {
+      newMarkers = hotels.map(hotel => {
+        if (!hotel.coords) return null;
+        const isSelected = selectedHotel === hotel.id;
+        const marker = new google.maps.Marker({
+          position: hotel.coords,
+          map: map,
+          title: hotel.name,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: isSelected ? 8 : 6,
+            fillColor: isSelected ? '#F59E0B' : '#8B5CF6', // Purple for hotels
+            fillOpacity: 1,
+            strokeColor: isSelected ? '#ffffff' : '#8B5CF6',
+            strokeWeight: isSelected ? 2 : 1,
+          }
+        });
 
-  setMarkers(newMarkers);
-}, [map, stadiums, selectedStadium, onStadiumSelect]);
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div style="font-family: sans-serif; color: #333;">
+              <h4 style="font-weight: bold; margin: 0 0 8px;">${hotel.name}</h4>
+              <p style="margin: 0 0 4px;"><strong>都市:</strong> ${hotel.city}</p>
+              ${hotel.rating ? `<p style="margin: 0 0 4px;"><strong>評価:</strong> ${hotel.rating} / 5</p>` : ''}
+              ${hotel.price ? `<p style="margin: 0 0 12px;"><strong>価格:</strong> ${hotel.price.toLocaleString()}円</p>` : ''}
+            </div>
+          `
+        });
+
+        marker.addListener('click', () => {
+          infoWindow.open(map, marker);
+          onHotelSelect?.(hotel.id);
+        });
+
+        return marker;
+      }).filter(Boolean); // remove nulls from hotels without coords
+    }
+
+    setMarkers(newMarkers);
+  }, [map, stadiums, hotels, selectedCategory, selectedStadium, selectedHotel, onStadiumSelect, onHotelSelect]);
 
   // Center map on selected stadium
   useEffect(() => {
@@ -244,7 +274,15 @@ const render = (status: Status, ...args: any[]) => {
 };
 
 // Main component
-export default function GoogleStadiumMap({ stadiums, selectedStadium, onStadiumSelect }: GoogleStadiumMapProps) {
+export default function GoogleStadiumMap({ 
+  stadiums, 
+  hotels, 
+  selectedCategory, 
+  selectedStadium, 
+  onStadiumSelect, 
+  selectedHotel, 
+  onHotelSelect 
+}: GoogleStadiumMapProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   if (!apiKey) {
@@ -254,9 +292,13 @@ export default function GoogleStadiumMap({ stadiums, selectedStadium, onStadiumS
   return (
     <Wrapper apiKey={apiKey} render={render} libraries={['marker']}>
       <MapComponent 
-        stadiums={stadiums} 
-        selectedStadium={selectedStadium} 
-        onStadiumSelect={onStadiumSelect} 
+        stadiums={stadiums}
+        hotels={hotels}
+        selectedCategory={selectedCategory}
+        selectedStadium={selectedStadium}
+        onStadiumSelect={onStadiumSelect}
+        selectedHotel={selectedHotel}
+        onHotelSelect={onHotelSelect}
       />
     </Wrapper>
   );
