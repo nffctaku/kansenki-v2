@@ -12,6 +12,7 @@ import {
   doc,
   getDoc,
   updateDoc,
+  writeBatch
 } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useTheme } from 'next-themes';
@@ -22,19 +23,32 @@ import { Timestamp } from 'firebase/firestore';
 import { Post, MatchInfo } from '@/types/post';
 import CollapsibleSection from '@/components/post-form/CollapsibleSection';
 import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
+import StarRating from '@/components/StarRating';
 
 interface Spot {
   id: string;
   spotName: string;
   url: string;
   comment: string;
-  rating: number;
+  rating: number; // for spot
   imageUrls: string[];
-  authorId: string;
-  authorNickname: string;
+  userId: string;
+  nickname: string;
   createdAt: Timestamp;
   country: string;
-  category: string;
+  category: string | null;
+  type: 'spot' | 'hotel';
+  // Hotel specific fields
+  overallRating?: number;
+  accessRating?: number;
+  cleanlinessRating?: number;
+  comfortRating?: number;
+  facilityRating?: number;
+  staffRating?: number;
+  price?: number;
+  bookingSite?: string;
+  city?: string;
+  nights?: number;
 }
 
 
@@ -156,19 +170,21 @@ export default function MyPage() {
           return post;
         });
         
-        const combined = [...newPostsData, ...oldPostsData];
-        combined.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-        setPosts(combined);
+        const combinedPosts = [...newPostsData, ...oldPostsData];
+        setPosts(combinedPosts.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds));
         setPostCollectionMap(newMap);
 
         // Fetch spots from 'spots' collection
         const spotsQuery = query(collection(db, 'spots'), where('authorId', '==', user.uid));
         const spotsSnapshot = await getDocs(spotsQuery);
-        const spotsData = spotsSnapshot.docs.map(doc => {
-          newMap.set(doc.id, 'spots');
-          return { ...doc.data(), id: doc.id } as Spot;
-        });
-        setSpots(spotsData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()));
+        const spotsData = spotsSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        } as Spot));
+        setSpots(spotsData.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds));
+
+        console.log('Fetched Posts:', combinedPosts);
+        console.log('Fetched Spots:', spotsData);
 
         setLoading(false);
 
@@ -186,11 +202,18 @@ export default function MyPage() {
         // Firestoreのドキュメント参照
         const postRef = doc(db, collectionName, postId);
 
-        // 投稿に関連するコメントを削除 (一時的に無効化して原因を調査)
-        // const commentsQuery = query(collection(db, 'comments'), where('postId', '==', postId));
-        // const commentsSnapshot = await getDocs(commentsQuery);
-        // const deleteCommentPromises = commentsSnapshot.docs.map((commentDoc) => deleteDoc(commentDoc.ref));
-        // await Promise.all(deleteCommentPromises);
+        // 投稿に関連するコメントを一括削除 (一時的に無効化)
+      /*
+      const commentsQuery = query(collection(db, 'comments'), where('postId', '==', postId));
+      const commentsSnapshot = await getDocs(commentsQuery);
+      if (!commentsSnapshot.empty) {
+        const batch = writeBatch(db);
+        commentsSnapshot.forEach(doc => {
+          batch.delete(doc.ref);
+        });
+        await batch.commit();
+      }
+      */
 
         // 投稿ドキュメント自体を削除
         await deleteDoc(postRef);
@@ -538,10 +561,10 @@ export default function MyPage() {
         </div>
       </div>
 
-      {/* あなたのおすすめスポット一覧 */}
+      {/* あなたのおすすめスポット・宿泊先一覧 */}
       <div className="p-4">
         <div className="mb-6 mt-12">
-          <h2 className="text-lg font-bold mb-4 dark:text-white">あなたのおすすめスポット</h2>
+          <h2 className="text-lg font-bold mb-4 dark:text-white">あなたのおすすめスポット・宿泊先</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {spots.map((spot) => (
@@ -557,11 +580,15 @@ export default function MyPage() {
               </a>
               <div className="p-4 text-sm flex-grow leading-[1.1] space-y-[2px]">
                 <p className="text-[12px] text-gray-400 dark:text-gray-500 leading-[1.1] m-0">
-                  {spot.category} / {spot.country}
+                  {spot.type === 'hotel' ? `${spot.city} / ${spot.country}` : `${spot.category} / ${spot.country}`}
                 </p>
                 <p className="text-[13px] font-bold dark:text-gray-200 leading-[1.1] m-0">
                   {spot.spotName}
                 </p>
+                <div className="flex items-center">
+                  <StarRating rating={spot.type === 'hotel' ? spot.overallRating || 0 : spot.rating || 0} readOnly={true} />
+                  <span className="ml-2 text-xs text-gray-500">({spot.type === 'hotel' ? (spot.overallRating || 0).toFixed(1) : (spot.rating || 0).toFixed(1)})</span>
+                </div>
               </div>
               <div className="flex justify-between items-center px-4 pb-4">
                 <a href={`/edit-spot/${spot.id}`} className="flex items-center gap-[4px] text-green-600 text-[12px] hover:underline">

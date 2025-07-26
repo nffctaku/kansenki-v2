@@ -84,6 +84,7 @@ export default function MenuDrawer() {
   const [isOpen, setIsOpen] = useState(false);
   useTheme();
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { totalPosts, publicPosts, loading } = usePostStats();
   const router = useRouter();
 
@@ -207,7 +208,7 @@ export default function MenuDrawer() {
         </div>
       </aside>
 
-      <Dialog>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
           <Button className="fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full shadow-lg transition-transform transform hover:scale-110 ease-in-out duration-200">
             <Plus className="h-8 w-8" />
@@ -224,7 +225,7 @@ export default function MenuDrawer() {
             <Button
               variant="outline"
               className="justify-start gap-2 text-base py-6"
-              onClick={() => router.push('/form')}
+              onClick={() => { setIsDialogOpen(false); router.push('/form'); }}
             >
               <BookOpen className="h-5 w-5" />
               観戦記を投稿
@@ -232,7 +233,7 @@ export default function MenuDrawer() {
             <Button
               variant="outline"
               className="justify-start gap-2 text-base py-6"
-              onClick={() => router.push('/create-spot?type=hotel')}
+              onClick={() => { setIsDialogOpen(false); router.push('/create-spot?type=hotel'); }}
             >
               <BedDouble className="h-5 w-5" />
               宿泊先を投稿
@@ -240,7 +241,7 @@ export default function MenuDrawer() {
             <Button
               variant="outline"
               className="justify-start gap-2 text-base py-6"
-              onClick={() => router.push('/create-spot?type=spot')}
+              onClick={() => { setIsDialogOpen(false); router.push('/create-spot?type=spot'); }}
             >
               <MapPin className="h-5 w-5" />
               おススメスポットを投稿
