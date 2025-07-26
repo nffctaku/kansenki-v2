@@ -34,6 +34,7 @@ const CreateSpotPage = () => {
     rating: 0,
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -57,6 +58,7 @@ const CreateSpotPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
     if (!user) {
       alert('ログインが必要です。');
@@ -94,6 +96,8 @@ const CreateSpotPage = () => {
     } catch (error) {
       console.error('Error submitting spot: ', error);
       alert('投稿中にエラーが発生しました。');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -146,7 +150,9 @@ const CreateSpotPage = () => {
               <Label className="font-semibold">評価（必須）</Label>
               <StarRating rating={spot.rating} setRating={handleRatingChange} />
             </div>
-            <Button type="submit" className="w-full !mt-8 font-bold py-6 text-base">投稿する</Button>
+            <Button type="submit" disabled={loading || isSubmitting} className="w-full !mt-8 font-bold py-6 text-base">
+              {isSubmitting ? '投稿中...' : '投稿する'}
+            </Button>
           </form>
         </CardContent>
       </Card>
