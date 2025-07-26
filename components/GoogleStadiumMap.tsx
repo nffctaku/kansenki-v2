@@ -150,7 +150,7 @@ function MapComponent({
         const infoWindow = new google.maps.InfoWindow({
           content: `
             <div style="font-family: sans-serif; color: #333; max-width: 250px;">
-              ${stadium.imageUrl ? `<img src="${stadium.imageUrl}" alt="${stadium.name}" style="width:100%; height:auto; margin-bottom: 10px; border-radius: 4px;">` : ''}
+
               <h4 style="font-weight: bold; margin: 0 0 8px;">${stadium.name}</h4>
               <p style="margin: 0 0 4px;"><strong>チーム:</strong> ${stadium.team}</p>
               <p style="margin: 0 0 4px;"><strong>リーグ:</strong> ${getLeagueName(stadium)}</p>
