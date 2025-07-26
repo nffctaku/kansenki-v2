@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc } from 'firebase/firestore';
+import { v4 as uuidv4 } from 'uuid';
 
 interface Spot {
   spotName: string;
@@ -20,6 +23,7 @@ interface Spot {
 }
 
 const CreateSpotPage = () => {
+  const [user, loading, error] = useAuthState(auth);
   const searchParams = useSearchParams();
   const type = searchParams.get('type');
 
@@ -54,6 +58,11 @@ const CreateSpotPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!user) {
+      alert('ログインが必要です。');
+      return;
+    }
+
     if (!spot.spotName || !spot.comment || spot.rating === 0) {
       alert('必須項目をすべて入力してください。');
       return;
@@ -63,14 +72,16 @@ const CreateSpotPage = () => {
       const imageUrls: string[] = [];
       if (imageFiles.length > 0) {
         const uploadPromises = imageFiles.map(file => {
-          const imageRef = ref(storage, `spot_images/${Date.now()}_${file.name}`);
+                    const imageRef = ref(storage, `spot_images/${user.uid}/${uuidv4()}`);
           return uploadBytes(imageRef, file).then(snapshot => getDownloadURL(snapshot.ref));
         });
         const urls = await Promise.all(uploadPromises);
         imageUrls.push(...urls);
       }
 
-      await addDoc(collection(db, 'spots'), {
+            await addDoc(collection(db, 'spots'), {
+        authorId: user.uid,
+        authorNickname: user.displayName || 'Anonymous',
         ...spot,
         imageUrls,
         createdAt: new Date(),
