@@ -8,6 +8,16 @@ import { db } from '@/lib/firebase';
 import { teamsByCountry } from '../lib/teamData';
 
 import { SimplePost } from '../types/match';
+
+interface SpotData {
+  id: string;
+  spotName: string;
+  comment: string;
+  rating: number;
+  imageUrls: string[];
+  createdAt: Date;
+  url?: string;
+}
 import LikeButton from '@/components/LikeButton';
 import { format } from 'date-fns';
 import AnnouncementBanner from './components/AnnouncementBanner';
@@ -16,6 +26,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
     const [allPosts, setAllPosts] = useState<SimplePost[]>([]);
     const [displayedPosts, setDisplayedPosts] = useState<SimplePost[]>([]);
+  const [spots, setSpots] = useState<SpotData[]>([]);
   const [teamNameSuggestions, setTeamNameSuggestions] = useState<{ [key: string]: string[] }>({});
 
   const [isLoading, setIsLoading] = useState(true);
@@ -81,6 +92,24 @@ export default function HomePage() {
         const uniquePosts = Array.from(new Map(postsWithImages.map(p => [p.id, p])).values());
         uniquePosts.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
         setAllPosts(uniquePosts.slice(0, 10));
+
+        // Fetch latest spots
+        const spotsCollection = collection(db, 'spots');
+        const qSpots = query(spotsCollection, orderBy('createdAt', 'desc'), limit(10));
+        const spotsSnapshot = await getDocs(qSpots);
+        const spotsData: SpotData[] = spotsSnapshot.docs.map(doc => {
+          const d = doc.data();
+          return {
+            id: doc.id,
+            spotName: d.spotName,
+            comment: d.comment,
+            rating: d.rating,
+            imageUrls: d.imageUrls || [],
+            createdAt: d.createdAt.toDate(),
+            url: d.url,
+          };
+        });
+        setSpots(spotsData);
       } catch (error) {
         console.error('投稿取得エラー:', error);
       } finally {
@@ -239,6 +268,55 @@ export default function HomePage() {
           })}
         </div>
       </div>
+
+      {/* Recommended Spots Section */}
+      {spots.length > 0 && (
+        <div className="p-3 mt-8">
+          <h2 className="text-lg font-bold my-3 text-center text-gray-900 dark:text-gray-200">
+            最近のおススメスポット
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+            {spots.map((spot) => {
+              const spotDate = spot.createdAt ? format(spot.createdAt, 'yyyy.MM.dd') : '';
+              return (
+                <div key={spot.id} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden flex flex-col">
+                  <Link href={`/spots/${spot.id}`} className="no-underline flex flex-col flex-grow">
+                    <div className="w-full h-28 relative">
+                      {spot.imageUrls && spot.imageUrls.length > 0 ? (
+                        <Image
+                          src={spot.imageUrls[0]}
+                          alt={spot.spotName}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                          <span className="text-gray-500">No Image</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2 flex flex-col flex-grow">
+                      <p className="text-sm font-bold text-gray-900 dark:text-gray-200 mb-1 line-clamp-2">
+                        {spot.spotName}
+                      </p>
+                      <div className="flex items-center mb-2">
+                        {[...Array(5)].map((_, i) => (
+                          <span key={i} className={`text-lg ${i < spot.rating ? 'text-yellow-400' : 'text-gray-300'}`}>
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                      <div className="mt-auto flex items-center justify-end text-xs text-gray-500 dark:text-gray-400">
+                        <span>{spotDate}</span>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </>
   );
 }
