@@ -155,6 +155,16 @@ useEffect(() => {
             <p><strong>収容人数:</strong> ${stadium.capacity?.toLocaleString()}人</p>
 ${stadium.opened ? `<p><strong>開場年:</strong> ${stadium.opened}年</p>` : ''}
           </div>
+          <div style="margin-top: 12px;">
+            <a 
+              href="https://www.booking.com/searchresults.html?ss=${encodeURIComponent(stadium.name)}" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              style="display: inline-block; background-color: #0071c2; color: white; padding: 8px 12px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 14px;"
+            >
+              Booking.comで周辺のホテルを探す
+            </a>
+          </div>
         </div>
       `
     });
