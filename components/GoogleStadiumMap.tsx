@@ -137,12 +137,12 @@ function MapComponent({
           map: map,
           title: stadium.name,
           icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: isSelected ? 8 : 6,
+            path: 'M 0,0 C -1.8,-1.8 -4,-4.5 -4,-7.5 A 4,4 0 1,1 4,-7.5 C 4,-4.5 1.8,-1.8 0,0 z M 0,-5.5 A 1.5,1.5 0 1,0 0,-8.5 A 1.5,1.5 0 1,0 0,-5.5 z',
             fillColor: getMarkerColor(stadium, isSelected),
             fillOpacity: 1,
-            strokeColor: isSelected ? '#ffffff' : getMarkerColor(stadium, isSelected),
+            strokeColor: isSelected ? '#FFFFFF' : '#000000',
             strokeWeight: isSelected ? 2 : 1,
+            scale: isSelected ? 2 : 1.5,
           }
         });
 
@@ -180,12 +180,12 @@ function MapComponent({
           map: map,
           title: hotel.name,
           icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: isSelected ? 8 : 6,
-            fillColor: isSelected ? '#F59E0B' : '#8B5CF6', // Purple for hotels
+            path: 'M 0,0 C -1.8,-1.8 -4,-4.5 -4,-7.5 A 4,4 0 1,1 4,-7.5 C 4,-4.5 1.8,-1.8 0,0 z M 0,-5.5 A 1.5,1.5 0 1,0 0,-8.5 A 1.5,1.5 0 1,0 0,-5.5 z',
+            fillColor: isSelected ? '#F59E0B' : '#8B5CF6',
             fillOpacity: 1,
-            strokeColor: isSelected ? '#ffffff' : '#8B5CF6',
+            strokeColor: isSelected ? '#FFFFFF' : '#000000',
             strokeWeight: isSelected ? 2 : 1,
+            scale: isSelected ? 2 : 1.5,
           }
         });
 
