@@ -654,6 +654,10 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
         </div>
       )}
 
+            <div className="bg-blue-100 dark:bg-blue-900/30 border-l-4 border-blue-500 dark:border-blue-400 text-blue-700 dark:text-blue-300 p-4 my-6 rounded-md" role="alert">
+        <p className="font-bold">キャンペーン参加者様への投稿項目お知らせ</p>
+        <p className="mt-1">現在開催中の投稿キャンペーンでは、<span className="font-semibold">基本情報、観戦試合、チケット情報、画像、カテゴリー＋2項目</span>の７項目が必須となります。ご投稿前にご確認をお願いいたします。(なお、項目ごと全ての内容を入力する必要はありません。)</p>
+      </div>
       <BasicInfoSection formData={formData} setFormData={setFormData} user={user} />
       <MatchInfoSection formData={formData} setFormData={setFormData} />
       <TicketInfoSection formData={formData} setFormData={setFormData} />
