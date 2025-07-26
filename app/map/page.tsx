@@ -61,9 +61,9 @@ export default function MapPage() {
   const leagueStates = {
     'プレミアリーグ': { show: showPremierLeague, set: setShowPremierLeague },
     'チャンピオンシップ': { show: showChampionship, set: setShowChampionship },
-    'リーグ・アン': { show: leagueOneStadiums, set: setShowLeagueOne },
+    'リーグ・ワン': { show: showLeagueOne, set: setShowLeagueOne },
     'セリエA': { show: showSerieA, set: setShowSerieA },
-    'セリエB': 'showSerieB',
+    'セリエB': { show: showSerieB, set: setShowSerieB },
     'リーグ・アン': { show: showLigue1, set: setShowLigue1 },
     'リーグ・ドゥ': { show: showLigue2, set: setShowLigue2 },
     'ラ・リーガ': { show: showLaLiga, set: setShowLaLiga },
