@@ -1,6 +1,15 @@
 // types/match.ts
 
 // Re-defining to ensure all properties are correctly recognized by the compiler.
+export interface Match {
+  homeTeam: string;
+  awayTeam: string;
+  teamA?: string; // for legacy data
+  teamB?: string; // for legacy data
+  competition: string;
+  date?: string;
+}
+
 export interface MatchInfo {
   competition: string;
   season: string;
@@ -102,8 +111,6 @@ export interface Travel {
   individualCosts?: IndividualCost[];
 }
 
-
-
 // For data from 'simple-travels' collection
 export interface SimpleTravel {
   id: string;
@@ -128,13 +135,9 @@ export interface SimplePost {
   episode: string;
   author: string; // authorNickname
   authorId?: string; // Add authorId
+  authorAvatar?: string;
   league: string; // competition name
-  matches: {
-    homeTeam: string;
-    awayTeam: string;
-    competition: string;
-    date?: string;
-  }[];
+  matches: Match[];
   likeCount: number;
   helpfulCount: number;
   createdAt?: Date;

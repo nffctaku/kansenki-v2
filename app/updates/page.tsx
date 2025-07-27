@@ -1,8 +1,14 @@
 export default function UpdatesPage() {
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">更新履歴 <span className="text-lg font-normal text-gray-500 dark:text-gray-400">v0.1.3</span></h1>
+      <h1 className="text-3xl font-bold mb-6">更新履歴 <span className="text-lg font-normal text-gray-500 dark:text-gray-400">v0.1.4</span></h1>
                   <div className="space-y-6">
+        <div className="p-4 border bg-white dark:bg-slate-800/50 dark:border-slate-700 rounded-lg shadow-sm">
+          <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">2025-07-27</p>
+          <ul className="list-disc list-inside mt-2 space-y-1 text-slate-600 dark:text-slate-300">
+            <li><strong>マップページの改善:</strong> ページ読み込み時にスタジアム・ホテルリストがデフォルトで閉じるようにし、表示のすっきりさを向上させました。</li>
+          </ul>
+        </div>
         <div className="p-4 border bg-white dark:bg-slate-800/50 dark:border-slate-700 rounded-lg shadow-sm">
           <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">2025-07-06</p>
           <ul className="list-disc list-inside mt-2 space-y-1 text-slate-600 dark:text-slate-300">
@@ -17,9 +23,26 @@ export default function UpdatesPage() {
           </ul>
         </div>
         <div className="p-4 border bg-white dark:bg-slate-800/50 dark:border-slate-700 rounded-lg shadow-sm">
+          <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">2025-07-05</p>
+          <ul className="list-disc list-inside mt-2 space-y-1 text-slate-600 dark:text-slate-300">
+            <li><strong>地図機能の大幅アップデート:</strong>
+              <ul className="list-disc list-inside ml-4 mt-1">
+                <li>スタジアムマップの地図をOpenStreetMapからGoogle Mapsにアップグレードし、表示品質を向上させました。</li>
+                <li>Google Geocoding APIを導入し、登録されたホテルの住所から正確な座標を取得して、地図上にピン留めする機能を追加しました。</li>
+                <li>ホテルは紫、スタジアムは赤のマーカーで表示されるようにしました。</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+        <div className="p-4 border bg-white dark:bg-slate-800/50 dark:border-slate-700 rounded-lg shadow-sm">
           <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">2025-07-04</p>
           <ul className="list-disc list-inside mt-2 space-y-1 text-slate-600 dark:text-slate-300">
-            <li>他のユーザーのマイページに正常に遷移できない問題を修正しました。</li>
+            <li><strong>地図機能の強化:</strong>
+              <ul className="list-disc list-inside ml-4 mt-1">
+                <li>複数のデータベースからホテル情報を取得する機能を追加しました。</li>
+                <li>地名検索機能を強化し、日本語の都市名（例：「ロンドン」「マドリード」）に対応しました。</li>
+              </ul>
+            </li>
             <li>投稿の削除が正常に機能しない問題を修正しました。</li>
             <li>投稿を削除する際に、関連する「いいね」データも同時に削除されるように改善しました。</li>
             <li>Firestoreのセキュリティルールを更新し、投稿の作成者本人が安全に投稿を削除できるように修正しました。</li>

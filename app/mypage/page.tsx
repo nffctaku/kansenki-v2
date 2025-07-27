@@ -24,6 +24,9 @@ import { Post, MatchInfo } from '@/types/post';
 import CollapsibleSection from '@/components/post-form/CollapsibleSection';
 import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
 import StarRating from '@/components/StarRating';
+import PostCard from '@/components/PostCard';
+import SpotCard, { SpotData } from '@/components/SpotCard';
+import { SimplePost } from '@/types/match';
 
 interface Spot {
   id: string;
@@ -56,8 +59,7 @@ interface Spot {
 
 export default function MyPage() {
   useTheme();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [spots, setSpots] = useState<Spot[]>([]);
+  const [combinedItems, setCombinedItems] = useState<(SimplePost | SpotData)[]>([]);
   const [loading, setLoading] = useState(true);
   const [nickname, setNickname] = useState('');
   const [userId, setUserId] = useState('');
@@ -170,24 +172,47 @@ export default function MyPage() {
           return post;
         });
         
-        const combinedPosts = [...newPostsData, ...oldPostsData];
-        setPosts(combinedPosts.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds));
-        setPostCollectionMap(newMap);
+        const allPostsData = [...newPostsData, ...oldPostsData];
 
-        // Fetch spots from 'spots' collection
+        const formattedPosts: SimplePost[] = allPostsData.map(p => ({
+          ...p,
+          id: p.id!,
+          episode: p.title || '',
+          author: p.authorNickname || nickname,
+          authorId: p.authorId || uid,
+          authorAvatar: avatarUrl, // Use the fetched avatarUrl
+          league: p.match?.competition || '',
+          matches: p.match ? [p.match] : [],
+          imageUrls: p.images || [],
+          createdAt: (p.createdAt as Timestamp)?.toDate() || new Date(),
+          postType: 'new', // This might need adjustment based on simple/new post type
+          type: 'post',
+        }));
+
         const spotsQuery = query(collection(db, 'spots'), where('authorId', '==', user.uid));
         const spotsSnapshot = await getDocs(spotsQuery);
         const spotsData = spotsSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
-        } as Spot));
-        setSpots(spotsData.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds));
+        }));
 
-        console.log('Fetched Posts:', combinedPosts);
+        const formattedSpots: SpotData[] = spotsData.map(s => ({
+          ...s,
+          author: s.nickname || nickname,
+          authorAvatar: avatarUrl,
+          createdAt: (s.createdAt as Timestamp)?.toDate() || new Date(),
+        }));
+
+        const combined = [...formattedPosts, ...formattedSpots];
+        combined.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+        setCombinedItems(combined);
+
+        setPostCollectionMap(newMap);
+
+        console.log('Fetched Posts:', combined);
         console.log('Fetched Spots:', spotsData);
 
         setLoading(false);
-
       } else {
         router.push('/login');
       }
@@ -219,11 +244,7 @@ export default function MyPage() {
         await deleteDoc(postRef);
 
         // UIから削除
-        if (collectionName === 'spots') {
-          setSpots((prevSpots) => prevSpots.filter((spot) => spot.id !== postId));
-        } else {
-          setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
-        }
+        setCombinedItems((prevItems) => prevItems.filter((item) => item.id !== postId));
 
         alert('投稿を削除しました。');
       } catch (error) {
@@ -508,101 +529,30 @@ export default function MyPage() {
         </div>
       </CollapsibleSection>
 
-      {/* あなたの投稿一覧 */}
-      <div className="p-4">
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-4 dark:text-white">あなたの投稿</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {posts.filter(p => p.id).map((post) => (
-            <div key={post.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden flex flex-col">
-              <a href={`/posts/${post.id}`}>
-                <Image
-                  src={post.images?.[0] || '/no-image.png'}
-                  alt="観戦画像"
-                  width={400}
-                  height={400}
-                  className="w-full aspect-square object-cover hover:opacity-90 transition"
-                />
-              </a>
-              <div className="p-4 text-sm flex-grow leading-[1.1] space-y-[2px]">
-                <p className="text-[12px] text-gray-400 dark:text-gray-500 leading-[1.1] m-0">
-                  {post.match?.season || post.match?.date || '日付未設定'}
-                </p>
-                <p className="text-[13px] font-bold dark:text-gray-200 leading-[1.1] m-0">
-                  {post.match?.competition || '大会名未入力'}
-                </p>
-                <p className="text-[13px] text-gray-800 dark:text-gray-300 leading-[1.1] m-0">
-                  {post.match?.homeTeam || 'チームA'} vs {post.match?.awayTeam || 'チームB'}
-                </p>
-              </div>
-              <div className="flex justify-between items-center px-4 pb-4">
-                <a href={`/edit/${post.id}?collection=${postCollectionMap.get(post.id!) || ''}`} className="flex items-center gap-[4px] text-green-600 text-[12px] hover:underline">
-                  <Image src="/えんぴつのアイコン素材.png" alt="編集" width={10} height={10} className="w-[10px] h-[10px] object-contain dark:invert" />
-                  編集
-                </a>
-                <button
-                  onClick={() => {
-                    if (post.id) {
-                      const collectionName = postCollectionMap.get(post.id);
-                      if (collectionName) {
-                        handleDelete(post.id, collectionName);
-                      }
-                    }
-                  }}
-                  className="flex items-center gap-[4px] text-red-600 text-[12px] hover:underline"
-                >
-                  <Image src="/ゴミ箱の無料アイコン.png" alt="削除" width={10} height={10} className="w-[10px] h-[10px] object-contain dark:invert" />
-                  削除
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* あなたのおすすめスポット・宿泊先一覧 */}
+      {/* 投稿一覧 */}
       <div className="p-4">
         <div className="mb-6 mt-12">
-          <h2 className="text-lg font-bold mb-4 dark:text-white">あなたのおすすめスポット・宿泊先</h2>
+          <h2 className="text-lg font-bold mb-4 dark:text-white">あなたの投稿一覧</h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {spots.map((spot) => (
-            <div key={spot.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden flex flex-col">
-              <a href={`/spots/${spot.id}`}>
-                <Image
-                  src={spot.imageUrls?.[0] || '/no-image.png'}
-                  alt={spot.spotName}
-                  width={400}
-                  height={400}
-                  className="w-full aspect-square object-cover hover:opacity-90 transition"
-                />
-              </a>
-              <div className="p-4 text-sm flex-grow leading-[1.1] space-y-[2px]">
-                <p className="text-[12px] text-gray-400 dark:text-gray-500 leading-[1.1] m-0">
-                  {spot.type === 'hotel' ? `${spot.city} / ${spot.country}` : `${spot.category} / ${spot.country}`}
-                </p>
-                <p className="text-[13px] font-bold dark:text-gray-200 leading-[1.1] m-0">
-                  {spot.spotName}
-                </p>
-                <div className="flex items-center">
-                  <StarRating rating={spot.type === 'hotel' ? spot.overallRating || 0 : spot.rating || 0} readOnly={true} />
-                  <span className="ml-2 text-xs text-gray-500">({spot.type === 'hotel' ? (spot.overallRating || 0).toFixed(1) : (spot.rating || 0).toFixed(1)})</span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+          {combinedItems.map((item) => (
+            <div key={item.id} className="relative group">
+              {item.type === 'post' ? (
+                <PostCard post={item as SimplePost} />
+              ) : (
+                <SpotCard spot={item as SpotData} />
+              )}
+              <div className="absolute top-2 right-2 z-10">
+                  <button
+                    onClick={() => handleDelete(item.id, item.type === 'post' ? postCollectionMap.get(item.id) || 'posts' : 'spots')}
+                    className="bg-red-500 text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Delete"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" />
+                    </svg>
+                  </button>
                 </div>
-              </div>
-              <div className="flex justify-between items-center px-4 pb-4">
-                <a href={`/edit-spot/${spot.id}`} className="flex items-center gap-[4px] text-green-600 text-[12px] hover:underline">
-                  <Image src="/えんぴつのアイコン素材.png" alt="編集" width={10} height={10} className="w-[10px] h-[10px] object-contain dark:invert" />
-                  編集
-                </a>
-                <button
-                  onClick={() => handleDelete(spot.id, 'spots')}
-                  className="flex items-center gap-[4px] text-red-600 text-[12px] hover:underline"
-                >
-                  <Image src="/ゴミ箱の無料アイコン.png" alt="削除" width={10} height={10} className="w-[10px] h-[10px] object-contain dark:invert" />
-                  削除
-                </button>
-              </div>
             </div>
           ))}
         </div>

@@ -12,7 +12,9 @@ import { FaInstagram, FaYoutube, FaXTwitter } from 'react-icons/fa6';
 
 
 import { useTheme } from 'next-themes';
-import LikeButton from '@/components/LikeButton';
+import PostCard from '@/components/PostCard';
+import SpotCard, { SpotData } from '@/components/SpotCard';
+import { SimplePost } from '@/types/match';
 import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
 
 type UserInfo = {
@@ -33,13 +35,14 @@ type UserInfo = {
 export default function UserPostsPage() {
   const { id } = useParams();
   useTheme();
-  const [posts, setPosts] = useState<any[]>([]);
+  const [items, setItems] = useState<(SimplePost | SpotData)[]>([]);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     const fetchUserAndPosts = async (userId: string) => {
+      console.log('Fetching data for user:', userId);
       setLoading(true);
       try {
         // ユーザーのUIDを使って、該当するユーザーをusersコレクションから直接取得します。
@@ -59,6 +62,7 @@ export default function UserPostsPage() {
 
         // 画面に表示するためのユーザー情報をセットします。
         setUserInfo(userData as UserInfo);
+        console.log('User info fetched:', userData);
 
         // 取得したUIDを使って、そのユーザーの投稿一覧を取得します。
         // 新しいフォーマットの投稿 ('posts'コレクション)
@@ -69,13 +73,25 @@ export default function UserPostsPage() {
           where('isPublic', '==', true)
         );
         const snapshotNew = await getDocs(qNew);
-        const newPosts = snapshotNew.docs.map((doc) => {
+        console.log('New posts fetched:', snapshotNew.docs.length);
+        const newPosts: SimplePost[] = snapshotNew.docs.map((doc) => {
           const d = doc.data();
           return {
             id: doc.id,
-            ...d,
+            status: d.isPublic ? 'published' : 'draft',
             imageUrls: d.images || d.imageUrls || d.existingImageUrls || [],
+            season: d.match?.season || '',
+            episode: d.title || '',
+            author: d.authorNickname || userData.nickname,
+            authorId: d.authorId || userUid,
+            authorAvatar: d.authorAvatar || userData.avatarUrl,
+            league: d.match?.competition || '',
             matches: d.match ? [d.match] : [],
+            likeCount: d.likeCount || 0,
+            helpfulCount: d.helpfulCount || 0,
+            createdAt: d.createdAt?.toDate(),
+            postType: 'new',
+            type: 'post',
           };
         });
 
@@ -83,22 +99,67 @@ export default function UserPostsPage() {
         const simplePostsCollection = collection(db, 'simple-posts');
         const qLegacy = query(simplePostsCollection, where('uid', '==', userUid));
         const snapshotLegacy = await getDocs(qLegacy);
-        const legacyPosts = snapshotLegacy.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        console.log('Legacy posts fetched:', snapshotLegacy.docs.length);
+        const legacyPosts: SimplePost[] = snapshotLegacy.docs.map((doc) => {
+          const d = doc.data();
+          return {
+            id: doc.id,
+            status: 'published',
+            imageUrls: d.imageUrls || [],
+            season: d.season || '',
+            episode: d.episode || '',
+            author: d.authorNickname || userData.nickname,
+            authorId: d.uid,
+            authorAvatar: d.authorAvatar || userData.avatarUrl,
+            league: d.league || '',
+            matches: d.matches || [],
+            likeCount: d.likeCount || 0,
+            helpfulCount: d.helpfulCount || 0,
+            createdAt: d.createdAt?.toDate(),
+            postType: 'simple',
+          };
+        });
 
-        // 新旧の投稿を結合し、重複を排除した上で、作成日時順に並び替えます。
-        const combined = [...newPosts, ...legacyPosts];
-        const uniquePosts = Array.from(new Map(combined.map((p) => [p.id, p])).values());
-        uniquePosts.sort((a: any, b: any) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        // スポット情報を取得します。
+        const spotsCollection = collection(db, 'spots');
+        const qSpots = query(spotsCollection, where('authorId', '==', userUid));
+        const spotsSnapshot = await getDocs(qSpots);
+        console.log('Spots fetched:', spotsSnapshot.docs.length);
+        const spots: SpotData[] = spotsSnapshot.docs.map(doc => {
+          const d = doc.data();
+          return {
+            id: doc.id,
+            spotName: d.spotName,
+            comment: d.comment,
+            imageUrls: d.imageUrls || [],
+            createdAt: d.createdAt?.toDate() || new Date(0),
+            url: d.url,
+            country: d.country,
+            category: d.category,
+            type: d.type || 'spot',
+            author: d.author,
+            authorAvatar: d.authorAvatar,
+            rating: d.rating,
+            city: d.city,
+            overallRating: d.overallRating,
+          };
+        });
 
-        setPosts(uniquePosts);
+        console.log('Combining all data...');
+        // 新旧の投稿を結合し、重複を排除します。
+        const allPosts = [...newPosts, ...legacyPosts];
+        const uniquePosts = Array.from(new Map(allPosts.map(p => [p.id, p])).values());
+
+        // 重複排除した投稿とスポットを結合し、作成日時順に並び替えます。
+        const combinedItems = [...uniquePosts, ...spots];
+        combinedItems.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+        setItems(combinedItems);
 
       } catch (err) {
-        console.error('データ取得エラー:', err);
+        console.error('Error fetching data:', err);
         setNotFound(true);
       } finally {
+        console.log('Finished fetching data.');
         setLoading(false);
       }
     };
@@ -201,39 +262,16 @@ export default function UserPostsPage() {
 
       {/* 投稿一覧 */}
 <div className="px-4 pb-10 mt-4 border-t dark:border-gray-700 pt-6">
-  {posts.length === 0 ? (
+  {items.length === 0 ? (
     <p className="text-gray-500 dark:text-gray-400">投稿がありません。</p>
   ) : (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-      {posts.map((post) => (
-        <div
-          key={post.id}
-          className="bg-white dark:bg-gray-700 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition"
-        >
-          <Link href={`/posts/${post.id}`}>
-            <div className="w-full aspect-square bg-gray-100 dark:bg-gray-600 relative">
-              <Image
-                src={post.imageUrls?.[0] || '/no-image.png'}
-                alt="観戦写真"
-                fill
-                className="object-cover"
-              />
-            </div>
-          </Link>
-          <div className="p-4">
-            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
-              {post.matches?.[0]
-                ? `${post.matches[0].homeTeam || post.matches[0].teamA} vs ${post.matches[0].awayTeam || post.matches[0].teamB}`
-                : '試合情報なし'}
-            </h3>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {post.season || (post.matches?.[0]?.date ? new Date(post.matches[0].date).toLocaleDateString('ja-JP') : 'シーズン未設定')}
-              </p>
-              <LikeButton postId={post.id} size="xs" />
-            </div>
-          </div>
-        </div>
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+      {items.map((item) => (
+        'matches' in item ? (
+          <PostCard key={item.id} post={item as SimplePost} />
+        ) : (
+          <SpotCard key={item.id} spot={item as SpotData} />
+        )
       ))}
     </div>
   )}
