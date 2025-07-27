@@ -175,6 +175,7 @@ export default function MyPage() {
         const allPostsData = [...newPostsData, ...oldPostsData];
 
         const formattedPosts: SimplePost[] = allPostsData.map(p => ({
+          season: p.season || '',
           ...p,
           id: p.id!,
           episode: p.title || '',
