@@ -274,7 +274,7 @@ const CreateSpotPage = () => {
                       <SelectValue placeholder="カテゴリーを選択" />
                     </SelectTrigger>
                     <SelectContent>
-                      {['レストラン', 'カフェ', 'バー', 'パブ', '観光地', 'フォトスポット'].map(category => (
+                      {['レストラン', 'カフェ', 'バー', 'パブ', '観光地', 'フォトスポット','ユニフォームショップ','公式ストア'].map(category => (
                         <SelectItem key={category} value={category}>{category}</SelectItem>
                       ))}
                     </SelectContent>

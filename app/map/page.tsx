@@ -54,8 +54,8 @@ export default function MapPage() {
   const [showSegunda, setShowSegunda] = useState(false);
   const [showBundesliga, setShowBundesliga] = useState(false);
   const [showBundesliga2, setShowBundesliga2] = useState(false);
-  const [isListOpen, setIsListOpen] = useState(true);
-  const [isLeagueListOpen, setIsLeagueListOpen] = useState(true);
+  const [isListOpen, setIsListOpen] = useState(false);
+  const [isLeagueListOpen, setIsLeagueListOpen] = useState(false);
 
 
   const leagueStates = {
