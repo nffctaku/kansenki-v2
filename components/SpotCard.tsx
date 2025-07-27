@@ -9,12 +9,14 @@ export interface SpotData {
   spotName: string;
   comment: string;
   imageUrls: string[];
-  createdAt: Date;
+  createdAt: Date | null;
   url?: string;
   country?: string;
   category?: string;
   type: 'spot' | 'hotel';
+  postType?: 'spot' | 'hotel';
   author?: string;
+  nickname?: string;
   authorAvatar?: string;
   // Spot specific
   rating?: number;

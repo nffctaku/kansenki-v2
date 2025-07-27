@@ -18,6 +18,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import { FaInstagram, FaYoutube, FaXTwitter } from 'react-icons/fa6';
+import Link from 'next/link';
 
 import { Timestamp } from 'firebase/firestore';
 import { Post, MatchInfo } from '@/types/post';
@@ -55,12 +56,11 @@ interface Spot {
 }
 
 
-
-
 export default function MyPage() {
   useTheme();
   const [combinedItems, setCombinedItems] = useState<(SimplePost | SpotData)[]>([]);
   const [loading, setLoading] = useState(true);
+  const [birthdate, setBirthdate] = useState<Date | null>(null);
   const [nickname, setNickname] = useState('');
   const [userId, setUserId] = useState('');
   const [uid, setUid] = useState('');
@@ -89,6 +89,9 @@ export default function MyPage() {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const userData = userSnap.data();
+          if (userData.birthdate) {
+            setBirthdate((userData.birthdate as Timestamp).toDate());
+          }
           setNickname(userData.nickname || '');
           setUserId(userData.id || '');
           setXLink(userData.xLink || '');
@@ -115,6 +118,8 @@ export default function MyPage() {
             ...data,
             id: doc.id,
             postType: 'new',
+            likeCount: data.likeCount || 0,
+            helpfulCount: data.helpfulCount || 0,
             images: data.images || data.imageUrls || data.existingImageUrls || [],
           } as unknown as Post;
         });
@@ -174,34 +179,48 @@ export default function MyPage() {
         
         const allPostsData = [...newPostsData, ...oldPostsData];
 
-        const formattedPosts: SimplePost[] = allPostsData.map(p => ({
-          season: p.season || '',
-          ...p,
-          id: p.id!,
-          episode: p.title || '',
-          author: p.authorNickname || nickname,
-          authorId: p.authorId || uid,
-          authorAvatar: avatarUrl, // Use the fetched avatarUrl
-          league: p.match?.competition || '',
-          matches: p.match ? [p.match] : [],
-          imageUrls: p.images || [],
-          createdAt: (p.createdAt as Timestamp)?.toDate() || new Date(),
-          postType: 'new', // This might need adjustment based on simple/new post type
-          type: 'post',
-        }));
+        const formattedPosts: SimplePost[] = allPostsData.map(p => {
+          const pData = p as any; // Handle different data structures from 'posts' and 'simple-posts'
+          return {
+            id: pData.id!,
+            status: pData.status || 'published',
+            imageUrls: pData.images || pData.imageUrls || [],
+            season: pData.season || '',
+            episode: pData.title || pData.episode || '',
+            author: pData.authorNickname || pData.author || '',
+            authorId: pData.authorId,
+            authorAvatar: pData.authorAvatar,
+            league: pData.competition || (pData.match ? pData.match.competition : '') || pData.league || '',
+            matches: pData.match ? [pData.match] : (pData.matches || []),
+            likeCount: pData.likeCount || 0,
+            helpfulCount: pData.helpfulCount || 0,
+            createdAt: pData.createdAt ? (pData.createdAt as unknown as Timestamp).toDate() : undefined,
+            postType: 'post',
+          };
+        });
 
         const spotsQuery = query(collection(db, 'spots'), where('authorId', '==', user.uid));
         const spotsSnapshot = await getDocs(spotsQuery);
-        const spotsData = spotsSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const spotsData: SpotData[] = spotsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            ...data,
+            id: doc.id,
+            type: 'spot',
+            createdAt: data.createdAt ? (data.createdAt as unknown as Timestamp).toDate() : new Date(),
+            nickname: data.nickname || '',
+            author: data.nickname || '',
+            comment: data.comment || '',
+            spotName: data.spotName || '',
+            imageUrls: data.imageUrls || [],
+          } as SpotData;
+        });
 
         const formattedSpots: SpotData[] = spotsData.map(s => ({
           ...s,
           author: s.nickname || nickname,
           authorAvatar: avatarUrl,
-          createdAt: (s.createdAt as Timestamp)?.toDate() || new Date(),
+          createdAt: s.createdAt,
         }));
 
         const combined = [...formattedPosts, ...formattedSpots];
@@ -282,7 +301,7 @@ export default function MyPage() {
       }
 
       const userRef = doc(db, 'users', uid);
-      const dataToSave: { [key: string]: any } = {
+            const dataToSave: { [key: string]: any } = {
         nickname,
         bio,
         xLink,
@@ -295,6 +314,10 @@ export default function MyPage() {
         visitedCountries,
         avatarUrl: newAvatarUrl,
       };
+
+      if (birthdate) {
+        dataToSave.birthdate = Timestamp.fromDate(birthdate);
+      }
       
       await updateDoc(userRef, dataToSave);
 
@@ -538,14 +561,18 @@ export default function MyPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
           {combinedItems.map((item) => (
             <div key={item.id} className="relative group">
-              {item.type === 'post' ? (
-                <PostCard post={item as SimplePost} />
+              {'matches' in item ? (
+                <Link href={`/posts/${item.id}`} className="block">
+                  <PostCard post={item as SimplePost} />
+                </Link>
               ) : (
-                <SpotCard spot={item as SpotData} />
+                <Link href={`/spots/${item.id}`} className="block">
+                  <SpotCard spot={item as SpotData} />
+                </Link>
               )}
               <div className="absolute top-2 right-2 z-10">
                   <button
-                    onClick={() => handleDelete(item.id, item.type === 'post' ? postCollectionMap.get(item.id) || 'posts' : 'spots')}
+                    onClick={() => handleDelete(item.id, 'matches' in item ? postCollectionMap.get(item.id) || 'posts' : 'spots')}
                     className="bg-red-500 text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                     aria-label="Delete"
                   >

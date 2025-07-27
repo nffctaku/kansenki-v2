@@ -34,6 +34,7 @@ export interface Post {
   travelId?: string;
   likeCount?: number;
   helpfulCount?: number;
+  season?: string;
 
   // Fields from PostFormData to be included in Post
   postType: 'new' | 'additional' | 'simple';
