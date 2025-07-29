@@ -1,22 +1,21 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { SimplePost } from '@/types/match';
+import { UnifiedPost } from '@/mypage/types';
 
 interface PostCardProps {
-  post: SimplePost;
+  post: UnifiedPost;
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const postDate = post.createdAt ? format(post.createdAt, 'yyyy.MM.dd') : '';
-  const title = post.episode;
-  const matchInfo = post.matches?.[0]
-    ? `${post.matches[0].homeTeam || post.matches[0].teamA} vs ${post.matches[0].awayTeam || post.matches[0].teamB}`
-    : null;
+
+  const title = post.title || '投稿';
+  const subtext = post.subtext || '';
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden flex flex-col h-full">
-      <Link href={`/posts/${post.id}`} className="no-underline flex flex-col flex-grow">
+      <Link href={post.href} className="no-underline flex flex-col flex-grow">
         <div className="w-full aspect-[4/3] relative">
           {post.imageUrls && post.imageUrls.length > 0 ? (
             <Image
@@ -41,13 +40,21 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             {title}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 h-4">
-            {matchInfo}
+            {subtext}
           </p>
-          <div className="mt-auto flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-2">
-            <span className="truncate">
-              {post.author}
-            </span>
-            <span>{postDate}</span>
+          <div className="mt-auto flex items-center text-xs text-gray-500 dark:text-gray-400 pt-2">
+                        <Link href={`/user/${post.author.id}`} className="flex items-center gap-2 truncate no-underline text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+              <div className="relative w-5 h-5 rounded-full overflow-hidden">
+                <Image
+                                    src={post.author?.avatar || '/default-avatar.svg'}
+                  alt={post.author?.nickname || 'avatar'}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+                            <span className="truncate">{post.author?.nickname || '名無し'}</span>
+            </Link>
+            <span className="ml-auto shrink-0">{postDate}</span>
           </div>
         </div>
       </Link>

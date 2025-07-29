@@ -19,6 +19,7 @@ import 'swiper/css/pagination';
 import { airlineOptions, seatClassOptions } from '@/components/data';
 import LikeButton from '@/components/LikeButton';
 import ShareButton from '@/components/ShareButton';
+import BookmarkButton from '../../components/BookmarkButton';
 
 // Helper component for star ratings
 const StarRating = ({ rating }: { rating: number }) => (
@@ -536,6 +537,7 @@ export default function PostDetailPage() {
       {/* Post Actions */}
       <div className="my-8 py-6 border-y border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-center gap-4">
         <LikeButton postId={id} size="md" />
+        <BookmarkButton postId={id} size="md" />
         <ShareButton title={post.title} url={`https://kansenki.footballtop.net/posts/${id}`} />
       </div>
 

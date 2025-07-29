@@ -14,6 +14,7 @@ import { FaInstagram, FaYoutube, FaXTwitter } from 'react-icons/fa6';
 import { useTheme } from 'next-themes';
 import PostCard from '@/components/PostCard';
 import SpotCard, { SpotData } from '@/components/SpotCard';
+import { UnifiedPost } from '@/mypage/types';
 import { SimplePost } from '@/types/match';
 import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
 
@@ -32,10 +33,35 @@ type UserInfo = {
   visitedCountries?: string[];
 };
 
+const toUnifiedPost = (item: any, author: UserInfo | null): UnifiedPost | null => {
+  if (item.type === 'post' || item.postType === 'new' || item.postType === 'legacy') {
+    const post = item as SimplePost;
+        const matches = post.matches || [];
+
+    return {
+      id: post.id,
+      postType: 'post',
+            title: post.episode || '無題の投稿',
+      subtext: (matches[0] ? `${matches[0].homeTeam || matches[0].teamA} vs ${matches[0].awayTeam || matches[0].teamB}` : '試合情報なし') || null,
+            imageUrls: post.imageUrls || [],
+      author: {
+        id: post.authorId || (author?.id ?? ''),
+        nickname: post.author || (author?.nickname ?? '名無し'),
+        avatar: post.authorAvatar || author?.avatarUrl || '/default-avatar.svg',
+      },
+      createdAt: post.createdAt ? (post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)) : null,
+      league: post.league,
+      href: `/posts/${post.id}`,
+      originalData: post,
+    };
+  }
+  return null;
+};
+
 export default function UserPostsPage() {
   const { id } = useParams();
   useTheme();
-  const [items, setItems] = useState<(SimplePost | SpotData)[]>([]);
+    const [items, setItems] = useState<(UnifiedPost | SpotData)[]>([]);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -147,13 +173,15 @@ export default function UserPostsPage() {
 
         console.log('Combining all data...');
         // 新旧の投稿を結合し、重複を排除します。
-        const allPosts = [...newPosts, ...legacyPosts];
-        const uniquePosts = Array.from(new Map(allPosts.map(p => [p.id, p])).values());
+        const allPosts = [...newPosts, ...legacyPosts].sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
+        });
 
-        // 重複排除した投稿とスポットを結合し、作成日時順に並び替えます。
-        const combinedItems = [...uniquePosts, ...spots];
-        combinedItems.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
-        setItems(combinedItems);
+        const unifiedItems = allPosts.map(post => toUnifiedPost(post, userData as UserInfo)).filter(Boolean) as UnifiedPost[];
+
+        setItems(unifiedItems);
 
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -267,8 +295,8 @@ export default function UserPostsPage() {
   ) : (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
       {items.map((item) => (
-        'matches' in item ? (
-          <PostCard key={item.id} post={item as SimplePost} />
+        'postType' in item && item.postType === 'post' ? (
+                    <PostCard key={item.id} post={item as UnifiedPost} />
         ) : (
           <SpotCard key={item.id} spot={item as SpotData} />
         )

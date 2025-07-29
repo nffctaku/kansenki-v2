@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
 import {
@@ -12,53 +12,25 @@ import {
   doc,
   getDoc,
   updateDoc,
-  writeBatch
+  Timestamp,
 } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import { FaInstagram, FaYoutube, FaXTwitter } from 'react-icons/fa6';
-import Link from 'next/link';
 
-import { Timestamp } from 'firebase/firestore';
-import { Post, MatchInfo } from '@/types/post';
 import CollapsibleSection from '@/components/post-form/CollapsibleSection';
 import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
-import StarRating from '@/components/StarRating';
-import PostCard from '@/components/PostCard';
-import SpotCard, { SpotData } from '@/components/SpotCard';
 import { SimplePost } from '@/types/match';
-
-interface Spot {
-  id: string;
-  spotName: string;
-  url: string;
-  comment: string;
-  rating: number; // for spot
-  imageUrls: string[];
-  userId: string;
-  nickname: string;
-  createdAt: Timestamp;
-  country: string;
-  category: string | null;
-  type: 'spot' | 'hotel';
-  // Hotel specific fields
-  overallRating?: number;
-  accessRating?: number;
-  cleanlinessRating?: number;
-  comfortRating?: number;
-  facilityRating?: number;
-  staffRating?: number;
-  price?: number;
-  bookingSite?: string;
-  city?: string;
-  nights?: number;
-}
-
+import { SpotData } from '@/components/SpotCard';
+import PostGrid from './PostGrid';
+import { UnifiedPost } from './types';
 
 export default function MyPage() {
   useTheme();
-  const [combinedItems, setCombinedItems] = useState<(SimplePost | SpotData)[]>([]);
+  const [activeTab, setActiveTab] = useState('myPosts');
+  const [combinedItems, setCombinedItems] = useState<UnifiedPost[]>([]);
+  const [bookmarkedItems, setBookmarkedItems] = useState<UnifiedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [birthdate, setBirthdate] = useState<Date | null>(null);
   const [nickname, setNickname] = useState('');
@@ -77,255 +49,261 @@ export default function MyPage() {
   const [residence, setResidence] = useState('');
   const [overseasMatchCount, setOverseasMatchCount] = useState('');
   const [visitedCountries, setVisitedCountries] = useState<string[]>([]);
+  const [visitedStadiums, setVisitedStadiums] = useState<string[]>([]);
+  const [favoriteClub, setFavoriteClub] = useState('');
   const router = useRouter();
 
   const [postCollectionMap, setPostCollectionMap] = useState(new Map<string, string>());
+  const [authorProfiles, setAuthorProfiles] = useState<Map<string, { nickname: string; avatar: string }>>(new Map());
+
+  const toUnifiedPost = useCallback((item: any, type: string): UnifiedPost | null => {
+    if (type === 'posts' || type === 'simple-posts') {
+      const post = item as any; // Use 'any' to handle different structures
+      const convertedPost = {
+        ...post,
+        createdAt: post.createdAt instanceof Timestamp ? post.createdAt.toDate() : post.createdAt,
+      };
+
+      const matches = post.matches || (post.match ? [post.match] : []);
+
+      return {
+        id: post.id,
+        postType: 'post',
+        title: post.episode || post.title || '無題の投稿',
+        subtext: (matches[0] ? `${matches[0].homeTeam || matches[0].teamA} vs ${matches[0].awayTeam || matches[0].teamB}` : '試合情報なし') || null,
+        imageUrls: post.imageUrls || [],
+        author: {
+                              id: post.authorId || '',
+          nickname: authorProfiles.get(post.authorId)?.nickname || post.authorNickname || post.author || '名無し',
+          avatar: authorProfiles.get(post.authorId)?.avatar || post.authorAvatar || '/default-avatar.svg',
+        },
+        createdAt: convertedPost.createdAt ?? null,
+        league: post.league,
+        href: `/${type}/${post.id}`,
+        originalData: convertedPost,
+      };
+    } else if (type === 'spots') {
+      const spot = item as SpotData;
+      const convertedSpot = {
+        ...spot,
+        createdAt: spot.createdAt instanceof Timestamp ? spot.createdAt.toDate() : null,
+      };
+
+      return {
+        id: spot.id,
+        postType: 'spot',
+        title: spot.spotName,
+        subtext: spot.country ?? null,
+        imageUrls: spot.imageUrls || [],
+        author: {
+                    id: auth.currentUser?.uid || '',
+          nickname: auth.currentUser?.displayName || '名無し',
+          avatar: auth.currentUser?.photoURL || '/default-avatar.svg',
+        },
+        createdAt: convertedSpot.createdAt ?? null,
+        href: `/spots/${spot.id}`,
+        originalData: convertedSpot,
+      };
+    }
+    return null;
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        setUid(user.uid);
-        const userRef = doc(db, 'users', user.uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          const userData = userSnap.data();
-          if (userData.birthdate) {
-            setBirthdate((userData.birthdate as Timestamp).toDate());
+        console.log("✅ [MyPage] User is authenticated:", user.uid);
+        setLoading(true);
+        try {
+          // ユーザープロファイル取得
+          const userRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            console.log("✅ [MyPage] User profile data fetched:", userData);
+            setNickname(userData.nickname || '');
+            setUserId(userData.id || '');
+            setBio(userData.bio || '');
+            setAvatarUrl(userData.avatarUrl || '');
+            setFavoriteClub(userData.favoriteClub || '');
+            setVisitedCountries(userData.visitedCountries || []);
+            setVisitedStadiums(userData.visitedStadiums || []);
+            setXLink(userData.socialLinks?.x || '');
+            setNoteLink(userData.socialLinks?.note || '');
+            setYoutubeLink(userData.socialLinks?.youtube || '');
+            setInstagramLink(userData.socialLinks?.instagram || '');
+            setTravelFrequency(userData.travelFrequency || '');
+            setOverseasMatchCount(userData.overseasMatchCount || '');
+          } else {
+            console.warn("⚠️ [MyPage] User profile not found in Firestore for UID:", user.uid);
           }
-          setNickname(userData.nickname || '');
-          setUserId(userData.id || '');
-          setXLink(userData.xLink || '');
-          setNoteLink(userData.noteLink || '');
-          setYoutubeLink(userData.youtubeUrl || '');
-          setInstagramLink(userData.instagramLink || '');
-          setBio(userData.bio || '');
-          setTravelFrequency(userData.travelFrequency || '0');
-          setResidence(userData.residence || '未選択');
-          setOverseasMatchCount(userData.overseasMatchCount || '0');
-          setVisitedCountries(userData.visitedCountries || []);
-          setAvatarUrl(userData.avatarUrl || '');
+
+          // ユーザーの投稿を取得
+          console.log("🔄 [MyPage] Fetching user's own posts...");
+          const postTypes = ['posts', 'simple-posts', 'spots'];
+          let allPosts: UnifiedPost[] = [];
+          const newPostCollectionMap: { [key: string]: string } = {};
+                    const authorIds = new Set<string>();
+
+          for (const type of postTypes) {
+            console.log(`[MyPage] Querying '${type}' collection for UID:`, user.uid);
+            const postsByAuthorUidQuery = query(collection(db, type), where('author.uid', '==', user.uid));
+            const postsByAuthorIdQuery = query(collection(db, type), where('authorId', '==', user.uid));
+
+            const [authorUidSnapshot, authorIdSnapshot] = await Promise.all([
+              getDocs(postsByAuthorUidQuery),
+              getDocs(postsByAuthorIdQuery)
+            ]);
+
+            const combinedDocs = [...authorUidSnapshot.docs, ...authorIdSnapshot.docs];
+            const uniqueDocs = Array.from(new Map(combinedDocs.map(doc => [doc.id, doc])).values());
+
+            console.log(`[MyPage] Found ${uniqueDocs.length} posts in '${type}' (combined).`);
+            uniqueDocs.forEach((doc) => {
+              const post = toUnifiedPost({ id: doc.id, ...doc.data() }, type);
+              if (post !== null) {
+                allPosts.push(post);
+                newPostCollectionMap[post.id] = type;
+                                const postData = doc.data() as SimplePost;
+                if (postData.authorId) authorIds.add(postData.authorId);
+              }
+            });
+          }
+
+          // Fetch author profiles
+          if (authorIds.size > 0) {
+            const profilesQuery = query(collection(db, 'users'), where('uid', 'in', Array.from(authorIds)));
+            const profilesSnapshot = await getDocs(profilesQuery);
+            const profiles = new Map<string, { nickname: string; avatar: string }>();
+            profilesSnapshot.forEach(doc => {
+              const data = doc.data();
+              profiles.set(data.uid, { nickname: data.nickname, avatar: data.avatarUrl });
+            });
+            setAuthorProfiles(profiles);
+          }
+
+          allPosts.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+          console.log(`✅ [MyPage] Total unified posts: ${allPosts.length}`, allPosts);
+          setCombinedItems(allPosts);
+          setPostCollectionMap(new Map(Object.entries(newPostCollectionMap)));
+
+          // ブックマークした投稿を取得
+          console.log("🔄 [MyPage] Fetching bookmarked posts...");
+          const bookmarksRef = collection(db, 'users', user.uid, 'bookmarks');
+          const bookmarksSnap = await getDocs(bookmarksRef);
+          console.log(`[MyPage] Found ${bookmarksSnap.size} bookmarks.`);
+          let bookmarkedPosts: UnifiedPost[] = [];
+
+          for (const bookmarkDoc of bookmarksSnap.docs) {
+            const bookmark = bookmarkDoc.data();
+            console.log(`[MyPage] Processing bookmark for postId: ${bookmark.postId}`);
+            for (const type of postTypes) {
+              const postRef = doc(db, type, bookmark.postId);
+              const postSnap = await getDoc(postRef);
+              if (postSnap.exists()) {
+                const post = toUnifiedPost({ id: postSnap.id, ...postSnap.data() }, type);
+                if (post !== null) {
+                  bookmarkedPosts.push(post);
+                  break;
+                }
+              }
+            }
+          }
+          
+          bookmarkedPosts.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+          console.log(`✅ [MyPage] Total bookmarked posts: ${bookmarkedPosts.length}`, bookmarkedPosts);
+          setBookmarkedItems(bookmarkedPosts);
+        } catch (error) {
+          console.error("❌ [MyPage] Error fetching data:", error);
+          setMessage('データの取得に失敗しました。');
+        } finally {
+          console.log("🏁 [MyPage] Data fetching process finished.");
+          setLoading(false);
         }
-
-        const newMap = new Map<string, string>();
-
-        // Fetch new posts from 'posts' collection
-        const newPostsQuery = query(collection(db, 'posts'), where('authorId', '==', user.uid));
-        const newPostsSnapshot = await getDocs(newPostsQuery);
-        const newPostsData = newPostsSnapshot.docs.map((doc) => {
-          newMap.set(doc.id, 'posts');
-          const data = doc.data();
-          return {
-            ...data,
-            id: doc.id,
-            postType: 'new',
-            likeCount: data.likeCount || 0,
-            helpfulCount: data.helpfulCount || 0,
-            images: data.images || data.imageUrls || data.existingImageUrls || [],
-          } as unknown as Post;
-        });
-
-        // Fetch old posts from 'simple-posts' collection
-        const oldPostsQuery = query(collection(db, 'simple-posts'), where('uid', '==', user.uid));
-        const oldPostsSnapshot = await getDocs(oldPostsQuery);
-        const oldPostsData = oldPostsSnapshot.docs.map((doc) => {
-          newMap.set(doc.id, 'simple-posts');
-          const data = doc.data();
-          const matchData = data.matches && data.matches[0] ? data.matches[0] : {};
-          const ticketData = data.ticket || {};
-
-          const matchInfo: MatchInfo = {
-            competition: matchData.competition || '',
-            season: matchData.season || data.season || '',
-            date: matchData.date || '',
-            kickoff: matchData.kickoff || '',
-            homeTeam: matchData.homeTeam || matchData.teamA || '',
-            awayTeam: matchData.awayTeam || matchData.teamB || '',
-            homeScore: matchData.homeScore ?? '',
-            awayScore: matchData.awayScore ?? '',
-            stadium: matchData.stadium || '',
-            ticketPrice: ticketData.price || '',
-            ticketPurchaseRoute: ticketData.purchaseRoute || '',
-            ticketPurchaseRouteUrl: ticketData.purchaseRouteUrl || '',
-            ticketTeam: ticketData.team || '',
-            isTour: ticketData.isTour || false,
-            isHospitality: ticketData.isHospitality || false,
-            hospitalityDetail: ticketData.hospitalityDetail || '',
-            seat: ticketData.seat || '',
-            seatReview: ticketData.seatReview || '',
-          };
-
-          const post: Post = {
-            id: doc.id,
-            status: data.status || 'published',
-            authorId: data.uid,
-            authorNickname: data.nickname || '',
-            isPublic: data.isPublic !== undefined ? data.isPublic : true,
-            title: data.title || '',
-            content: data.content || '',
-            firstAdvice: data.firstAdvice || '',
-            goods: data.goods || '',
-            images: data.imageUrls || [],
-            categories: data.categories || [],
-            match: matchInfo,
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt || data.createdAt,
-            postType: 'simple',
-            likeCount: data.likeCount || 0,
-            helpfulCount: data.helpfulCount || 0,
-          };
-
-          return post;
-        });
-        
-        const allPostsData = [...newPostsData, ...oldPostsData];
-
-        const formattedPosts: SimplePost[] = allPostsData.map(p => {
-          const pData = p as any; // Handle different data structures from 'posts' and 'simple-posts'
-          return {
-            id: pData.id!,
-            status: pData.status || 'published',
-            imageUrls: pData.images || pData.imageUrls || [],
-            season: pData.season || '',
-            episode: pData.title || pData.episode || '',
-            author: pData.authorNickname || pData.author || '',
-            authorId: pData.authorId,
-            authorAvatar: pData.authorAvatar,
-            league: pData.competition || (pData.match ? pData.match.competition : '') || pData.league || '',
-            matches: pData.match ? [pData.match] : (pData.matches || []),
-            likeCount: pData.likeCount || 0,
-            helpfulCount: pData.helpfulCount || 0,
-            createdAt: pData.createdAt ? (pData.createdAt as unknown as Timestamp).toDate() : undefined,
-            postType: 'post',
-          };
-        });
-
-        const spotsQuery = query(collection(db, 'spots'), where('authorId', '==', user.uid));
-        const spotsSnapshot = await getDocs(spotsQuery);
-        const spotsData: SpotData[] = spotsSnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            ...data,
-            id: doc.id,
-            type: 'spot',
-            createdAt: data.createdAt ? (data.createdAt as unknown as Timestamp).toDate() : new Date(),
-            nickname: data.nickname || '',
-            author: data.nickname || '',
-            comment: data.comment || '',
-            spotName: data.spotName || '',
-            imageUrls: data.imageUrls || [],
-          } as SpotData;
-        });
-
-        const formattedSpots: SpotData[] = spotsData.map(s => ({
-          ...s,
-          author: s.nickname || nickname,
-          authorAvatar: avatarUrl,
-          createdAt: s.createdAt,
-        }));
-
-        const combined = [...formattedPosts, ...formattedSpots];
-        combined.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
-        setCombinedItems(combined);
-
-        setPostCollectionMap(newMap);
-
-        console.log('Fetched Posts:', combined);
-        console.log('Fetched Spots:', spotsData);
-
-        setLoading(false);
       } else {
+        console.log("🚪 [MyPage] User not authenticated, redirecting to /login.");
         router.push('/login');
       }
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [router, toUnifiedPost]);
 
-  const handleDelete = async (postId: string, collectionName: string) => {
+  const handleDelete = async (postId: string) => {
+    if (!uid) return;
+    const collectionName = postCollectionMap.get(postId);
+    if (!collectionName) {
+      console.error('Collection for post not found');
+      return;
+    }
+
     if (window.confirm('本当にこの投稿を削除しますか？')) {
       try {
-        // Firestoreのドキュメント参照
-        const postRef = doc(db, collectionName, postId);
-
-        // 投稿に関連するコメントを一括削除 (一時的に無効化)
-      /*
-      const commentsQuery = query(collection(db, 'comments'), where('postId', '==', postId));
-      const commentsSnapshot = await getDocs(commentsQuery);
-      if (!commentsSnapshot.empty) {
-        const batch = writeBatch(db);
-        commentsSnapshot.forEach(doc => {
-          batch.delete(doc.ref);
-        });
-        await batch.commit();
-      }
-      */
-
-        // 投稿ドキュメント自体を削除
-        await deleteDoc(postRef);
-
-        // UIから削除
-        setCombinedItems((prevItems) => prevItems.filter((item) => item.id !== postId));
-
-        alert('投稿を削除しました。');
+        await deleteDoc(doc(db, collectionName, postId));
+        setCombinedItems(prevItems => prevItems.filter(item => item.id !== postId));
+        console.log('Post deleted successfully');
       } catch (error) {
-        console.error('削除エラー:', error);
-        alert('投稿の削除に失敗しました。');
+        console.error('Error deleting post: ', error);
       }
     }
   };
 
   const handleSave = async () => {
     if (!uid) return;
-    setMessage('保存中...');
+    setMessage('更新中...');
 
     let newAvatarUrl = avatarUrl;
+    if (avatarFile) {
+      try {
+        newAvatarUrl = await uploadImage(avatarFile);
+        setAvatarUrl(newAvatarUrl);
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        setMessage('画像のアップロードに失敗しました。');
+        return;
+      }
+    }
 
-    const uploadImage = async (file: File) => {
+    async function uploadImage(file: File): Promise<string> {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'default_preset');
+      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '');
       const response = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, {
         method: 'POST',
         body: formData,
       });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error.message || 'Image upload failed');
-      }
       return data.secure_url;
+    }
+
+    const userRef = doc(db, 'users', uid);
+    const updatedData = {
+      nickname,
+      bio,
+      socialLinks: { 
+        twitter: xLink, 
+        instagram: instagramLink, 
+        youtube: youtubeLink, 
+        note: noteLink 
+      },
+      residence,
+      travelFrequency,
+      overseasMatchCount,
+      visitedCountries,
+      avatarUrl: newAvatarUrl,
     };
 
+    if (birthdate) {
+      (updatedData as any).birthdate = Timestamp.fromDate(birthdate);
+    }
+
     try {
-      if (avatarFile) {
-        newAvatarUrl = await uploadImage(avatarFile);
-      }
-
-      const userRef = doc(db, 'users', uid);
-            const dataToSave: { [key: string]: any } = {
-        nickname,
-        bio,
-        xLink,
-        instagramLink,
-        youtubeUrl: youtubeLink,
-        noteLink,
-        residence,
-        travelFrequency,
-        overseasMatchCount,
-        visitedCountries,
-        avatarUrl: newAvatarUrl,
-      };
-
-      if (birthdate) {
-        dataToSave.birthdate = Timestamp.fromDate(birthdate);
-      }
-      
-      await updateDoc(userRef, dataToSave);
-
-      setMessage('プロフィールを更新しました！');
-      setAvatarFile(null); // Clear the file input after save
+      await updateDoc(userRef, updatedData);
+      setMessage('プロフィールが更新されました！');
+      setAvatarFile(null);
+      setAvatarPreview(null);
     } catch (error) {
-      console.error('Error updating profile: ', error);
       setMessage('プロフィールの更新に失敗しました。');
+      console.error('Error updating profile: ', error);
     }
   };
 
@@ -337,6 +315,7 @@ export default function MyPage() {
       console.error('Logout failed', error);
     }
   };
+
 
   if (loading) return <div className="p-6 dark:text-white">読み込み中...</div>;
 
@@ -350,7 +329,7 @@ export default function MyPage() {
       <div className="p-4 sm:p-6">
         <div className="flex flex-col items-center sm:flex-row sm:items-start sm:gap-6">
           {/* Avatar */}
-          <div className="relative h-24 w-24 sm:h-32 sm:w-32 rounded-full bg-gray-300 dark:bg-gray-600 overflow-hidden flex-shrink-0 border-4 border-white dark:border-gray-800 shadow-md">
+          <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden shadow-lg">
             <Image
               src={avatarUrl || '/default-avatar.png'}
               alt="User Avatar"
@@ -363,20 +342,20 @@ export default function MyPage() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{nickname}</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">@{userId}</p>
             {/* Social Links */}
-            <div className="flex items-center justify-center sm:justify-start gap-4 mt-2">
+            <div className="flex justify-center sm:justify-start space-x-4 mt-2">
               {xLink && (
                 <a href={xLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
-                  <FaXTwitter size={24} />
+                  <FaXTwitter size={20} />
                 </a>
               )}
               {instagramLink && (
                 <a href={instagramLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
-                  <FaInstagram size={24} />
+                  <FaInstagram size={20} />
                 </a>
               )}
               {youtubeLink && (
                 <a href={youtubeLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
-                  <FaYoutube size={24} />
+                  <FaYoutube size={20} />
                 </a>
               )}
               {noteLink && (
@@ -386,135 +365,115 @@ export default function MyPage() {
               )}
             </div>
             {/* Bio */}
-            {bio && <p className="mt-4 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap text-left">{bio}</p>}
+            <p className="text-gray-700 dark:text-gray-300 mt-4 whitespace-pre-wrap">{bio}</p>
           </div>
         </div>
-        
-        {/* Travel Stats */}
-        <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
-            <div className="space-y-4">
-              {residence && residence !== '未選択' && (
-                  <div className="flex items-center">
-                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400">居住地</span>
-                      <span className="text-sm text-gray-800 dark:text-gray-200">{residence}</span>
-                  </div>
-              )}
-              {travelFrequency && travelFrequency !== '0' && (
-                  <div className="flex items-center">
-                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400">観戦頻度</span>
-                      <span className="text-sm text-gray-800 dark:text-gray-200">{travelFrequencyOptions.find(o => o.value === travelFrequency)?.label || travelFrequency}</span>
-                  </div>
-              )}
-              {overseasMatchCount && overseasMatchCount !== '0' && (
-                  <div className="flex items-center">
-                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400">海外観戦試合数</span>
-                      <span className="text-sm text-gray-800 dark:text-gray-200">{overseasMatchCountOptions.find(o => o.value === overseasMatchCount)?.label || overseasMatchCount}</span>
-                  </div>
-              )}
-              {visitedCountries && visitedCountries.length > 0 && (
-                  <div className="flex items-start">
-                      <span className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400 pt-1">行ったことのある国</span>
-                      <span className="text-sm text-gray-800 dark:text-gray-200 flex-1">
-                        {visitedCountries.map(country => countryOptions.find(c => c.value === country)?.label || country).join('、')}
-                      </span>
-                  </div>
-              )}
-            </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 text-center">
+          <div className="p-3 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <p className="font-bold text-xl text-blue-600 dark:text-blue-400">{visitedCountries.length}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">訪問国数</p>
+          </div>
+          <div className="p-3 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <p className="font-bold text-xl text-blue-600 dark:text-blue-400">{overseasMatchCount || '0'}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">海外観戦</p>
+          </div>
+          <div className="p-3 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <p className="font-bold text-xl text-blue-600 dark:text-blue-400">{combinedItems.length}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">投稿数</p>
+          </div>
+          <div className="p-3 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <p className="font-bold text-xl text-blue-600 dark:text-blue-400">{bookmarkedItems.length}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">ブックマーク</p>
+          </div>
         </div>
       </div>
 
+      {/* Edit Profile Section */}
       <CollapsibleSection title="プロフィールを編集する">
-        <div className="p-6 space-y-6">
-
-          {/* プロフィール画像 */}
-          <div className="space-y-2">
-            <label className="block text-sm font-bold dark:text-gray-300">プロフィール画像</label>
-            <div className="flex items-center gap-4">
-              <div style={{ position: 'relative', width: '96px', height: '96px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
-                <Image
-                  src={avatarPreview || avatarUrl || '/no-image.png'}
-                  alt="Avatar"
-                  fill
-                  style={{ objectFit: 'cover' }}
-                />
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    const file = e.target.files[0];
-                    setAvatarFile(file);
-                    setAvatarPreview(URL.createObjectURL(file));
-                  }
-                }}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+        <div className="p-4 sm:p-6 space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-inner">
+          {/* Avatar Upload */}
+          <div className="flex items-center space-x-4">
+            <div className="relative w-20 h-20 rounded-full overflow-hidden">
+              <Image
+                src={avatarPreview || avatarUrl || '/default-avatar.png'}
+                alt="Avatar Preview"
+                fill
+                className="object-cover"
               />
             </div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  const file = e.target.files[0];
+                  setAvatarFile(file);
+                  setAvatarPreview(URL.createObjectURL(file));
+                }
+              }}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-gray-300 dark:hover:file:bg-gray-600"
+            />
           </div>
 
-          {/* ニックネーム */}
+          {/* Nickname */}
           <div className="space-y-2">
-            <label className="text-sm font-semibold dark:text-gray-300">ニックネーム</label>
-            <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
+            <label htmlFor="nickname" className="text-sm font-semibold dark:text-gray-300">ニックネーム</label>
+            <input type="text" id="nickname" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
           </div>
-          
-          {/* ユーザーID */}
+
+          {/* Bio */}
           <div className="space-y-2">
-            <label className="text-sm font-semibold dark:text-gray-300">ユーザーID（@ID）</label>
-            <div className="flex items-center w-full">
-              <span className="text-gray-500 dark:text-gray-400 mr-1">@</span>
-              <input type="text" value={userId} readOnly className="rounded-lg px-3 py-2 bg-gray-200 dark:bg-gray-800 dark:text-gray-400 focus:outline-none border-none w-full cursor-not-allowed" />
+            <label htmlFor="bio" className="text-sm font-semibold dark:text-gray-300">自己紹介</label>
+            <textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} rows={4} className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
+          </div>
+
+          {/* Social Links */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label htmlFor="xLink" className="text-sm font-semibold dark:text-gray-300">X (Twitter) リンク</label>
+              <input type="url" id="xLink" value={xLink} onChange={(e) => setXLink(e.target.value)} className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="instagramLink" className="text-sm font-semibold dark:text-gray-300">Instagram リンク</label>
+              <input type="url" id="instagramLink" value={instagramLink} onChange={(e) => setInstagramLink(e.target.value)} className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="youtubeLink" className="text-sm font-semibold dark:text-gray-300">YouTube リンク</label>
+              <input type="url" id="youtubeLink" value={youtubeLink} onChange={(e) => setYoutubeLink(e.target.value)} className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="noteLink" className="text-sm font-semibold dark:text-gray-300">note リンク</label>
+              <input type="url" id="noteLink" value={noteLink} onChange={(e) => setNoteLink(e.target.value)} className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
             </div>
           </div>
 
-          {/* 自己紹介 */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold dark:text-gray-300">自己紹介</label>
-            <textarea value={bio} onChange={(e) => setBio(e.target.value)} className="w-full mt-1 rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" rows={4}></textarea>
-          </div>
-
-          {/* SNSリンク */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold dark:text-gray-300">X (Twitter)</label>
-            <input type="text" value={xLink} onChange={(e) => setXLink(e.target.value)} placeholder="https://twitter.com/your_id" className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-semibold dark:text-gray-300">Note</label>
-            <input type="text" value={noteLink} onChange={(e) => setNoteLink(e.target.value)} placeholder="https://note.com/your_id" className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-semibold dark:text-gray-300">YouTube</label>
-            <input type="text" value={youtubeLink} onChange={(e) => setYoutubeLink(e.target.value)} placeholder="https://youtube.com/channel/your_id" className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-semibold dark:text-gray-300">Instagram</label>
-            <input type="text" value={instagramLink} onChange={(e) => setInstagramLink(e.target.value)} placeholder="https://instagram.com/your_id" className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none" />
-          </div>
-
-          {/* 海外観戦歴 */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold dark:text-gray-300">海外観戦歴</label>
-            <select value={travelFrequency} onChange={(e) => setTravelFrequency(e.target.value)} className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none">
-              {travelFrequencyOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-          </div>
+          {/* Travel Stats */}
           <div className="space-y-2">
             <label className="text-sm font-semibold dark:text-gray-300">居住地</label>
             <select value={residence} onChange={(e) => setResidence(e.target.value)} className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none">
-              {countryOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+              {countryOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)} 
             </select>
           </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-semibold dark:text-gray-300">海外旅行の頻度</label>
+            <select value={travelFrequency} onChange={(e) => setTravelFrequency(e.target.value)} className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none">
+              {travelFrequencyOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)} 
+            </select>
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-semibold dark:text-gray-300">海外観戦回数</label>
             <select value={overseasMatchCount} onChange={(e) => setOverseasMatchCount(e.target.value)} className="w-full rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white focus:outline-none border-none">
-              {overseasMatchCountOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+              {overseasMatchCountOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)} 
             </select>
           </div>
 
           {/* 行ったことのある国 */}
           <div className="space-y-2">
-            <label className="text-sm font-semibold dark:text-gray-300">行ったことのある国（複数選択可）</label>
+            <label className="text-sm font-semibold dark:text-gray-300">行ったことのある国</label>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2 p-4 border rounded-md dark:border-gray-600">
               {countryOptions.map(option => (
                 <div key={option.value} className="flex items-center">
@@ -553,37 +512,38 @@ export default function MyPage() {
         </div>
       </CollapsibleSection>
 
+      {/* タブ */}
+      <div className="border-b border-gray-200 dark:border-gray-700">
+        <nav className="-mb-px flex space-x-8 px-4" aria-label="Tabs">
+          <button
+            onClick={() => setActiveTab('myPosts')}
+            className={`${activeTab === 'myPosts'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+          >
+            あなたの投稿
+          </button>
+          <button
+            onClick={() => setActiveTab('bookmarks')}
+            className={`${activeTab === 'bookmarks'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            aria-current={activeTab === 'bookmarks' ? 'page' : undefined}
+          >
+            保存した投稿
+          </button>
+        </nav>
+      </div>
+
       {/* 投稿一覧 */}
       <div className="p-4">
-        <div className="mb-6 mt-12">
-          <h2 className="text-lg font-bold mb-4 dark:text-white">あなたの投稿一覧</h2>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
-          {combinedItems.map((item) => (
-            <div key={item.id} className="relative group">
-              {'matches' in item ? (
-                <Link href={`/posts/${item.id}`} className="block">
-                  <PostCard post={item as SimplePost} />
-                </Link>
-              ) : (
-                <Link href={`/spots/${item.id}`} className="block">
-                  <SpotCard spot={item as SpotData} />
-                </Link>
-              )}
-              <div className="absolute top-2 right-2 z-10">
-                  <button
-                    onClick={() => handleDelete(item.id, 'matches' in item ? postCollectionMap.get(item.id) || 'posts' : 'spots')}
-                    className="bg-red-500 text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label="Delete"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </div>
-            </div>
-          ))}
-        </div>
+        {activeTab === 'myPosts' ? (
+          <PostGrid items={combinedItems} showDeleteButton={true} onDelete={handleDelete} />
+        ) : (
+          <PostGrid items={bookmarkedItems} showDeleteButton={false} />
+        )}
       </div>
 
       {/* がっつり余白 */}

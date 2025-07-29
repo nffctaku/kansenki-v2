@@ -10,12 +10,21 @@ service cloud.firestore {
     // USERS: Users can create their own user document, and can only read/write their own.
     match /users/{userId} {
       allow create: if request.auth != null;
-      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+            allow get: if request.auth != null;
+      allow list: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == userId;
+
+      // Rules for the 'bookmarks' subcollection
+      match /bookmarks/{bookmarkId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // POSTS: Anyone can read. Authenticated users can create. Author can update/delete.
-    match /posts/{postId} {
-      allow read: if true;
+        match /posts/{postId} {
+      allow get: if resource.data.isPublic == true || request.auth.uid == resource.data.authorId;
+      allow list: if request.auth != null;
+
       allow create: if request.auth != null;
       allow delete: if request.auth != null && request.auth.uid == resource.data.authorId;
 
@@ -37,8 +46,9 @@ service cloud.firestore {
     }
 
     // SIMPLE-POSTS (Legacy): Anyone can read. Authenticated users can create. Author can update/delete.
-    match /simple-posts/{postId} {
-      allow read: if true;
+        match /simple-posts/{postId} {
+      allow get: if resource.data.isPublic == true || request.auth.uid == resource.data.uid;
+      allow list: if request.auth != null;
       allow create: if request.auth != null;
       // Note: Legacy posts use 'uid' for author id.
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.uid;

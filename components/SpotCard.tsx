@@ -29,7 +29,7 @@ interface SpotCardProps {
   spot: SpotData;
 }
 
-const SpotCard: React.FC<SpotCardProps> = ({ spot }) => {
+export default function SpotCard({ spot }: SpotCardProps) {
   const spotDate = spot.createdAt ? format(spot.createdAt, 'yyyy.MM.dd') : '';
   const rating = spot.type === 'hotel' ? spot.overallRating : spot.rating;
 
@@ -75,4 +75,4 @@ const SpotCard: React.FC<SpotCardProps> = ({ spot }) => {
   );
 };
 
-export default SpotCard;
+
