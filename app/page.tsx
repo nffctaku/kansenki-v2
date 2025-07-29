@@ -87,7 +87,8 @@ export default function HomePage() {
           title: post.episode,
           subtext: (post.matches?.[0] ? `${post.matches[0].homeTeam || post.matches[0].teamA} vs ${post.matches[0].awayTeam || post.matches[0].teamB}` : '試合情報なし') || null,
           imageUrls: post.imageUrls || [],
-          author: {
+                    author: {
+            id: post.authorId || '', // Add authorId here
             nickname: post.author as string,
             avatar: post.authorAvatar,
           },
