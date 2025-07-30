@@ -29,7 +29,7 @@ export default function HomePage() {
       try {
         // Fetch from 'posts' (new format)
         const postsCollection = collection(db, 'posts');
-        const qNew = query(postsCollection, where("isPublic", "==", true), orderBy('createdAt', 'desc'), limit(50));
+        const qNew = query(postsCollection, orderBy('createdAt', 'desc'), limit(50));
         const snapshotNew = await getDocs(qNew);
         const newPosts: SimplePost[] = snapshotNew.docs.map((doc) => {
           const d = doc.data();

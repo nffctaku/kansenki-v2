@@ -506,9 +506,13 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
       const finalImageUrls = [...formData.existingImageUrls, ...newImageUrls];
 
       // Map form data to the Firestore Post schema
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      const userNickname = (userDocSnap.exists() && userDocSnap.data().nickname) ? userDocSnap.data().nickname : 'NoName';
+
       const postData: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'likeCount' | 'helpfulCount'> & { updatedAt: any, createdAt?: any } = {
         authorId: user.uid,
-        authorNickname: formData.authorNickname,
+        authorNickname: userNickname,
         postType: formData.postType,
         parentPostId: formData.parentPostId || null,
         title: formData.title,

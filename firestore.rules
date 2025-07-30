@@ -1,74 +1,77 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Deny all reads and writes by default.
+    // By default, deny all reads and writes.
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // USERS: Users can create their own user document, and can only read/write their own.
+    // USERS
+    // Users can create their own profile.
+    // They can only read, update, or delete their own profile.
     match /users/{userId} {
       allow create: if request.auth != null;
-            allow get: if request.auth != null;
-      allow list: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == userId;
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
 
-      // Rules for the 'bookmarks' subcollection
+      // Bookmarks are private to the user.
       match /bookmarks/{bookmarkId} {
         allow read, write, delete: if request.auth != null && request.auth.uid == userId;
       }
     }
 
-    // POSTS: Anyone can read. Authenticated users can create. Author can update/delete.
-        match /posts/{postId} {
-      allow get: if resource.data.isPublic == true || request.auth.uid == resource.data.authorId;
-      allow list: if request.auth != null;
-
+    // POSTS (New format)
+    match /posts/{postId} {
+      // Allow reading a single document for anyone, so the client can check permissions.
+      allow get: if true;
+      // Allow listing for anyone, but with a limit to prevent abuse.
+      allow list: if request.query.limit <= 100;
+      // Authenticated users can create posts.
       allow create: if request.auth != null;
-      allow delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+      // Only the author can update or delete their post.
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
 
-      allow update: if request.auth != null && (
-        // Case 1: The user is the author, they can update everything.
-        request.auth.uid == resource.data.authorId ||
-        // Case 2: Another authenticated user is liking/unliking.
-        // We prevent content vandalism by ensuring key fields are not changed.
-        (request.resource.data.authorId == resource.data.authorId &&
-         request.resource.data.title == resource.data.title &&
-         request.resource.data.content == resource.data.content)
-      );
-
-      // Rules for the 'likes' subcollection
+      // Likes subcollection
       match /likes/{userId} {
+        // Anyone can see who liked a post.
+        allow read, list: if true;
+        // Only the authenticated user can create/delete their own like.
         allow create, delete: if request.auth != null && request.auth.uid == userId;
-        allow read: if request.auth != null && request.auth.uid == userId;
       }
     }
 
-    // SIMPLE-POSTS (Legacy): Anyone can read. Authenticated users can create. Author can update/delete.
-        match /simple-posts/{postId} {
-      allow get: if resource.data.isPublic == true || request.auth.uid == resource.data.uid;
-      allow list: if request.auth != null;
+    // SIMPLE-POSTS (Legacy format)
+    match /simple-posts/{postId} {
+      // Allow reading a single document for anyone, so the client can check permissions.
+      allow get: if true;
+      // Allow listing for anyone, but with a limit to prevent abuse.
+      allow list: if request.query.limit <= 100;
       allow create: if request.auth != null;
-      // Note: Legacy posts use 'uid' for author id.
+      // Only the author can update or delete their post (using legacy 'uid' field).
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
+
+      match /likes/{userId} {
+        allow read, list: if true;
+        allow create, delete: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
-    // SIMPLE-TRAVELS: Anyone can read. Authenticated users can create. Only the author can update/delete.
+    // SIMPLE-TRAVELS (Legacy format)
     match /simple-travels/{travelId} {
+      // Travels are public.
       allow read: if true;
       allow create: if request.auth != null;
-      // Note: Legacy travels use 'uid' for author id.
+      // Only the author can update or delete (using legacy 'uid' field).
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
     }
 
-    // SPOTS: Anyone can read. Authenticated users can create. Author can update/delete.
+    // SPOTS
     match /spots/{spotId} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
 
-      // Rules for comments on spots
       match /comments/{commentId} {
         allow read: if true;
         allow create: if request.auth != null;

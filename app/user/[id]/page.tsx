@@ -95,8 +95,7 @@ export default function UserPostsPage() {
         const postsCollection = collection(db, 'posts');
         const qNew = query(
           postsCollection,
-          where('authorId', '==', userUid),
-          where('isPublic', '==', true)
+          where('authorId', '==', userUid)
         );
         const snapshotNew = await getDocs(qNew);
         console.log('New posts fetched:', snapshotNew.docs.length);

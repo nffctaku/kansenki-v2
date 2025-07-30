@@ -3,6 +3,7 @@ import MenuDrawer from './components/MenuDrawer';
 
 import { Analytics } from '@vercel/analytics/react';
 import { ThemeProvider } from './components/ThemeProvider';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -18,14 +19,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           enableSystem
           disableTransitionOnChange
         >
-          <div className="relative min-h-screen">
-            <MenuDrawer />
-            <main className="pt-16 pb-24">
-              {children}
-            </main>
+          <AuthProvider>
+            <div className="relative min-h-screen">
+              <MenuDrawer />
+              <main className="pt-16 pb-24">
+                {children}
+              </main>
 
-            <Analytics />
-          </div>
+              <Analytics />
+            </div>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

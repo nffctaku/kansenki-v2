@@ -28,7 +28,7 @@ export function usePostStats(): PostStats {
         const postsCount = postsSnapshot.size;
 
         // Count public posts from 'posts' collection
-        const publicPostsQuery = query(postsCollection, where("isPublic", "==", true));
+        const publicPostsQuery = query(postsCollection, where("status", "==", "published"));
         const publicPostsSnapshot = await getDocs(publicPostsQuery);
         const publicPostsCount = publicPostsSnapshot.size;
 
