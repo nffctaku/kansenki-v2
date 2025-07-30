@@ -18,8 +18,12 @@ export interface Transport {
 
 export interface Post {
   id: string;
+  author: {
+    id: string;
+    name: string;
+    image?: string | null;
+  };
   authorId: string;
-  authorNickname: string;
   status: 'published' | 'draft';
   title: string;
   content: string; // memories

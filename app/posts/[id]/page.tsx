@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import type { DocumentData, DocumentSnapshot, FirestoreError } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -21,6 +21,11 @@ import { airlineOptions, seatClassOptions } from '@/components/data';
 import LikeButton from '@/components/LikeButton';
 import ShareButton from '@/components/ShareButton';
 import BookmarkButton from '../../components/BookmarkButton';
+
+type UserInfo = {
+  nickname: string;
+  avatarUrl?: string;
+};
 
 // Helper component for star ratings
 const StarRating = ({ rating }: { rating: number }) => (
@@ -69,10 +74,16 @@ const normalizePostData = (data: DocumentData, docId: string): Post => {
     seatReview: matchSource.seatReview || '',
   } : { competition: '', season: '', date: '', kickoff: '', homeTeam: '', awayTeam: '', homeScore: '', awayScore: '', stadium: '', ticketPrice: '', ticketPurchaseRoute: '', ticketPurchaseRouteUrl: '', ticketTeam: '', isTour: false, isHospitality: false, hospitalityDetail: '', seat: '', seatReview: '' };
 
+  const authorInfo = {
+    id: data.authorId || (data.author && data.author.id) || data.uid,
+    name: data.authorName || (data.author && data.author.name) || '名無し',
+    image: data.authorImage || (data.author && data.author.image) || null,
+  };
+
   return {
     id: docId,
-    author: data.author || { id: data.uid, name: data.authorName, image: data.authorImage },
-    authorId: data.authorId || data.uid,
+    author: authorInfo,
+    authorId: (data.author && data.author.id) || data.authorId || data.uid,
     title: data.title || '',
     content: data.content || '',
     images: data.images || [],
@@ -109,63 +120,70 @@ export default function PostDetailPage() {
   const { user } = useAuth();
 
   const [post, setPost] = useState<Post | null>(null);
+  const [travel, setTravel] = useState<SimpleTravel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     const fetchPost = async () => {
-      // Wait until id is available and auth state is resolved.
-      if (!id || user === undefined) {
+      if (!id || typeof id !== 'string') {
+        setNotFound(true);
+        setLoading(false);
         return;
       }
 
-      setLoading(true);
-      
       try {
-        let postData: Post | null = null;
-        let postFound = false;
+        const postRef = doc(db, 'posts', id);
+        const postDoc = await getDoc(postRef);
 
-        // 1. Attempt to fetch from 'posts' collection.
-        try {
-          const postRef = doc(db, 'posts', id);
-          const docSnap = await getDoc(postRef);
-          if (docSnap.exists()) {
-            postData = normalizePostData(docSnap.data(), docSnap.id);
-            postFound = true;
-          }
-        } catch (error) {
-          console.log("Could not fetch from 'posts', likely a permissions issue. Trying 'simple-posts'.", error);
+        if (!postDoc.exists()) {
+          setNotFound(true);
+          setLoading(false);
+          return;
         }
 
-        // 2. If not found in 'posts', attempt to fetch from 'simple-posts'.
-        if (!postFound) {
-          const simplePostRef = doc(db, 'simple-posts', id);
-          const simpleDocSnap = await getDoc(simplePostRef);
-          if (simpleDocSnap.exists()) {
-            postData = normalizePostData(simpleDocSnap.data(), simpleDocSnap.id);
-            postFound = true;
-          }
-        }
+        const postData = postDoc.data();
+        let authorData: { nickname?: string; avatarUrl?: string } = {};
 
-        // 3. If a post was found and processed, merge any associated travel data.
-        if (postFound && postData) {
-          if (postData.travelId) {
-            const travelRef = doc(db, 'simple-travels', postData.travelId);
-            const travelSnap = await getDoc(travelRef);
-            if (travelSnap.exists()) {
-              const travelData = travelSnap.data() as SimpleTravel;
-              postData = { ...postData, ...travelData };
+        if (postData.authorId) {
+          try {
+            const usersCollection = collection(db, 'users');
+            const userQuery = query(usersCollection, where('uid', '==', postData.authorId));
+            const userSnapshot = await getDocs(userQuery);
+
+            if (!userSnapshot.empty) {
+              const userDoc = userSnapshot.docs[0];
+              const userData = userDoc.data();
+              authorData = {
+                nickname: userData.nickname,
+                avatarUrl: userData.avatarUrl,
+              };
             }
+          } catch (error) {
+            console.error("Error fetching author's user data:", error);
           }
-          setPost(postData);
-        } else {
-          // 4. If not found in either collection.
-          setError('投稿が見つからないか、アクセス権がありません。');
         }
 
+        const combinedData = {
+          ...postData,
+          authorName: authorData.nickname || postData.author,
+          authorImage: authorData.avatarUrl,
+        };
+
+        const normalizedPost = normalizePostData(combinedData, postDoc.id);
+        setPost(normalizedPost);
+
+        if (normalizedPost.travelId) {
+          const travelRef = doc(db, 'simple-travels', normalizedPost.travelId);
+          const travelDoc = await getDoc(travelRef);
+          if (travelDoc.exists()) {
+            setTravel(travelDoc.data() as SimpleTravel);
+          }
+        }
       } catch (e) {
         console.error('Error fetching post:', e);
-        setError('投稿の取得中に予期せぬエラーが発生しました。');
+        setError('投稿の読み込み中にエラーが発生しました。');
       } finally {
         setLoading(false);
       }
@@ -195,7 +213,7 @@ export default function PostDetailPage() {
     spots,
     goods,
     firstAdvice,
-    authorNickname,
+    author,
     authorId,
 
     outboundTotalDuration,
@@ -252,9 +270,9 @@ export default function PostDetailPage() {
       <div className="mb-4 px-2">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{title}</h1>
         <div className="mt-2 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <Link href={`/user/${authorId}`} className="text-slate-700 dark:text-slate-300 hover:underline">
-              投稿者: {authorNickname}
+          <div className="flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400">
+            <Link href={`/user/${authorId}`} className="flex items-center space-x-2 hover:underline">
+              <span>{author?.name || '投稿者'}</span>
             </Link>
             <span className="text-slate-500 dark:text-slate-400">•</span>
             <span className="text-sm text-slate-500 dark:text-slate-400">

@@ -4,7 +4,6 @@
     "paths": {
       "@/components/*": ["./components/*"],
       "@/contexts/*": ["./contexts/*"],
-
       "@/lib/*": ["./lib/*"],
       "@/types/*": ["./types/*"],
       "@/hooks/*": ["./hooks/*"],

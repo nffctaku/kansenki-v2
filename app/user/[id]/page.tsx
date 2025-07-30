@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, limit } from 'firebase/firestore';
 export const dynamic = 'force-dynamic';
 
 import { db } from '@/lib/firebase';
@@ -71,11 +71,12 @@ export default function UserPostsPage() {
       console.log('Fetching data for user:', userId);
       setLoading(true);
       try {
-        // ユーザーのUIDを使って、該当するユーザーをusersコレクションから直接取得します。
-        const userRef = doc(db, 'users', userId);
-        const userDoc = await getDoc(userRef);
+        // ユーザーのUIDを使って、usersコレクションから該当ユーザーを検索します。
+        const usersCollection = collection(db, 'users');
+        const userQuery = query(usersCollection, where('uid', '==', userId));
+        const userSnapshot = await getDocs(userQuery);
 
-        if (!userDoc.exists()) {
+        if (userSnapshot.empty) {
           // 該当ユーザーが見つからなかった場合
           setNotFound(true);
           setLoading(false);
@@ -83,8 +84,9 @@ export default function UserPostsPage() {
         }
 
         // ユーザー情報と、投稿の検索に使う内部的なID（UID）を取得します。
+        const userDoc = userSnapshot.docs[0];
         const userData = userDoc.data();
-        const userUid = userDoc.id; // This is the UID, which is what we need for posts query
+        const userUid = userId; // The ID from the URL is the UID we need for posts query
 
         // 画面に表示するためのユーザー情報をセットします。
         setUserInfo(userData as UserInfo);
@@ -95,7 +97,8 @@ export default function UserPostsPage() {
         const postsCollection = collection(db, 'posts');
         const qNew = query(
           postsCollection,
-          where('authorId', '==', userUid)
+          where('authorId', '==', userUid),
+          limit(100)
         );
         const snapshotNew = await getDocs(qNew);
         console.log('New posts fetched:', snapshotNew.docs.length);
@@ -122,7 +125,7 @@ export default function UserPostsPage() {
 
         // 古いフォーマットの投稿 ('simple-posts'コレクション)
         const simplePostsCollection = collection(db, 'simple-posts');
-        const qLegacy = query(simplePostsCollection, where('uid', '==', userUid));
+        const qLegacy = query(simplePostsCollection, where('uid', '==', userUid), limit(100));
         const snapshotLegacy = await getDocs(qLegacy);
         console.log('Legacy posts fetched:', snapshotLegacy.docs.length);
         const legacyPosts: SimplePost[] = snapshotLegacy.docs.map((doc) => {
