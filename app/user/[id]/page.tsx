@@ -117,12 +117,23 @@ export default function UserPostsPage() {
 
         const fetchCollection = async (collectionName: string, type: 'post' | 'simple-post' | 'spot') => {
           const collRef = collection(db, collectionName);
-          const q = query(collRef, where('authorId', '==', userId), limit(50));
-          const querySnapshot = await getDocs(q);
-          const unifiedPosts = querySnapshot.docs
-            .map((doc) => toUnifiedPost({ id: doc.id, ...doc.data() }, type, userData))
-            .filter((p): p is UnifiedPost => p !== null);
-          return unifiedPosts;
+          
+          // Query for new data structure
+          const q1 = query(collRef, where('authorId', '==', userId), limit(50));
+          
+          // Query for old data structure (author.id)
+          const q2 = query(collRef, where('author.id', '==', userId), limit(50));
+
+          const [snapshot1, snapshot2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+
+          const posts1 = snapshot1.docs.map(doc => toUnifiedPost({ ...doc.data(), id: doc.id }, type, userData));
+          const posts2 = snapshot2.docs.map(doc => toUnifiedPost({ ...doc.data(), id: doc.id }, type, userData));
+
+          // Combine and remove duplicates
+          const combined = [...posts1, ...posts2].filter(p => p !== null) as UnifiedPost[];
+          const uniquePosts = Array.from(new Map(combined.map(p => [p.id, p])).values());
+          
+          return uniquePosts;
         };
 
         const postPromises = [
