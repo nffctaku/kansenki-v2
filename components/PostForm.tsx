@@ -23,7 +23,6 @@ import CategorySection from './post-form/CategorySection';
 
 const initialFormData: PostFormData = {
   id: null,
-  authorNickname: '',
   postType: 'new',
   parentPostId: undefined,
   title: '',
@@ -88,38 +87,33 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
   const [selectedParentPostId, setSelectedParentPostId] = useState<string | null>(null);
   const [loadingUserPosts, setLoadingUserPosts] = useState(false);
 
-
-
   useEffect(() => {
     if (navigationUrl) {
       router.push(navigationUrl);
     }
   }, [navigationUrl, router]);
 
-
-
-    // Normalizes data from 'simple-posts' (legacy)
-    const normalizeOldPostToFormData = (oldData: DocumentData): Partial<PostFormData> => {
-        const oldMatch = (oldData.matches && oldData.matches[0]) || {};
-        const matchInfo: MatchInfo = {
-            competition: oldMatch.competition || '',
-            season: oldData.season || oldMatch.season || '',
-            date: oldMatch.date || '',
-            kickoff: oldMatch.kickoff || '',
-            homeTeam: oldMatch.homeTeam || oldMatch.teamA || '',
-            awayTeam: oldMatch.awayTeam || oldMatch.teamB || '',
-            homeScore: String(oldMatch.homeScore ?? ''),
-            awayScore: String(oldMatch.awayScore ?? ''),
-            stadium: oldMatch.stadium || '',
-            ticketPrice: String(oldMatch.ticketPrice ?? ''),
-            ticketPurchaseRoute: oldMatch.ticketPurchaseRoute || '',
-            ticketPurchaseRouteUrl: oldMatch.ticketPurchaseRouteUrl || '',
-            ticketTeam: oldMatch.ticketTeam || '',
-            isTour: oldMatch.isTour || false,
-            isHospitality: oldMatch.isHospitality || false,
-            hospitalityDetail: oldMatch.hospitalityDetail || '',
-            seat: oldMatch.seat || '',
-            seatReview: oldMatch.seatReview || '',
+  const normalizeOldPostToFormData = (oldData: DocumentData): Partial<PostFormData> => {
+    const oldMatch = (oldData.matches && oldData.matches[0]) || {};
+    const matchInfo: MatchInfo = {
+      competition: oldMatch.competition || '',
+      season: oldData.season || oldMatch.season || '',
+      date: oldMatch.date || '',
+      kickoff: oldMatch.kickoff || '',
+      homeTeam: oldMatch.homeTeam || oldMatch.teamA || '',
+      awayTeam: oldMatch.awayTeam || oldMatch.teamB || '',
+      homeScore: String(oldMatch.homeScore ?? ''),
+      awayScore: String(oldMatch.awayScore ?? ''),
+      stadium: oldMatch.stadium || '',
+      ticketPrice: String(oldMatch.ticketPrice ?? ''),
+      ticketPurchaseRoute: oldMatch.ticketPurchaseRoute || '',
+      ticketPurchaseRouteUrl: oldMatch.ticketPurchaseRouteUrl || '',
+      ticketTeam: oldMatch.ticketTeam || '',
+      isTour: oldMatch.isTour || false,
+      isHospitality: oldMatch.isHospitality || false,
+      hospitalityDetail: oldMatch.hospitalityDetail || '',
+      seat: oldMatch.seat || '',
+      seatReview: oldMatch.seatReview || '',
     };
 
     const costs = oldData.cost ? Object.entries(oldData.cost).map(([category, amount]) => ({
@@ -198,7 +192,6 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
 
     return {
       id: post.id,
-      authorNickname: post.authorNickname || '',
       postType: post.postType || 'new',
       parentPostId: post.parentPostId,
       title: post.title || '',
@@ -235,10 +228,9 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
 
       const userDocRef = doc(db, 'users', user.uid);
       const userDocSnap = await getDoc(userDocRef);
-      const userNickname = userDocSnap.exists() ? userDocSnap.data().nickname : '';
 
       if (!isEditMode || !postId) {
-        setFormData({ ...initialFormData, authorNickname: userNickname, postType: 'new' });
+        setFormData({ ...initialFormData, postType: 'new' });
         setIsFetching(false);
         return;
       }
@@ -273,7 +265,7 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
             ...initialFormData,
             ...normalizedData,
             id: postId,
-            authorNickname: userNickname,
+  
           });
           setIsLegacyPost(collectionName === 'simple-posts');
 
@@ -361,7 +353,6 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
 
         setFormData({
           ...initialFormData,
-          authorNickname: formData.authorNickname,
           postType: 'additional',
           parentPostId: parentPost.id,
           travelStartDate: parentPost.travelStartDate || '',
@@ -388,14 +379,13 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
       setFormData({
         ...initialFormData,
         postType: 'additional',
-        authorNickname: formData.authorNickname,
       });
     }
-  }, [selectedParentPostId, userPosts, formData.postType, formData.authorNickname, isEditMode]);
+  }, [selectedParentPostId, userPosts, formData.postType, isEditMode]);
 
   const handlePostTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPostType = e.target.value as 'new' | 'additional';
-    setFormData(prev => ({ ...initialFormData, authorNickname: prev.authorNickname, postType: newPostType }));
+    setFormData(prev => ({ ...initialFormData, postType: newPostType }));
     if (newPostType === 'new') {
       setSelectedParentPostId(null);
     }
@@ -430,7 +420,6 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
           id: null,
           postType: 'additional',
           parentPostId: parentPost.id,
-          authorNickname: prevData.authorNickname,
           status: parentPost.status ?? 'published',
           title: '',
           match: initialFormData.match,
@@ -445,7 +434,6 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
       setFormData(prevData => ({
         ...initialFormData,
         postType: 'additional',
-        authorNickname: prevData.authorNickname,
       }));
     }
   };
@@ -506,13 +494,12 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
       const finalImageUrls = [...formData.existingImageUrls, ...newImageUrls];
 
       // Map form data to the Firestore Post schema
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-      const userNickname = (userDocSnap.exists() && userDocSnap.data().nickname) ? userDocSnap.data().nickname : 'NoName';
-
       const postData: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'likeCount' | 'helpfulCount'> & { updatedAt: any, createdAt?: any } = {
-        authorId: user.uid,
-        authorNickname: userNickname,
+        author: {
+          id: user.uid,
+          name: user.displayName || user.email || '名無し',
+          image: user.photoURL || '',
+        },
         postType: formData.postType,
         parentPostId: formData.parentPostId || null,
         title: formData.title,

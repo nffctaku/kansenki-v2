@@ -23,7 +23,7 @@ export interface Post {
     name: string;
     image?: string | null;
   };
-  authorId: string;
+
   status: 'published' | 'draft';
   title: string;
   content: string; // memories
@@ -66,7 +66,6 @@ export interface SectionProps {
 
 export interface PostFormData {
   id: string | null;
-  authorNickname: string;
   postType: 'new' | 'additional' | 'simple';
   parentPostId?: string | null;
   title: string;
