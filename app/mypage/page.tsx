@@ -62,17 +62,19 @@ export default function MyPage() {
     if (!item || !item.id) return null;
 
     const post = item as any;
-    const authorProfile = authorProfiles.get(post.author?.id);
+    const authorProfile = authorProfiles.get(post.authorId || post.userId);
+
+    const authorId = post.authorId || post.userId || '';
+    const authorName = authorProfile?.nickname || post.authorName || '名無し';
+    const authorImage = authorProfile?.avatar || '/default-avatar.svg';
 
     const basePost: Omit<UnifiedPost, 'postType' | 'href' | 'originalData' | 'subtext' | 'league' | 'country'> = {
       id: post.id,
       title: post.title || post.spotName || '無題',
       imageUrls: post.imageUrls || (post.imageUrl ? [post.imageUrl] : []) || (post.image_url ? [post.image_url] : []) || (post.images ? post.images : []),
-      author: {
-        id: post.author?.id || post.userId || '',
-        nickname: authorProfile?.nickname || post.author?.name || '名無し',
-        avatar: authorProfile?.avatar || post.author?.image || '/default-avatar.svg',
-      },
+      authorId,
+      authorName,
+      authorImage,
       createdAt: post.createdAt instanceof Timestamp ? post.createdAt.toDate() : new Date(),
     };
 
@@ -82,7 +84,7 @@ export default function MyPage() {
         postType: 'post',
         subtext: post.content?.substring(0, 50) || null,
         league: post.competition || post.league || '',
-        country: post.country || '', // Add missing property
+        country: post.country || '',
         href: `/posts/${post.id}`,
         originalData: post,
       };
@@ -91,7 +93,7 @@ export default function MyPage() {
         ...basePost,
         postType: 'spot',
         subtext: post.address || null,
-        league: post.league || '', // Add missing property
+        league: post.league || '',
         country: post.country || '',
         href: `/spots/${post.id}`,
         originalData: post,
