@@ -24,7 +24,7 @@ import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } fro
 import { SimplePost } from '@/types/match';
 import { SpotData } from '@/components/SpotCard';
 import PostGrid from './PostGrid';
-import { UnifiedPost } from './types';
+import { UnifiedPost } from '@/types/post';
 
 export default function MyPage() {
   useTheme();
@@ -82,6 +82,7 @@ export default function MyPage() {
         postType: 'post',
         subtext: post.content?.substring(0, 50) || null,
         league: post.competition || post.league || '',
+        country: post.country || '', // Add missing property
         href: `/posts/${post.id}`,
         originalData: post,
       };
@@ -90,6 +91,7 @@ export default function MyPage() {
         ...basePost,
         postType: 'spot',
         subtext: post.address || null,
+        league: post.league || '', // Add missing property
         country: post.country || '',
         href: `/spots/${post.id}`,
         originalData: post,
