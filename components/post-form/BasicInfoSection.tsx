@@ -18,7 +18,7 @@ export default function BasicInfoSection({ formData, setFormData }: SectionProps
       <FormInput
         label="ニックネーム"
         type="text"
-        value={formData.authorNickname || ''}
+        value={formData.author?.name || ''}
         readOnly
         className="bg-gray-200 dark:bg-gray-800 cursor-not-allowed"
       />
