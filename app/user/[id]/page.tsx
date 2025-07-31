@@ -10,11 +10,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { FaInstagram, FaYoutube, FaXTwitter } from 'react-icons/fa6';
 
-
 import { useTheme } from 'next-themes';
 import PostCard from '@/components/PostCard';
 import SpotCard, { SpotData } from '@/components/SpotCard';
-import { UnifiedPost } from '@/mypage/types';
+import { UnifiedPost } from '@/types/post';
 import { SimplePost } from '@/types/match';
 import { travelFrequencyOptions, countryOptions, overseasMatchCountOptions } from '@/components/data';
 
@@ -33,35 +32,69 @@ type UserInfo = {
   visitedCountries?: string[];
 };
 
-const toUnifiedPost = (item: any, author: UserInfo | null): UnifiedPost | null => {
-  if (item.type === 'post' || item.postType === 'new' || item.postType === 'legacy') {
-    const post = item as SimplePost;
-        const matches = post.matches || [];
 
-    return {
-      id: post.id,
-      postType: 'post',
-            title: post.episode || '無題の投稿',
-      subtext: (matches[0] ? `${matches[0].homeTeam || matches[0].teamA} vs ${matches[0].awayTeam || matches[0].teamB}` : '試合情報なし') || null,
-            imageUrls: post.imageUrls || [],
-      author: {
-        id: post.authorId || (author?.id ?? ''),
-        nickname: post.author || (author?.nickname ?? '名無し'),
-        avatar: post.authorAvatar || author?.avatarUrl || '/default-avatar.svg',
-      },
-      createdAt: post.createdAt ? (post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)) : null,
-      league: post.league,
-      href: `/posts/${post.id}`,
-      originalData: post,
-    };
+
+const toUnifiedPost = (item: any, type: 'post' | 'simple-post' | 'spot', authorProfile?: UserInfo): UnifiedPost | null => {
+  if (!item || !item.id) return null;
+
+  const author = {
+    id: item.author?.id || '',
+    nickname: authorProfile?.nickname || item.author?.name || '名無し',
+    avatar: authorProfile?.avatarUrl || item.author?.image || '/default-avatar.svg',
+  };
+
+  switch (type) {
+    case 'post':
+      return {
+        id: item.id,
+        postType: 'post',
+        title: item.title || '無題の投稿',
+        subtext: item.match?.homeTeam && item.match?.awayTeam ? `${item.match.homeTeam} vs ${item.match.awayTeam}` : '試合情報なし',
+        imageUrls: item.imageUrls || [],
+        author: author,
+        createdAt: item.createdAt?.toDate() || new Date(),
+        league: item.match?.competition || '',
+        country: item.match?.country || '',
+        href: `/posts/${item.id}`,
+        originalData: item,
+      };
+    case 'simple-post':
+      return {
+        id: item.id,
+        postType: 'simple-post',
+        title: item.title || '無題の投稿',
+        subtext: item.teamA && item.teamB ? `${item.teamA} vs ${item.teamB}` : '試合情報なし',
+        imageUrls: item.imageUrls || [],
+        author: author,
+        createdAt: item.createdAt?.toDate() || new Date(),
+        league: item.league || '',
+        country: item.country || '',
+        href: `/simple-posts/${item.id}`,
+        originalData: item,
+      };
+    case 'spot':
+      return {
+        id: item.id,
+        postType: 'spot',
+        title: item.spotName || '無題のスポット',
+        subtext: item.address || '住所情報なし',
+        imageUrls: item.imageUrls || [],
+        author: author,
+        createdAt: item.createdAt?.toDate() || new Date(),
+        league: '',
+        country: item.country || '',
+        href: `/spots/${item.id}`,
+        originalData: item,
+      };
+    default:
+      return null;
   }
-  return null;
 };
 
 export default function UserPostsPage() {
   const { id } = useParams();
   useTheme();
-    const [items, setItems] = useState<(UnifiedPost | SpotData)[]>([]);
+    const [items, setItems] = useState<UnifiedPost[]>([]);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -71,119 +104,41 @@ export default function UserPostsPage() {
       console.log('Fetching data for user:', userId);
       setLoading(true);
       try {
-        // ユーザーのUIDを使って、usersコレクションから該当ユーザーを検索します。
         const usersCollection = collection(db, 'users');
-        const userQuery = query(usersCollection, where('uid', '==', userId));
-        const userSnapshot = await getDocs(userQuery);
+        const userDocRef = doc(db, 'users', userId);
+        const userDocSnap = await getDoc(userDocRef);
 
-        if (userSnapshot.empty) {
-          // 該当ユーザーが見つからなかった場合
+        if (!userDocSnap.exists()) {
           setNotFound(true);
           setLoading(false);
           return;
         }
 
-        // ユーザー情報と、投稿の検索に使う内部的なID（UID）を取得します。
-        const userDoc = userSnapshot.docs[0];
-        const userData = userDoc.data();
-        const userUid = userId; // The ID from the URL is the UID we need for posts query
-
-        // 画面に表示するためのユーザー情報をセットします。
-        setUserInfo(userData as UserInfo);
+        const userData = userDocSnap.data() as UserInfo;
+        setUserInfo(userData);
         console.log('User info fetched:', userData);
 
-        // 取得したUIDを使って、そのユーザーの投稿一覧を取得します。
-        // 新しいフォーマットの投稿 ('posts'コレクション)
-        const postsCollection = collection(db, 'posts');
-        const qNew = query(
-          postsCollection,
-          where('authorId', '==', userUid),
-          limit(100)
-        );
-        const snapshotNew = await getDocs(qNew);
-        console.log('New posts fetched:', snapshotNew.docs.length);
-        const newPosts: SimplePost[] = snapshotNew.docs.map((doc) => {
-          const d = doc.data();
-          return {
-            id: doc.id,
-            status: d.isPublic ? 'published' : 'draft',
-            imageUrls: d.images || d.imageUrls || d.existingImageUrls || [],
-            season: d.match?.season || '',
-            episode: d.title || '',
-            author: d.authorNickname || userData.nickname,
-            authorId: d.authorId || userUid,
-            authorAvatar: d.authorAvatar || userData.avatarUrl,
-            league: d.match?.competition || '',
-            matches: d.match ? [d.match] : [],
-            likeCount: d.likeCount || 0,
-            helpfulCount: d.helpfulCount || 0,
-            createdAt: d.createdAt?.toDate(),
-            postType: 'new',
-            type: 'post',
-          };
-        });
+        const fetchCollection = async (collectionName: string, type: 'post' | 'simple-post' | 'spot') => {
+          const collRef = collection(db, collectionName);
+          const q = query(collRef, where('author.id', '==', userId), limit(50));
+          const querySnapshot = await getDocs(q);
+          const unifiedPosts = querySnapshot.docs
+            .map(doc => toUnifiedPost({ id: doc.id, ...doc.data() }, type, userData))
+            .filter((p): p is UnifiedPost => p !== null);
+          return unifiedPosts;
+        };
 
-        // 古いフォーマットの投稿 ('simple-posts'コレクション)
-        const simplePostsCollection = collection(db, 'simple-posts');
-        const qLegacy = query(simplePostsCollection, where('uid', '==', userUid), limit(100));
-        const snapshotLegacy = await getDocs(qLegacy);
-        console.log('Legacy posts fetched:', snapshotLegacy.docs.length);
-        const legacyPosts: SimplePost[] = snapshotLegacy.docs.map((doc) => {
-          const d = doc.data();
-          return {
-            id: doc.id,
-            status: 'published',
-            imageUrls: d.imageUrls || [],
-            season: d.season || '',
-            episode: d.episode || '',
-            author: d.authorNickname || userData.nickname,
-            authorId: d.uid,
-            authorAvatar: d.authorAvatar || userData.avatarUrl,
-            league: d.league || '',
-            matches: d.matches || [],
-            likeCount: d.likeCount || 0,
-            helpfulCount: d.helpfulCount || 0,
-            createdAt: d.createdAt?.toDate(),
-            postType: 'simple',
-          };
-        });
+        const postPromises = [
+          fetchCollection('posts', 'post'),
+          fetchCollection('simple-posts', 'simple-post'),
+          fetchCollection('spots', 'spot'),
+        ];
 
-        // スポット情報を取得します。
-        const spotsCollection = collection(db, 'spots');
-        const qSpots = query(spotsCollection, where('authorId', '==', userUid));
-        const spotsSnapshot = await getDocs(qSpots);
-        console.log('Spots fetched:', spotsSnapshot.docs.length);
-        const spots: SpotData[] = spotsSnapshot.docs.map(doc => {
-          const d = doc.data();
-          return {
-            id: doc.id,
-            spotName: d.spotName,
-            comment: d.comment,
-            imageUrls: d.imageUrls || [],
-            createdAt: d.createdAt?.toDate() || new Date(0),
-            url: d.url,
-            country: d.country,
-            category: d.category,
-            type: d.type || 'spot',
-            author: d.author,
-            authorAvatar: d.authorAvatar,
-            rating: d.rating,
-            city: d.city,
-            overallRating: d.overallRating,
-          };
-        });
+        const [posts, simplePosts, spots] = await Promise.all(postPromises);
 
-        console.log('Combining all data...');
-        // 新旧の投稿を結合し、重複を排除します。
-        const allPosts = [...newPosts, ...legacyPosts].sort((a, b) => {
-          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return dateB - dateA;
-        });
-
-        const unifiedItems = allPosts.map(post => toUnifiedPost(post, userData as UserInfo)).filter(Boolean) as UnifiedPost[];
-
-        setItems(unifiedItems);
+        const combinedItems = [...posts, ...simplePosts, ...spots];
+        combinedItems.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+        setItems(combinedItems);
 
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -296,13 +251,12 @@ export default function UserPostsPage() {
     <p className="text-gray-500 dark:text-gray-400">投稿がありません。</p>
   ) : (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
-      {items.map((item) => (
-        'postType' in item && item.postType === 'post' ? (
-                    <PostCard key={item.id} post={item as UnifiedPost} />
-        ) : (
-          <SpotCard key={item.id} spot={item as SpotData} />
-        )
-      ))}
+      {items.map((item) => {
+        if (item.postType === 'spot') {
+          return <SpotCard key={item.id} spot={item.originalData as SpotData} />;
+        }
+        return <PostCard key={item.id} post={item} />;
+      })}
     </div>
   )}
 

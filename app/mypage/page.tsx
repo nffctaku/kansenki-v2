@@ -56,62 +56,54 @@ export default function MyPage() {
   const [postCollectionMap, setPostCollectionMap] = useState(new Map<string, string>());
   const [authorProfiles, setAuthorProfiles] = useState<Map<string, { nickname: string; avatar: string }>>(new Map());
 
+
+
   const toUnifiedPost = useCallback((item: any, type: string): UnifiedPost | null => {
+    if (!item || !item.id) return null;
+
+    const post = item as any;
+    const authorProfile = authorProfiles.get(post.author?.id);
+
+    const basePost: Omit<UnifiedPost, 'postType' | 'href' | 'originalData' | 'subtext' | 'league' | 'country'> = {
+      id: post.id,
+      title: post.title || post.spotName || '無題',
+      imageUrls: post.imageUrls || (post.imageUrl ? [post.imageUrl] : []) || (post.image_url ? [post.image_url] : []) || (post.images ? post.images : []),
+      author: {
+        id: post.author?.id || post.userId || '',
+        nickname: authorProfile?.nickname || post.author?.name || '名無し',
+        avatar: authorProfile?.avatar || post.author?.image || '/default-avatar.svg',
+      },
+      createdAt: post.createdAt instanceof Timestamp ? post.createdAt.toDate() : new Date(),
+    };
+
     if (type === 'posts' || type === 'simple-posts') {
-      const post = item as any; // Use 'any' to handle different structures
-      const convertedPost = {
-        ...post,
-        createdAt: post.createdAt instanceof Timestamp ? post.createdAt.toDate() : post.createdAt,
-      };
-
-      const matches = post.matches || (post.match ? [post.match] : []);
-
       return {
-        id: post.id,
+        ...basePost,
         postType: 'post',
-        title: post.episode || post.title || '無題の投稿',
-        subtext: (matches[0] ? `${matches[0].homeTeam || matches[0].teamA} vs ${matches[0].awayTeam || matches[0].teamB}` : '試合情報なし') || null,
-        imageUrls: post.imageUrls || [],
-        author: {
-                              id: post.author?.id || '',
-          nickname: authorProfiles.get(post.author?.id)?.nickname || post.author?.name || '名無し',
-          avatar: authorProfiles.get(post.author?.id)?.avatar || post.author?.image || '/default-avatar.svg',
-        },
-        createdAt: convertedPost.createdAt ?? null,
-        league: post.league,
-        href: `/${type}/${post.id}`,
-        originalData: convertedPost,
+        subtext: post.content?.substring(0, 50) || null,
+        league: post.competition || post.league || '',
+        href: `/posts/${post.id}`,
+        originalData: post,
       };
     } else if (type === 'spots') {
-      const spot = item as SpotData;
-      const convertedSpot = {
-        ...spot,
-        createdAt: spot.createdAt instanceof Timestamp ? spot.createdAt.toDate() : null,
-      };
-
       return {
-        id: spot.id,
+        ...basePost,
         postType: 'spot',
-        title: spot.spotName,
-        subtext: spot.country ?? null,
-        imageUrls: spot.imageUrls || [],
-        author: {
-                    id: auth.currentUser?.uid || '',
-          nickname: auth.currentUser?.displayName || '名無し',
-          avatar: auth.currentUser?.photoURL || '/default-avatar.svg',
-        },
-        createdAt: convertedSpot.createdAt ?? null,
-        href: `/spots/${spot.id}`,
-        originalData: convertedSpot,
+        subtext: post.address || null,
+        country: post.country || '',
+        href: `/spots/${post.id}`,
+        originalData: post,
       };
     }
+
     return null;
-  }, []);
+  }, [authorProfiles]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         console.log("✅ [MyPage] User is authenticated:", user.uid);
+        setUid(user.uid);
         setLoading(true);
         try {
           // ユーザープロファイル取得
@@ -133,69 +125,49 @@ export default function MyPage() {
             setInstagramLink(userData.socialLinks?.instagram || '');
             setTravelFrequency(userData.travelFrequency || '');
             setOverseasMatchCount(userData.overseasMatchCount || '');
+            if (userData.birthdate instanceof Timestamp) {
+              setBirthdate(userData.birthdate.toDate());
+            }
           } else {
             console.warn("⚠️ [MyPage] User profile not found in Firestore for UID:", user.uid);
           }
 
-          // ユーザーの投稿を取得
-          console.log("🔄 [MyPage] Fetching user's own posts...");
-          const postTypes = ['posts', 'simple-posts', 'spots'];
-          let allPosts: UnifiedPost[] = [];
-          const newPostCollectionMap: { [key: string]: string } = {};
-                    const authorIds = new Set<string>();
+          // ユーザーの投稿を取得 (author.id に統一)
+          console.log("🔄 [MyPage] Fetching user's own posts with author.id...");
+          const collectionsToQuery = ['posts', 'simple-posts', 'simple-travels'];
+          const allPosts: UnifiedPost[] = [];
+          const newPostCollectionMap = new Map<string, string>();
 
-          for (const type of postTypes) {
-            console.log(`[MyPage] Querying '${type}' collection for UID:`, user.uid);
-            const postsByAuthorUidQuery = query(collection(db, type), where('author.uid', '==', user.uid));
-            const postsByAuthorIdQuery = query(collection(db, type), where('authorId', '==', user.uid));
-
-            const [authorUidSnapshot, authorIdSnapshot] = await Promise.all([
-              getDocs(postsByAuthorUidQuery),
-              getDocs(postsByAuthorIdQuery)
-            ]);
-
-            const combinedDocs = [...authorUidSnapshot.docs, ...authorIdSnapshot.docs];
-            const uniqueDocs = Array.from(new Map(combinedDocs.map(doc => [doc.id, doc])).values());
-
-            console.log(`[MyPage] Found ${uniqueDocs.length} posts in '${type}' (combined).`);
-            uniqueDocs.forEach((doc) => {
-              const post = toUnifiedPost({ id: doc.id, ...doc.data() }, type);
-              if (post !== null) {
-                allPosts.push(post);
-                newPostCollectionMap[post.id] = type;
-                                const postData = doc.data() as SimplePost;
-                if (postData.authorId) authorIds.add(postData.authorId);
-              }
-            });
-          }
-
-          // Fetch author profiles
-          if (authorIds.size > 0) {
-            const profilesQuery = query(collection(db, 'users'), where('uid', 'in', Array.from(authorIds)));
-            const profilesSnapshot = await getDocs(profilesQuery);
-            const profiles = new Map<string, { nickname: string; avatar: string }>();
-            profilesSnapshot.forEach(doc => {
+          for (const collectionName of collectionsToQuery) {
+            const q = query(collection(db, collectionName), where('author.id', '==', user.uid));
+            const querySnapshot = await getDocs(q);
+            const posts = querySnapshot.docs.map(doc => {
               const data = doc.data();
-              profiles.set(data.uid, { nickname: data.nickname, avatar: data.avatarUrl });
-            });
-            setAuthorProfiles(profiles);
+              if (!newPostCollectionMap.has(doc.id)) { // 重複を避ける
+                newPostCollectionMap.set(doc.id, collectionName);
+                return toUnifiedPost({ id: doc.id, ...data }, collectionName);
+              }
+              return null;
+            }).filter((p): p is UnifiedPost => p !== null);
+            allPosts.push(...posts);
           }
 
           allPosts.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
-          console.log(`✅ [MyPage] Total unified posts: ${allPosts.length}`, allPosts);
+          console.log(`✅ [MyPage] Total unified posts: ${allPosts.length}`);
           setCombinedItems(allPosts);
-          setPostCollectionMap(new Map(Object.entries(newPostCollectionMap)));
+          setPostCollectionMap(newPostCollectionMap);
 
           // ブックマークした投稿を取得
           console.log("🔄 [MyPage] Fetching bookmarked posts...");
           const bookmarksRef = collection(db, 'users', user.uid, 'bookmarks');
           const bookmarksSnap = await getDocs(bookmarksRef);
           console.log(`[MyPage] Found ${bookmarksSnap.size} bookmarks.`);
-          let bookmarkedPosts: UnifiedPost[] = [];
+          const bookmarkedPosts: UnifiedPost[] = [];
 
           for (const bookmarkDoc of bookmarksSnap.docs) {
             const bookmark = bookmarkDoc.data();
             console.log(`[MyPage] Processing bookmark for postId: ${bookmark.postId}`);
+            const postTypes = ['posts', 'simple-posts', 'simple-travels', 'spots'];
             for (const type of postTypes) {
               const postRef = doc(db, type, bookmark.postId);
               const postSnap = await getDoc(postRef);
@@ -203,15 +175,16 @@ export default function MyPage() {
                 const post = toUnifiedPost({ id: postSnap.id, ...postSnap.data() }, type);
                 if (post !== null) {
                   bookmarkedPosts.push(post);
-                  break;
+                  break; // 次のブックマークへ
                 }
               }
             }
           }
           
           bookmarkedPosts.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
-          console.log(`✅ [MyPage] Total bookmarked posts: ${bookmarkedPosts.length}`, bookmarkedPosts);
+          console.log(`✅ [MyPage] Total bookmarked posts: ${bookmarkedPosts.length}`);
           setBookmarkedItems(bookmarkedPosts);
+
         } catch (error) {
           console.error("❌ [MyPage] Error fetching data:", error);
           setMessage('データの取得に失敗しました。');

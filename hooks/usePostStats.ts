@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '@/lib/firebase';
 
 export interface PostStats {
@@ -22,28 +22,15 @@ export function usePostStats(): PostStats {
       try {
         setStats(prev => ({ ...prev, loading: true, error: null }));
 
-        // Count posts from 'posts' collection (new format)
-        const postsCollection = collection(db, 'posts');
-        const postsSnapshot = await getDocs(postsCollection);
-        const postsCount = postsSnapshot.size;
-
-        // Count public posts from 'posts' collection
-        const publicPostsQuery = query(postsCollection, where("status", "==", "published"));
-        const publicPostsSnapshot = await getDocs(publicPostsQuery);
-        const publicPostsCount = publicPostsSnapshot.size;
-
-        // Count posts from 'simple-posts' collection (legacy format)
-        const simplePostsCollection = collection(db, 'simple-posts');
-        const simplePostsSnapshot = await getDocs(simplePostsCollection);
-        const simplePostsCount = simplePostsSnapshot.size;
-
-        // Total counts
-        const totalPosts = postsCount + simplePostsCount;
-        const totalPublicPosts = publicPostsCount + simplePostsCount; // simple-posts are assumed to be public
+        const functions = getFunctions();
+        const getPostStats = httpsCallable(functions, 'getPostStats');
+        const result = await getPostStats();
+        
+        const data = result.data as { totalPosts: number };
 
         setStats({
-          totalPosts,
-          publicPosts: totalPublicPosts,
+          totalPosts: data.totalPosts,
+          publicPosts: 0, // Public posts count is not available from this function yet
           loading: false,
           error: null,
         });

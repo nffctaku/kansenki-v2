@@ -103,3 +103,21 @@ export interface PostFormData {
   categories: string[];
   isPublic: boolean;
 }
+
+export interface UnifiedPost {
+  id: string;
+  postType: 'post' | 'simple-post' | 'spot';
+  title: string;
+  subtext: string;
+  imageUrls: string[];
+  author: {
+    id: string;
+    nickname: string;
+    avatar: string;
+  };
+  createdAt: Date;
+  league: string;
+  country: string;
+  href: string;
+  originalData: any; 
+}

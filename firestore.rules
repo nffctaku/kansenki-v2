@@ -3,83 +3,67 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // By default, deny all reads and writes.
-    match /{document=**} {
-      allow read, write: if false;
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
     }
 
     // USERS
-    // Users can create their own profile.
     match /users/{userId} {
       allow create: if request.auth != null;
-      // Anyone can read a user's public profile.
       allow get: if true;
-      // Allow querying the users collection (e.g., to find a user by UID).
-      allow list: if true;
-      // A user can only update or delete their own profile.
-      allow update, delete: if request.auth != null && request.auth.uid == userId;
+      allow list: if request.auth != null;
+      allow update, delete: if isOwner(userId);
 
-      // Bookmarks are private to the user.
       match /bookmarks/{bookmarkId} {
-        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+        allow read, write, delete: if isOwner(userId);
       }
     }
 
-    // POSTS (New format)
+    // POSTS
     match /posts/{postId} {
-      // Allow reading a single document for anyone, so the client can check permissions.
       allow get: if true;
-      // Allow listing for anyone, but with a limit to prevent abuse.
-      allow list: if request.query.limit <= 100;
-      // Authenticated users can create posts.
+      allow list: if true;
       allow create: if request.auth != null;
-      // Only the author can update or delete their post.
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+      allow update, delete: if isOwner(resource.data.author.id);
 
-      // Likes subcollection
       match /likes/{userId} {
-        // Anyone can see who liked a post.
         allow read, list: if true;
-        // Only the authenticated user can create/delete their own like.
-        allow create, delete: if request.auth != null && request.auth.uid == userId;
+        allow create, delete: if isOwner(userId);
       }
     }
 
-    // SIMPLE-POSTS (Legacy format)
+    // SIMPLE-POSTS
     match /simple-posts/{postId} {
-      // Allow reading a single document for anyone, so the client can check permissions.
       allow get: if true;
-      // Allow listing for anyone, but with a limit to prevent abuse.
-      allow list: if request.query.limit <= 100;
+      allow list: if true;
       allow create: if request.auth != null;
-      // Only the author can update or delete their post (using legacy 'uid' field).
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow update, delete: if isOwner(resource.data.author.id);
 
-      match /likes/{userId} {
+       match /likes/{userId} {
         allow read, list: if true;
-        allow create, delete: if request.auth != null && request.auth.uid == userId;
+        allow create, delete: if isOwner(userId);
       }
     }
 
-    // SIMPLE-TRAVELS (Legacy format)
+    // SIMPLE-TRAVELS
     match /simple-travels/{travelId} {
-      // Travels are public.
-      allow read: if true;
+      allow get: if true;
+      allow list: if request.auth != null;
       allow create: if request.auth != null;
-      // Only the author can update or delete (using legacy 'uid' field).
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow update, delete: if isOwner(resource.data.author.id);
     }
 
     // SPOTS
     match /spots/{spotId} {
-      allow read: if true;
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow get: if true;
+      allow list: if true;
+      allow create: if isOwner(request.resource.data.author.id);
+      allow update, delete: if isOwner(resource.data.author.id);
 
       match /comments/{commentId} {
         allow read: if true;
         allow create: if request.auth != null;
-        allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+        allow delete: if isOwner(resource.data.author.id);
       }
     }
   }
