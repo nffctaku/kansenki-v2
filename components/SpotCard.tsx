@@ -32,10 +32,11 @@ interface SpotCardProps {
 export default function SpotCard({ spot }: SpotCardProps) {
   const spotDate = spot.createdAt ? format(spot.createdAt, 'yyyy.MM.dd') : '';
   const rating = spot.type === 'hotel' ? spot.overallRating : spot.rating;
+  const href = spot.id ? `/${spot.type === 'hotel' ? 'hotels' : 'spots'}/${spot.id}` : '/'; // Safe href generation
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden flex flex-col h-full">
-      <Link href={`/spots/${spot.id}`} className="no-underline flex flex-col flex-grow">
+      <Link href={href} className="no-underline flex flex-col flex-grow">
         <div className="w-full aspect-[4/3] relative">
           {spot.imageUrls && spot.imageUrls.length > 0 ? (
             <Image

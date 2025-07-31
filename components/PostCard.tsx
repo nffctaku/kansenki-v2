@@ -13,10 +13,11 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
   const title = post.title || '投稿';
   const subtext = post.subtext || '';
+  const href = post.href || '/'; // Fallback to root if href is missing
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden flex flex-col h-full relative">
-      <Link href={post.href} className="no-underline">
+      <Link href={href} className="no-underline">
         <div className="w-full aspect-[4/3] relative">
           {post.imageUrls && post.imageUrls.length > 0 ? (
             <Image
@@ -39,7 +40,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         </div>
       </Link>
       <div className="p-2 flex flex-col flex-grow">
-        <Link href={post.href} className="no-underline">
+        <Link href={href} className="no-underline">
           <p className="text-sm font-bold text-gray-800 dark:text-gray-200 line-clamp-2 leading-tight h-10 mb-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
             {title}
           </p>
