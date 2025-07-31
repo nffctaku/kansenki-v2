@@ -38,9 +38,9 @@ const toUnifiedPost = (item: any, type: 'post' | 'simple-post' | 'spot', authorP
   if (!item || !item.id) return null;
 
   const author = {
-    id: item.author?.id || '',
-    nickname: authorProfile?.nickname || item.author?.name || '名無し',
-    avatar: authorProfile?.avatarUrl || item.author?.image || '/default-avatar.svg',
+    id: item.author?.id || item.authorId || '',
+    nickname: authorProfile?.nickname || item.author?.name || item.authorName || '名無し',
+    avatar: authorProfile?.avatarUrl || item.author?.image || item.authorImage || '/default-avatar.svg',
   };
 
   switch (type) {
