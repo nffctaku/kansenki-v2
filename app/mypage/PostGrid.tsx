@@ -4,7 +4,7 @@ import Link from 'next/link';
 import PostCard from '@/components/PostCard';
 import SpotCard, { SpotData } from '@/components/SpotCard';
 import { SimplePost } from '@/types/match';
-import { UnifiedPost } from './types';
+import { UnifiedPost } from '@/types/post';
 
 interface PostGridProps {
   items: UnifiedPost[];
