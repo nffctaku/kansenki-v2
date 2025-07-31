@@ -9,8 +9,9 @@ export const getPostStats = onCall({
   cors: [
     'http://localhost:3000',
     'http://localhost:3007',
-    /footballtop-a4271\.web\.app$/,
-    /footballtop-a4271\.firebaseapp\.com$/,
+    'https://kansenki-v2.web.app',
+    'https://kansenki-v2.firebaseapp.com',
+    'https://www.footballtop.net'
   ],
 }, async (request) => {
   try {

@@ -8,7 +8,8 @@ interface PostCardProps {
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
-  console.log('PostCard authorImage:', post.authorImage);
+  const authorImage = post.authorImage || '/default-avatar.svg';
+  console.log('PostCard authorImage:', authorImage);
   const postDate = post.createdAt ? format(post.createdAt, 'yyyy.MM.dd') : '';
 
   const title = post.title || '投稿';
