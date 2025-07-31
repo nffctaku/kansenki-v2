@@ -73,9 +73,9 @@ export default function MyPage() {
         subtext: (matches[0] ? `${matches[0].homeTeam || matches[0].teamA} vs ${matches[0].awayTeam || matches[0].teamB}` : '試合情報なし') || null,
         imageUrls: post.imageUrls || [],
         author: {
-                              id: post.authorId || '',
-          nickname: authorProfiles.get(post.authorId)?.nickname || post.authorNickname || post.author || '名無し',
-          avatar: authorProfiles.get(post.authorId)?.avatar || post.authorAvatar || '/default-avatar.svg',
+                              id: post.author?.id || '',
+          nickname: authorProfiles.get(post.author?.id)?.nickname || post.author?.name || '名無し',
+          avatar: authorProfiles.get(post.author?.id)?.avatar || post.author?.image || '/default-avatar.svg',
         },
         createdAt: convertedPost.createdAt ?? null,
         league: post.league,
