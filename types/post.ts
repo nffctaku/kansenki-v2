@@ -18,11 +18,9 @@ export interface Transport {
 
 export interface Post {
   id: string;
-  author: {
-    id: string;
-    name: string;
-    image?: string | null;
-  };
+  authorId: string;
+  authorName: string;
+  authorImage?: string | null;
 
   status: 'published' | 'draft';
   title: string;
@@ -110,11 +108,9 @@ export interface UnifiedPost {
   title: string;
   subtext: string | null;
   imageUrls: string[];
-  author: {
-    id: string;
-    nickname: string;
-    avatar?: string;
-  };
+  authorId: string;
+  authorName: string;
+  authorImage?: string;
   createdAt: Date | null;
   league: string;
   country: string;

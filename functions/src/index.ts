@@ -5,7 +5,14 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 admin.initializeApp();
 const db = admin.firestore();
 
-export const getPostStats = onCall({cors: true}, async (request) => {
+export const getPostStats = onCall({
+  cors: [
+    'http://localhost:3000',
+    'http://localhost:3007',
+    /footballtop-a4271\.web\.app$/,
+    /footballtop-a4271\.firebaseapp\.com$/,
+  ],
+}, async (request) => {
   try {
     logger.info("getPostStats function called", {structuredData: true});
 

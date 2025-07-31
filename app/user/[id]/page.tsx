@@ -37,54 +37,51 @@ type UserInfo = {
 const toUnifiedPost = (item: any, type: 'post' | 'simple-post' | 'spot', authorProfile?: UserInfo): UnifiedPost | null => {
   if (!item || !item.id) return null;
 
-  const author = {
-    id: item.author?.id || item.authorId || '',
-    nickname: authorProfile?.nickname || item.author?.name || item.authorName || '名無し',
-    avatar: authorProfile?.avatarUrl || item.author?.image || item.authorImage || '/default-avatar.svg',
+  // Prioritize authorProfile for consistent author info on the user page
+  const authorId = authorProfile?.id || item.authorId || (item.author?.id) || '';
+  const authorName = authorProfile?.nickname || item.authorName || (item.author?.name) || '名無し';
+  const authorImage = authorProfile?.avatarUrl || item.authorImage || (item.author?.image) || '/default-avatar.svg';
+
+  const basePost = {
+    id: item.id,
+    imageUrls: item.imageUrls || [],
+    authorId,
+    authorName,
+    authorImage,
+    createdAt: item.createdAt?.toDate() || new Date(),
+    originalData: item,
   };
 
   switch (type) {
     case 'post':
       return {
-        id: item.id,
+        ...basePost,
         postType: 'post',
         title: item.title || '無題の投稿',
         subtext: item.match?.homeTeam && item.match?.awayTeam ? `${item.match.homeTeam} vs ${item.match.awayTeam}` : '試合情報なし',
-        imageUrls: item.imageUrls || [],
-        author: author,
-        createdAt: item.createdAt?.toDate() || new Date(),
         league: item.match?.competition || '',
         country: item.match?.country || '',
         href: `/posts/${item.id}`,
-        originalData: item,
       };
     case 'simple-post':
       return {
-        id: item.id,
+        ...basePost,
         postType: 'simple-post',
         title: item.title || '無題の投稿',
         subtext: item.teamA?.name && item.teamB?.name ? `${item.teamA.name} vs ${item.teamB.name}` : '試合情報なし',
-        imageUrls: item.imageUrls || [],
-        author: author,
-        createdAt: item.createdAt?.toDate() || new Date(),
         league: item.league || '',
         country: item.country || '',
         href: `/simple-posts/${item.id}`,
-        originalData: item,
       };
     case 'spot':
       return {
-        id: item.id,
+        ...basePost,
         postType: 'spot',
         title: item.spotName || '無題のスポット',
         subtext: item.address || '住所情報なし',
-        imageUrls: item.imageUrls || [],
-        author: author,
-        createdAt: item.createdAt?.toDate() || new Date(),
         league: '',
         country: item.country || '',
         href: `/spots/${item.id}`,
-        originalData: item,
       };
     default:
       return null;
@@ -120,10 +117,10 @@ export default function UserPostsPage() {
 
         const fetchCollection = async (collectionName: string, type: 'post' | 'simple-post' | 'spot') => {
           const collRef = collection(db, collectionName);
-          const q = query(collRef, where('author.id', '==', userId), limit(50));
+          const q = query(collRef, where('authorId', '==', userId), limit(50));
           const querySnapshot = await getDocs(q);
           const unifiedPosts = querySnapshot.docs
-            .map(doc => toUnifiedPost({ id: doc.id, ...doc.data() }, type, userData))
+            .map((doc) => toUnifiedPost({ id: doc.id, ...doc.data() }, type, userData))
             .filter((p): p is UnifiedPost => p !== null);
           return unifiedPosts;
         };

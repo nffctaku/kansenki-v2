@@ -82,7 +82,9 @@ const normalizePostData = (data: DocumentData, docId: string): Post => {
 
   return {
     id: docId,
-    author: authorInfo,
+    authorId: authorInfo.id,
+    authorName: authorInfo.name,
+    authorImage: authorInfo.image,
     title: data.title || '',
     content: data.content || '',
     images: data.images || [],
@@ -212,7 +214,9 @@ export default function PostDetailPage() {
     spots,
     goods,
     firstAdvice,
-    author,
+    authorId,
+    authorName,
+    authorImage,
 
     outboundTotalDuration,
     inboundTotalDuration,
@@ -269,8 +273,15 @@ export default function PostDetailPage() {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{title}</h1>
         <div className="mt-2 flex justify-between items-center">
           <div className="flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400">
-            <Link href={`/user/${author.id}`} className="flex items-center space-x-2 hover:underline">
-              <span>{author?.name || '投稿者'}</span>
+            <Link href={`/user/${authorId}`} className="flex items-center space-x-2 hover:underline">
+              <Image
+                src={authorImage || '/default-avatar.png'}
+                alt={authorName || 'Avatar'}
+                width={24}
+                height={24}
+                className="rounded-full"
+              />
+              <span>{authorName || '投稿者'}</span>
             </Link>
             <span className="text-slate-500 dark:text-slate-400">•</span>
             <span className="text-sm text-slate-500 dark:text-slate-400">

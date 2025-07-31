@@ -8,6 +8,7 @@ interface PostCardProps {
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
+  console.log('PostCard authorImage:', post.authorImage);
   const postDate = post.createdAt ? format(post.createdAt, 'yyyy.MM.dd') : '';
 
   const title = post.title || '投稿';
@@ -19,10 +20,11 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         <div className="w-full aspect-[4/3] relative">
           {post.imageUrls && post.imageUrls.length > 0 ? (
             <Image
-              src={post.imageUrls[0]}
+              src={post.imageUrls && post.imageUrls.length > 0 ? post.imageUrls[0] : '/default-avatar.svg'}
               alt={title || 'Post image'}
               fill
-              className="object-cover"
+              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
           ) : (
             <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
@@ -46,16 +48,16 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           </p>
         </Link>
         <div className="mt-auto flex items-center text-xs text-gray-500 dark:text-gray-400 pt-2">
-          <Link href={`/user/${post.author.id}`} className="flex items-center gap-2 truncate no-underline text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors z-10">
+          <Link href={`/user/${post.authorId}`} className="flex items-center gap-2 truncate no-underline text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors z-10">
             <div className="relative w-5 h-5 rounded-full overflow-hidden">
               <Image
-                src={post.author?.avatar || '/default-avatar.svg'}
-                alt={post.author?.nickname || 'avatar'}
+                src={post.authorImage || '/default-avatar.svg'}
+                alt={post.authorName || 'avatar'}
                 fill
                 className="object-cover"
               />
             </div>
-            <span className="truncate">{post.author?.nickname || '名無し'}</span>
+            <span className="truncate">{post.authorName || '名無し'}</span>
           </Link>
           <span className="ml-auto shrink-0">{postDate}</span>
         </div>
