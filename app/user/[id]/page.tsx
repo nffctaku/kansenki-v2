@@ -63,7 +63,7 @@ const toUnifiedPost = (item: any, type: 'post' | 'simple-post' | 'spot', authorP
         id: item.id,
         postType: 'simple-post',
         title: item.title || '無題の投稿',
-        subtext: item.teamA && item.teamB ? `${item.teamA} vs ${item.teamB}` : '試合情報なし',
+        subtext: item.teamA?.name && item.teamB?.name ? `${item.teamA.name} vs ${item.teamB.name}` : '試合情報なし',
         imageUrls: item.imageUrls || [],
         author: author,
         createdAt: item.createdAt?.toDate() || new Date(),
