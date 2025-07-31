@@ -7,7 +7,7 @@ import { collection, getDocs, query, where, orderBy, limit } from 'firebase/fire
 import { db } from '@/lib/firebase';
 import { teamsByCountry } from '../lib/teamData';
 import { SimplePost, Match } from '@/types/match';
-import { UnifiedPost } from '@/mypage/types';
+import { UnifiedPost } from '@/types/post';
 import { Timestamp } from 'firebase/firestore';
 import PostCard from '@/components/PostCard';
 import SpotCard, { SpotData } from '@/components/SpotCard';
@@ -87,14 +87,15 @@ export default function HomePage() {
           title: post.episode,
           subtext: (post.matches?.[0] ? `${post.matches[0].homeTeam || post.matches[0].teamA} vs ${post.matches[0].awayTeam || post.matches[0].teamB}` : '試合情報なし') || null,
           imageUrls: post.imageUrls || [],
-                    author: {
-            id: post.authorId || '', // Add authorId here
+          author: {
+            id: post.authorId || '',
             nickname: post.author as string,
             avatar: post.authorAvatar,
           },
           createdAt: post.createdAt ?? null,
-          league: post.league,
-          href: `/${post.postType === 'simple' ? 'simple-posts' : 'posts'}/${post.id}`,
+          league: post.league || '',
+          country: post.country || '',
+          href: `/posts/${post.id}`,
           originalData: post,
         }));
         const spotsCollection = collection(db, 'spots');

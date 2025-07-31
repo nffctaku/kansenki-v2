@@ -108,14 +108,14 @@ export interface UnifiedPost {
   id: string;
   postType: 'post' | 'simple-post' | 'spot';
   title: string;
-  subtext: string;
+  subtext: string | null;
   imageUrls: string[];
   author: {
     id: string;
     nickname: string;
-    avatar: string;
+    avatar?: string;
   };
-  createdAt: Date;
+  createdAt: Date | null;
   league: string;
   country: string;
   href: string;

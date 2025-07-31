@@ -137,6 +137,7 @@ export interface SimplePost {
   authorId?: string; // Add authorId
   authorAvatar?: string;
   league: string; // competition name
+  country?: string;
   matches: Match[];
   likeCount: number;
   helpfulCount: number;
