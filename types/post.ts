@@ -63,11 +63,9 @@ export interface SectionProps {
 }
 
 export interface PostFormData {
-  author: {
-    id: string;
-    name: string;
-    image?: string | null;
-  };
+  authorId: string;
+  authorName: string;
+  authorImage?: string | null;
   id: string | null;
   postType: 'new' | 'additional' | 'simple';
   parentPostId?: string | null;

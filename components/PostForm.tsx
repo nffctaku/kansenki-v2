@@ -22,7 +22,9 @@ import ImageUploadSection from './post-form/ImageUploadSection';
 import CategorySection from './post-form/CategorySection';
 
 const initialFormData: PostFormData = {
-  author: { id: '', name: '', image: null },
+  authorId: '',
+  authorName: '',
+  authorImage: '',
   id: null,
   postType: 'new',
   parentPostId: undefined,
@@ -496,11 +498,9 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
 
       // Map form data to the Firestore Post schema
       const postData: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'likeCount' | 'helpfulCount'> & { updatedAt: any, createdAt?: any } = {
-        author: {
-          id: user.uid,
-          name: user.displayName || user.email || '名無し',
-          image: user.photoURL || '',
-        },
+        authorId: user.uid,
+        authorName: user.displayName || user.email || '名無し',
+        authorImage: user.photoURL || '',
         postType: formData.postType,
         parentPostId: formData.parentPostId || null,
         title: formData.title,
