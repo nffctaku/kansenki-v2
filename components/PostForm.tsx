@@ -22,6 +22,7 @@ import ImageUploadSection from './post-form/ImageUploadSection';
 import CategorySection from './post-form/CategorySection';
 
 const initialFormData: PostFormData = {
+  author: { id: '', name: '', image: null },
   id: null,
   postType: 'new',
   parentPostId: undefined,
