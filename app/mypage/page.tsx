@@ -29,10 +29,7 @@ function MyPageContent({ user }: { user: User }) {
   }, [profileProps.loading, profileProps.nickname, profileProps.avatarUrl]);
 
   // プロフィール情報が読み込まれた後に投稿を取得する
-  const { combinedItems, bookmarkedItems, loading: postsLoading, handleDelete, refetch } = useUserPosts(
-    user,
-    currentUserProfile
-  );
+  const { combinedItems, bookmarkedItems, loading: postsLoading, handleDelete, refetch } = useUserPosts(user, currentUserProfile);
 
   const handleLogout = async () => {
     try {

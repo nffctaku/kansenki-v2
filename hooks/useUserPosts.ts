@@ -8,7 +8,7 @@ export const useUserPosts = (user: User | null, currentUserProfile: { nickname: 
   const [combinedItems, setCombinedItems] = useState<UnifiedPost[]>([]);
   const [bookmarkedItems, setBookmarkedItems] = useState<UnifiedPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [postCollectionMap, setPostCollectionMap] = useState(new Map<string, string>());
+  
   const [authorProfiles, setAuthorProfiles] = useState<Map<string, { nickname: string; photoURL: string }>>(new Map());
 
   const getMillis = (date: Date | Timestamp | null): number => {
@@ -39,14 +39,14 @@ export const useUserPosts = (user: User | null, currentUserProfile: { nickname: 
     const fetchPosts = async () => {
       const collectionsToQuery = ['posts', 'simple-posts', 'simple-travels', 'spots'];
       const allPosts: UnifiedPost[] = [];
-      const newPostCollectionMap = new Map<string, string>();
+      
 
       for (const collectionName of collectionsToQuery) {
         const q = query(collection(db, collectionName), where('authorId', '==', uid));
         const querySnapshot = await getDocs(q);
         const posts = querySnapshot.docs.map(doc => {
           const data = doc.data();
-          newPostCollectionMap.set(doc.id, collectionName);
+          
           return toUnifiedPostCallback({ id: doc.id, ...data }, collectionName);
         }).filter((p): p is UnifiedPost => p !== null);
         allPosts.push(...posts);
@@ -54,7 +54,7 @@ export const useUserPosts = (user: User | null, currentUserProfile: { nickname: 
 
       allPosts.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
       setCombinedItems(allPosts);
-      setPostCollectionMap(prevMap => new Map([...Array.from(prevMap), ...Array.from(newPostCollectionMap)]));
+      
     };
 
     const fetchBookmarkedPosts = async () => {
@@ -76,7 +76,7 @@ export const useUserPosts = (user: User | null, currentUserProfile: { nickname: 
               authorIdsToFetch.add(authorId);
             }
             bookmarkedPostInfo.push({ data: postData, type });
-                        setPostCollectionMap(prev => new Map(prev).set(postSnap.id, type));
+                        
             break;
           }
         }
@@ -122,22 +122,20 @@ export const useUserPosts = (user: User | null, currentUserProfile: { nickname: 
     fetchData();
   }, [fetchData]);
 
-  const handleDelete = async (postId: string) => {
+    const handleDelete = async (postId: string, collectionName: string) => {
     if (!user) return;
-    if (window.confirm('本当にこの投稿を削除しますか？')) {
-      const collectionName = postCollectionMap.get(postId);
-      if (!collectionName) {
-        console.error('Collection for post not found');
-        return;
-      }
 
-      try {
-        await deleteDoc(doc(db, collectionName, postId));
-        setCombinedItems(prev => prev.filter(item => item.id !== postId));
-        console.log('Post deleted successfully');
-      } catch (error) {
-        console.error('Error deleting post:', error);
-      }
+    if (!collectionName) {
+      console.error('Collection name not provided for post:', postId);
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, collectionName, postId));
+      // 削除後にデータを再取得してUIを更新
+      await fetchData();
+    } catch (error) {
+      console.error('Error deleting post:', error);
     }
   };
 

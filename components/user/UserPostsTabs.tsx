@@ -26,7 +26,7 @@ const Tabs = ({ tabs, activeTab, setActiveTab }: { tabs: { name: string, label: 
   </div>
 );
 
-const PostGrid = ({ posts, handleDelete, isBookmark, refetchPosts }: { posts: UnifiedPost[], handleDelete: (id: string) => Promise<void>, isBookmark: boolean, refetchPosts: () => void }) => (
+const PostGrid = ({ posts, handleDelete, isBookmark, refetchPosts }: { posts: UnifiedPost[], handleDelete: (id: string, collectionName: string) => Promise<void>, isBookmark: boolean, refetchPosts: () => void }) => (
   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3 mt-6">
     {posts.length > 0 ? (
       posts.map((post) => (
@@ -43,9 +43,10 @@ const PostGrid = ({ posts, handleDelete, isBookmark, refetchPosts }: { posts: Un
                 variant="destructive"
                 size="sm"
                 className="flex-1"
-                onClick={async () => {
-                await handleDelete(post.id);
-                refetchPosts();
+                onClick={() => {
+                if (window.confirm('この投稿を削除しますか？')) {
+                  handleDelete(post.id, post.collectionName);
+                }
               }}
               >
                 削除
@@ -63,7 +64,7 @@ const PostGrid = ({ posts, handleDelete, isBookmark, refetchPosts }: { posts: Un
 type UserPostsTabsProps = {
     userPosts: UnifiedPost[];
     bookmarkedPosts: UnifiedPost[];
-    handleDelete: (id: string) => Promise<void>;
+    handleDelete: (id: string, collectionName: string) => Promise<void>;
     refetchPosts: () => void;
 };
 
@@ -78,7 +79,15 @@ export const UserPostsTabs = ({ userPosts, bookmarkedPosts, handleDelete, refetc
                 setActiveTab={setActiveTab}
             />
             {activeTab === 'posts' && <PostGrid posts={userPosts} handleDelete={handleDelete} isBookmark={false} refetchPosts={refetchPosts} />}
-            {activeTab === 'bookmarks' && <PostGrid posts={bookmarkedPosts} handleDelete={async () => {}} isBookmark={true} refetchPosts={refetchPosts} />}
+            {activeTab === 'bookmarks' && 
+              <PostGrid 
+                posts={bookmarkedPosts} 
+                // ブックマークタブでは削除機能は無効
+                handleDelete={async (id: string, collectionName: string) => { console.log('Delete disabled for bookmarks'); }}
+                isBookmark={true} 
+                refetchPosts={refetchPosts} 
+              />
+            }
         </div>
     );
 };
