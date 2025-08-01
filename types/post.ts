@@ -113,7 +113,7 @@ export interface UnifiedPostWithDate extends UnifiedPost {
 
 export interface UnifiedPost {
   id: string;
-  postType: 'post' | 'simple-post' | 'spot';
+  postType: 'post' | 'simple-post' | 'spot' | 'simple-travel';
   collectionName: string; // 'posts', 'simple-posts', 'spots'など
   title: string;
   subtext: string | null;
