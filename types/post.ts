@@ -18,6 +18,7 @@ export interface Transport {
 }
 
 export interface Post {
+  createdAt: any; // Consider using Timestamp type
   id: string;
   authorId: string;
   authorName: string;
