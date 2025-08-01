@@ -6,9 +6,10 @@ import LikeButton from './LikeButton';
 
 interface PostCardProps {
   post: UnifiedPost;
+  showLikeButton?: boolean;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post }) => {
+const PostCard: React.FC<PostCardProps> = ({ post, showLikeButton = true }) => {
   const authorImage = post.authorImage || '/default-avatar.svg';
   console.log('PostCard authorImage:', authorImage);
   const getSafeDate = (date: any): Date | null => {
@@ -71,7 +72,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             <span className="truncate">{post.authorName || '名無し'}</span>
           </Link>
           <div className="flex items-center gap-2 ml-auto shrink-0">
-            <LikeButton postId={post.id} collectionName={post.collectionName} />
+            {showLikeButton && <LikeButton postId={post.id} collectionName={post.collectionName} />}
             <span>{postDate}</span>
           </div>
         </div>

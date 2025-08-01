@@ -26,7 +26,7 @@ const Tabs = ({ tabs, activeTab, setActiveTab }: { tabs: { name: string, label: 
   </div>
 );
 
-const PostGrid = ({ posts, handleDelete, isBookmark }: { posts: UnifiedPost[], handleDelete: (id: string) => void, isBookmark: boolean }) => (
+const PostGrid = ({ posts, handleDelete, isBookmark, refetchPosts }: { posts: UnifiedPost[], handleDelete: (id: string) => Promise<void>, isBookmark: boolean, refetchPosts: () => void }) => (
   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3 mt-6">
     {posts.length > 0 ? (
       posts.map((post) => (
@@ -36,14 +36,17 @@ const PostGrid = ({ posts, handleDelete, isBookmark }: { posts: UnifiedPost[], h
             <div className="flex items-center gap-2 mt-2">
               {post.editHref && (
                 <Link href={post.editHref} passHref className="flex-1">
-                  <Button variant="outline" size="sm" className="w-full">編集</Button>
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => setTimeout(refetchPosts, 1000)}>編集</Button>
                 </Link>
               )}
               <Button
                 variant="destructive"
                 size="sm"
                 className="flex-1"
-                onClick={() => handleDelete(post.id)}
+                onClick={async () => {
+                await handleDelete(post.id);
+                refetchPosts();
+              }}
               >
                 削除
               </Button>
@@ -60,10 +63,11 @@ const PostGrid = ({ posts, handleDelete, isBookmark }: { posts: UnifiedPost[], h
 type UserPostsTabsProps = {
     userPosts: UnifiedPost[];
     bookmarkedPosts: UnifiedPost[];
-    handleDelete: (id: string) => void;
+    handleDelete: (id: string) => Promise<void>;
+    refetchPosts: () => void;
 };
 
-export const UserPostsTabs = ({ userPosts, bookmarkedPosts, handleDelete }: UserPostsTabsProps) => {
+export const UserPostsTabs = ({ userPosts, bookmarkedPosts, handleDelete, refetchPosts }: UserPostsTabsProps) => {
     const [activeTab, setActiveTab] = useState('posts');
 
     return (
@@ -73,8 +77,8 @@ export const UserPostsTabs = ({ userPosts, bookmarkedPosts, handleDelete }: User
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
             />
-            {activeTab === 'posts' && <PostGrid posts={userPosts} handleDelete={handleDelete} isBookmark={false} />}
-            {activeTab === 'bookmarks' && <PostGrid posts={bookmarkedPosts} handleDelete={() => {}} isBookmark={true} />}
+            {activeTab === 'posts' && <PostGrid posts={userPosts} handleDelete={handleDelete} isBookmark={false} refetchPosts={refetchPosts} />}
+            {activeTab === 'bookmarks' && <PostGrid posts={bookmarkedPosts} handleDelete={async () => {}} isBookmark={true} refetchPosts={refetchPosts} />}
         </div>
     );
 };

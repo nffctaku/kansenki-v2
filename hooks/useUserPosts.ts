@@ -17,9 +17,13 @@ export const useUserPosts = (user: User | null, currentUserProfile: { nickname: 
     return date.getTime();
   };
 
+    const toUnifiedPostCallback = useCallback((item: any, type: string): UnifiedPost | null => {
+    return toUnifiedPost(item, type, user, currentUserProfile, authorProfiles);
+  }, [user, currentUserProfile, authorProfiles]);
+
   const fetchData = useCallback(async () => {
     // ユーザー情報またはプロフィール情報がまだ読み込まれていない場合は、処理を開始しない
-    if (!user || !currentUserProfile) {
+        if (!user || !currentUserProfile) {
       setCombinedItems([]);
       setBookmarkedItems([]);
       setLoading(false);
@@ -29,9 +33,7 @@ export const useUserPosts = (user: User | null, currentUserProfile: { nickname: 
     setLoading(true);
     const uid = user.uid;
 
-    const toUnifiedPostCallback = (item: any, type: string): UnifiedPost | null => {
-      return toUnifiedPost(item, type, user, currentUserProfile, authorProfiles);
-    };
+    
 
     const fetchPosts = async () => {
       const collectionsToQuery = ['posts', 'simple-posts', 'simple-travels', 'spots'];
@@ -73,7 +75,7 @@ export const useUserPosts = (user: User | null, currentUserProfile: { nickname: 
               authorIdsToFetch.add(authorId);
             }
             bookmarkedPostInfo.push({ data: postData, type });
-            setPostCollectionMap(prev => new Map(prev).set(postSnap.id, type));
+                        setPostCollectionMap(prev => new Map(prev).set(postSnap.id, type));
             break;
           }
         }
@@ -113,7 +115,7 @@ export const useUserPosts = (user: User | null, currentUserProfile: { nickname: 
     } finally {
       setLoading(false);
     }
-  }, [user, currentUserProfile]);
+    }, [user, currentUserProfile, toUnifiedPostCallback]);
 
   useEffect(() => {
     fetchData();
@@ -138,5 +140,5 @@ export const useUserPosts = (user: User | null, currentUserProfile: { nickname: 
     }
   };
 
-  return { combinedItems, bookmarkedItems, loading, handleDelete };
+  return { combinedItems, bookmarkedItems, loading, handleDelete, refetch: fetchData };
 };

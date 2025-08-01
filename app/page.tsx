@@ -177,7 +177,7 @@ export default function HomePage() {
             if (item.postType === 'spot') {
               return <SpotCard key={item.id} spot={item.originalData as SpotData} />;
             }
-            return <PostCard key={item.id} post={item} />;
+            return <PostCard key={item.id} post={item} showLikeButton={false} />;
           })}
         </div>
       </div>

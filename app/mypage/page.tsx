@@ -29,7 +29,7 @@ function MyPageContent({ user }: { user: User }) {
   }, [profileProps.loading, profileProps.nickname, profileProps.avatarUrl]);
 
   // プロフィール情報が読み込まれた後に投稿を取得する
-  const { combinedItems, bookmarkedItems, loading: postsLoading, handleDelete } = useUserPosts(
+  const { combinedItems, bookmarkedItems, loading: postsLoading, handleDelete, refetch } = useUserPosts(
     user,
     currentUserProfile
   );
@@ -54,6 +54,7 @@ function MyPageContent({ user }: { user: User }) {
             userPosts={combinedItems} 
             bookmarkedPosts={bookmarkedItems} 
             handleDelete={handleDelete} 
+            refetchPosts={refetch}
           />
         )}
         {postsLoading && <div className="text-center p-4">投稿を読み込んでいます...</div>}
