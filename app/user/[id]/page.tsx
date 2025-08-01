@@ -67,25 +67,37 @@ const toUnifiedPost = (
     }
   }
 
+  const getTitle = () => {
+    if (post.title) {
+      return post.title;
+    }
+    const homeTeam = post.match?.homeTeam || post.homeTeam;
+    const awayTeam = post.match?.awayTeam || post.awayTeam;
+    if (homeTeam && awayTeam) {
+      return `${homeTeam} vs ${awayTeam}`;
+    }
+    return post.spotName || '無題';
+  };
+
   const unifiedPost: UnifiedPost = {
     id: post.id,
     postType: type as any,
-    collectionName: type,
-    title: post.title || post.spotName || '無題',
-    subtext,
+    collectionName: `${type}s`,
+    title: getTitle(),
+    subtext: post.match?.stadium?.name || post.stadium || null,
     imageUrls: post.imageUrls || post.images || (post.imageUrl ? [post.imageUrl] : []),
     authorId,
     authorName,
     authorImage,
     createdAt,
-    league: post.match?.league || '',
-    country: post.match?.country || '',
+    league: post.match?.competition || post.match?.league || post.league || post.matches?.[0]?.competition || '',
+    country: post.match?.country || post.country || '',
     href: `/${{
       'post': 'posts',
       'simple-post': 'simple-posts',
       'spot': 'spots',
       'simple-travel': 'simple-travels',
-    }[type as 'post' | 'simple-post' | 'spot' | 'simple-travel'] || type}/${post.id}`,
+    }[type as 'post' | 'simple-post' | 'spot' | 'simple-travel'] || type}s/${post.id}`,
     originalData: item,
   };
 

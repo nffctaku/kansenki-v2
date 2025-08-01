@@ -72,6 +72,11 @@ export default function HomePage() {
             || '/default-avatar.svg';
 
           const getTitle = () => {
+            // Use user-defined title if it exists, especially for the 'posts' collection.
+            if (data.title) {
+              return data.title;
+            }
+            // Fallback to match card string if no user title.
             if (type === 'posts' || type === 'simple-posts') {
               const homeTeam = data.match?.homeTeam || data.homeTeam;
               const awayTeam = data.match?.awayTeam || data.awayTeam;
@@ -79,7 +84,8 @@ export default function HomePage() {
                 return `${homeTeam} vs ${awayTeam}`;
               }
             }
-            return data.title || data.spotName || '無題';
+            // Final fallback for other types or if no data is available.
+            return data.spotName || '無題';
           };
 
           return {
@@ -87,7 +93,7 @@ export default function HomePage() {
             postType: type.replace(/s$/, '') as any,
             collectionName: type,
             title: getTitle(),
-            subtext: data.match?.stadium?.name || data.spotName || null,
+            subtext: data.match?.stadium?.name || data.stadium || null,
             imageUrls: data.imageUrls || data.images || (data.imageUrl ? [data.imageUrl] : []),
             authorId: authorId,
             authorName: authorName,
@@ -95,13 +101,12 @@ export default function HomePage() {
             createdAt: (() => {
               const d = data.createdAt;
               if (!d) return null;
-              if (d instanceof Timestamp) return d.toDate();
               if (d instanceof Date) return d;
               if (typeof d === 'string') return new Date(d);
               if (typeof d.seconds === 'number') return new Timestamp(d.seconds, d.nanoseconds).toDate();
               return null;
             })(),
-            league: data.match?.league || '',
+            league: data.match?.competition || data.match?.league || data.league || data.matches?.[0]?.competition || '',
             country: data.match?.country || data.country || '',
             href: `/${type}/${data.id}`,
             originalData: data,

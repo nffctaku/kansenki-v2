@@ -10,7 +10,6 @@ interface PostCardProps {
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const authorImage = post.authorImage || '/default-avatar.svg';
-  console.log('PostCard authorImage:', authorImage);
   const getSafeDate = (date: any): Date | null => {
     if (!date) return null;
     if (date instanceof Date) return date;
@@ -21,42 +20,54 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const safeCreatedAt = getSafeDate(post.createdAt);
   const postDate = safeCreatedAt ? format(safeCreatedAt, 'yyyy.MM.dd') : '';
 
-  const collection = post.collectionName;
-  const match = post.originalData?.match;
   const userTitle = post.originalData?.title?.trim();
+  const homeTeam = post.originalData?.match?.homeTeam || post.originalData?.homeTeam;
+  const awayTeam = post.originalData?.match?.awayTeam || post.originalData?.awayTeam;
 
   let displayTitle: string = post.title || '投稿';
   let displaySubtext: string | null = post.subtext;
 
-  if (match && match.homeTeam && match.awayTeam) {
-    const matchCard = `${match.homeTeam} vs ${match.awayTeam}`;
-    if (collection === 'posts' && userTitle) {
-      // Case 1: 'posts' with a user-defined title.
+  // Handle display logic for match-related posts
+  if (homeTeam && awayTeam) {
+    const matchCardString = `${homeTeam} vs ${awayTeam}`;
+    // Case 1: 'posts' collection with a user-defined title.
+    if (post.collectionName === 'posts' && userTitle) {
       displayTitle = userTitle;
-      displaySubtext = matchCard;
-    } else {
-      // Case 2: 'simple-posts' OR 'posts' without a user-defined title.
-      displayTitle = matchCard;
-      displaySubtext = match.league || null;
+      displaySubtext = matchCardString; // Match card becomes the subtext
+    } 
+    // Case 2: 'simple-posts' or 'posts' without a user-defined title.
+    else {
+      displayTitle = matchCardString; // Match card is the main title
+      displaySubtext = post.subtext; // Subtext is the stadium name passed from page.tsx
     }
   }
   const href = post.href || '/'; // Fallback to root if href is missing
 
   const getCategoryLabel = (p: UnifiedPost): string | null => {
-    if (p.category && p.category.trim() !== '') {
-      return p.category;
+    // Prioritize league name from any possible source within the original data.
+    const leagueFromOriginal = p.originalData?.match?.competition || p.originalData?.match?.league || p.originalData?.league || p.originalData?.matches?.[0]?.competition;
+    if (leagueFromOriginal && typeof leagueFromOriginal === 'string' && leagueFromOriginal.trim() !== '') {
+      return leagueFromOriginal;
     }
+
+    // Fallback to the unified league prop
     if (p.league && p.league.trim() !== '') {
       return p.league;
     }
-    // Fallback logic when category and league are not available
-    switch (p.collectionName) {
-      case 'simple-travels':
+    
+    // Fallback to category
+    if (p.category && p.category.trim() !== '') {
+      return p.category;
+    }
+
+    // Final fallback based on post type
+    switch (p.postType) {
+      case 'simple-travel':
         return '旅行記';
-      case 'posts':
-      case 'simple-posts':
+      case 'post':
+      case 'simple-post':
         return '観戦記録';
-      case 'spots':
+      case 'spot':
         return 'スポット';
       default:
         return null;

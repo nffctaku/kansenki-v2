@@ -158,13 +158,20 @@ export const toUnifiedPost = (
     ? currentUserProfile?.avatarUrl || post.author?.image || '/default-avatar.svg'
     : authorProfile?.photoURL || post.author?.image || '/default-avatar.svg';
 
-  const title = post.title || post.spotName || '無題';
-  let subtext: string | null = null;
-  if (post.match?.stadium?.name) {
-    subtext = `${post.match.league} | ${post.match.stadium.name}`;
-  } else if (post.spotName) {
-    subtext = post.spotName;
-  }
+  const getTitle = () => {
+    if (post.title?.trim()) {
+      return post.title.trim();
+    }
+    const homeTeam = post.match?.homeTeam || post.homeTeam;
+    const awayTeam = post.match?.awayTeam || post.awayTeam;
+    if (homeTeam && awayTeam) {
+      return `${homeTeam} vs ${awayTeam}`;
+    }
+    return post.spotName || post.title || '無題';
+  };
+
+  const title = getTitle();
+  const subtext = post.match?.stadium?.name || post.stadium || null;
 
   let createdAt: Date | null = null;
   if (post.createdAt) {
@@ -188,10 +195,10 @@ export const toUnifiedPost = (
     authorName,
     authorImage,
     createdAt,
-    league: post.match?.league || '',
+    league: post.category || post.match?.competition || post.match?.league || post.league || '',
     category: (post.categories && post.categories.length > 0) ? post.categories[0] : (post.match?.category || ''),
-    country: post.match?.country || '',
-    href: `/posts/${post.id}`,
+    country: post.match?.country || post.country || '',
+    href: `/${type.replace(/s$/, '')}s/${post.id}`,
     originalData: item,
   };
 
