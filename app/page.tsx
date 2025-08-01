@@ -50,19 +50,34 @@ export default function HomePage() {
           usersSnapshot.forEach(doc => {
             const userData = doc.data();
             authorProfiles.set(doc.id, { 
-              nickname: userData.nickname || '名無し',
-              avatarUrl: userData.avatarUrl || '/default-avatar.svg'
+              nickname: userData.nickname,
+              avatarUrl: userData.avatarUrl
             });
           });
         }
 
         const unifiedItems: UnifiedPostWithDate[] = allItems.map(({ data, type }) => {
+
           const authorId = data.authorId || data.userId || (data.author && data.author.id);
-          const profile = authorProfiles.get(authorId);
+          const profile = authorId ? authorProfiles.get(authorId) : undefined;
+
+          const authorName = profile?.nickname
+            || data.authorName
+            || (data.author && typeof data.author === 'object' ? data.author.name : (typeof data.author === 'string' ? data.author : null))
+            || '名無し';
+
+          const authorImage = profile?.avatarUrl
+            || (data.author && typeof data.author === 'object' ? data.author.image : null)
+            || data.authorImage
+            || '/default-avatar.svg';
 
           const getTitle = () => {
-            if ((type === 'posts' || type === 'simple-posts') && data.match) {
-              return `${data.match.homeTeam} vs ${data.match.awayTeam}`;
+            if (type === 'posts' || type === 'simple-posts') {
+              const homeTeam = data.match?.homeTeam || data.homeTeam;
+              const awayTeam = data.match?.awayTeam || data.awayTeam;
+              if (homeTeam && awayTeam) {
+                return `${homeTeam} vs ${awayTeam}`;
+              }
             }
             return data.title || data.spotName || '無題';
           };
@@ -75,8 +90,8 @@ export default function HomePage() {
             subtext: data.match?.stadium?.name || data.spotName || null,
             imageUrls: data.imageUrls || data.images || (data.imageUrl ? [data.imageUrl] : []),
             authorId: authorId,
-            authorName: profile?.nickname || (typeof data.author === 'object' && data.author !== null ? data.author.name : data.author) || data.authorName || '名無し',
-            authorImage: profile?.avatarUrl || (typeof data.author === 'object' && data.author !== null ? data.author.image : data.authorImage),
+            authorName: authorName,
+            authorImage: authorImage,
             createdAt: (() => {
               const d = data.createdAt;
               if (!d) return null;

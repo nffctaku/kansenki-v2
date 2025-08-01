@@ -77,7 +77,7 @@ const normalizePostData = (data: DocumentData, docId: string): Post => {
   const authorInfo = {
     id: data.authorId || (data.author && data.author.id) || data.uid,
     name: data.authorName || (data.author && data.author.name) || '名無し',
-    image: data.authorImage || (data.author && data.author.image) || null,
+    image: data.authorImage || (data.author && data.author.image),
   };
 
   return {
