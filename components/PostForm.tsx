@@ -34,6 +34,7 @@ import ImageUploadSection from './post-form/ImageUploadSection';
 import CategorySection from './post-form/CategorySection';
 
 const initialFormData: PostFormData = {
+  content: '',
   authorId: '',
   authorName: '',
   authorImage: '',
@@ -196,16 +197,20 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
       if (selectedPost) {
         const normalizedData = normalizeNewPostToFormData(selectedPost as Post);
         setFormData(prev => ({
+          ...initialFormData,
           ...prev,
+          ...normalizedData,
           parentPostId: selectedPost.id,
-          travelStartDate: normalizedData.travelStartDate,
-          travelEndDate: normalizedData.travelEndDate,
-          visitedCities: normalizedData.visitedCities,
-          transports: normalizedData.transports,
-          hotels: normalizedData.hotels,
-          spots: normalizedData.spots,
-          costs: normalizedData.costs,
-          belongings: normalizedData.belongings,
+          id: null,
+          postType: 'add',
+          travelStartDate: normalizedData.travelStartDate || '',
+          travelEndDate: normalizedData.travelEndDate || '',
+          visitedCities: normalizedData.visitedCities || [],
+          transports: normalizedData.transports || [],
+          hotels: normalizedData.hotels || [],
+          spots: normalizedData.spots || [],
+          costs: normalizedData.costs || [],
+          belongings: normalizedData.belongings || '',
         }));
       }
     } else {
@@ -256,6 +261,12 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
       return;
     }
 
+    if (!formData.match) {
+      setMessage('試合情報が不足しています。');
+      setIsSubmitting(false);
+      return;
+    }
+
     setIsSubmitting(true);
     setMessage('');
 
@@ -265,33 +276,34 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
 
       const postDoc: Omit<Post, 'id' | 'createdAt' | 'updatedAt'> & { updatedAt: any, createdAt?: any } = {
         authorId: user.uid,
-        authorName: formData.authorName,
-        authorImage: formData.authorImage,
+        authorName: formData.authorName || '',
+        authorImage: formData.authorImage || '',
         postType: formData.postType,
-        parentPostId: formData.parentPostId,
-        title: formData.title,
+        parentPostId: formData.parentPostId || null,
+        title: formData.title || '',
         status: submissionStatus,
         isPublic: submissionStatus === 'published',
         match: formData.match,
-        travelStartDate: formData.travelStartDate,
-        travelEndDate: formData.travelEndDate,
-        visitedCities: formData.visitedCities,
-        transports: formData.transports,
-        outboundTotalDuration: formData.outboundTotalDuration,
-        inboundTotalDuration: formData.inboundTotalDuration,
-        hotels: formData.hotels,
-        spots: formData.spots,
-        costs: formData.costs,
-        belongings: formData.belongings,
-        goods: formData.goods,
-        memories: formData.memories,
-        message: formData.message,
-        youtubeUrl: formData.youtubeUrl,
+        travelStartDate: formData.travelStartDate || '',
+        travelEndDate: formData.travelEndDate || '',
+        visitedCities: formData.visitedCities || [],
+        transports: formData.transports || [],
+        outboundTotalDuration: formData.outboundTotalDuration || '',
+        inboundTotalDuration: formData.inboundTotalDuration || '',
+        hotels: formData.hotels || [],
+        spots: formData.spots || [],
+        costs: formData.costs || [],
+        belongings: formData.belongings || '',
+        goods: formData.goods || '',
+        content: formData.content || formData.memories || '',
+        firstAdvice: formData.message || '',
+        youtubeUrl: formData.youtubeUrl || '',
         images: finalImageUrls,
-        categories: formData.categories,
+        categories: formData.categories || [],
         likeCount: 0,
         helpfulCount: 0,
         updatedAt: serverTimestamp(),
+        tags: [], // Add tags property
       };
 
       const docId = isEditMode && formData.id ? formData.id : uuidv4();
@@ -497,12 +509,12 @@ const normalizeNewPostToFormData = (post: Post): Partial<PostFormData> => {
     costs: post.costs,
     belongings: post.belongings,
     goods: post.goods,
-    memories: post.memories,
-    message: post.message,
+    memories: (post as any).memories, // Cast to any to access potential property
+    message: (post as any).message, // Cast to any to access potential property
     youtubeUrl: post.youtubeUrl,
     existingImageUrls: post.images,
     categories: post.categories,
     isPublic: post.isPublic !== undefined ? post.isPublic : true,
-    postType: post.postType,
+    postType: (post as any).postType,
   };
 };

@@ -18,6 +18,7 @@ export interface Transport {
 }
 
 export interface Post {
+  tags: string[];
   createdAt: any; // Consider using Timestamp type
   id: string;
   authorId: string;
@@ -41,7 +42,7 @@ export interface Post {
   season?: string;
 
   // Fields from PostFormData to be included in Post
-  postType: 'new' | 'additional' | 'simple';
+  postType: 'new' | 'additional' | 'simple' | 'add';
   travelStartDate?: string;
   travelEndDate?: string;
   visitedCities?: { id: string; name: string }[];
@@ -65,11 +66,12 @@ export interface SectionProps {
 }
 
 export interface PostFormData {
+  content: string;
   authorId: string;
   authorName: string;
   authorImage?: string | null;
   id: string | null;
-  postType: 'new' | 'additional' | 'simple';
+  postType: 'new' | 'additional' | 'simple' | 'add';
   parentPostId?: string | null;
   title: string;
   status: 'published' | 'draft';
