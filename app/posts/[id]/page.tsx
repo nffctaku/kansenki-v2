@@ -512,7 +512,7 @@ export default function PostDetailPage() {
           <div className="p-6 bg-slate-100 dark:bg-slate-800 rounded-lg space-y-4">
             {content && (
               <div>
-                <h3 className="font-semibold text-slate-800 dark:text-slate-200">これから初観戦行く人へメッセージ</h3>
+                <h3 className="font-semibold text-slate-800 dark:text-slate-200">旅の思い出/エピソード</h3>
                 <p className="text-sm text-slate-700 dark:text-slate-300 mt-1 whitespace-pre-wrap">{content}</p>
               </div>
             )}
