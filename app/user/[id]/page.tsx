@@ -118,7 +118,7 @@ export default function UserPostsPage() {
         setUserInfo(userData);
         console.log('User info fetched:', userData);
 
-        const fetchCollection = async (collectionName: string, type: 'post' | 'simple-post' | 'spot') => {
+        const fetchCollection = async (collectionName: string, postType: 'post' | 'simple-post' | 'spot' | 'simple-travel') => {
           const collRef = collection(db, collectionName);
           
           // Query for new data structure (authorId)
@@ -128,8 +128,8 @@ export default function UserPostsPage() {
 
           const [snapshot1, snapshot2] = await Promise.all([getDocs(q1), getDocs(q2)]);
 
-          const posts1 = snapshot1.docs.map(doc => toUnifiedPost({ ...doc.data(), id: doc.id }, type, userData));
-          const posts2 = snapshot2.docs.map(doc => toUnifiedPost({ ...doc.data(), id: doc.id }, type, userData));
+          const posts1 = snapshot1.docs.map(doc => toUnifiedPost({ ...doc.data(), id: doc.id }, postType, userData));
+          const posts2 = snapshot2.docs.map(doc => toUnifiedPost({ ...doc.data(), id: doc.id }, postType, userData));
 
           // Combine, filter out nulls/undefined, and remove duplicates
           const combined = [...posts1, ...posts2].filter((p): p is UnifiedPost => !!p);
