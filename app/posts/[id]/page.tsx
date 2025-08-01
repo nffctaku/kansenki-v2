@@ -255,13 +255,14 @@ export default function PostDetailPage() {
         <div className="mt-2 flex justify-between items-center">
           <div className="flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400">
             <Link href={`/user/${authorId}`} className="flex items-center space-x-2 hover:underline">
-              <Image
-                src={displayAuthorImage}
-                alt={displayAuthorName}
-                width={24}
-                height={24}
-                className="rounded-full object-cover"
-              />
+              <div className="relative w-10 h-10 rounded-full overflow-hidden">
+                <Image
+                  src={displayAuthorImage}
+                  alt={displayAuthorName}
+                  fill
+                  className="object-cover"
+                />
+              </div>
               <span>{displayAuthorName}</span>
             </Link>
             <span className="text-slate-500 dark:text-slate-400">•</span>
@@ -534,7 +535,7 @@ export default function PostDetailPage() {
 
       {/* Post Actions */}
       <div className="my-8 py-6 border-y border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-center gap-4">
-        {collectionName && post && <LikeButton postId={id} collectionName={collectionName} size="md" />}
+        {/* {collectionName && post && <LikeButton postId={id} collectionName={collectionName} size="md" />} */}
         <BookmarkButton postId={id} size="md" />
         {post && <ShareButton title={post.title} url={`https://kansenki.footballtop.net/posts/${id}`} />}
       </div>

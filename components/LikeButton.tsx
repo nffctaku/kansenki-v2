@@ -70,16 +70,26 @@ const LikeButton: React.FC<LikeButtonProps> = ({ postId, collectionName, size = 
       await runTransaction(db, async (transaction) => {
         const postDoc = await transaction.get(postRef);
         if (!postDoc.exists()) {
-          throw 'Post does not exist!';
+          throw new Error('Post does not exist!');
         }
 
+        // Check the like document's existence within the transaction
+        const likeDoc = await transaction.get(likeRef);
+
         const currentLikeCount = postDoc.data().likeCount || 0;
+
         if (liked) {
-          transaction.update(postRef, { likeCount: currentLikeCount - 1 });
-          transaction.delete(likeRef);
+          // User wants to unlike, so the like document should exist.
+          if (likeDoc.exists()) {
+            transaction.update(postRef, { likeCount: Math.max(0, currentLikeCount - 1) });
+            transaction.delete(likeRef);
+          }
         } else {
-          transaction.update(postRef, { likeCount: currentLikeCount + 1 });
-          transaction.set(likeRef, { createdAt: new Date() });
+          // User wants to like, so the like document should not exist.
+          if (!likeDoc.exists()) {
+            transaction.update(postRef, { likeCount: currentLikeCount + 1 });
+            transaction.set(likeRef, { createdAt: new Date() });
+          }
         }
       });
 

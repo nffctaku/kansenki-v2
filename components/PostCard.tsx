@@ -2,14 +2,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { UnifiedPost } from '@/types/post';
-import LikeButton from './LikeButton';
+// import LikeButton from './LikeButton';
 
 interface PostCardProps {
   post: UnifiedPost;
-  showLikeButton?: boolean;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post, showLikeButton = true }) => {
+const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const authorImage = post.authorImage || '/default-avatar.svg';
   console.log('PostCard authorImage:', authorImage);
   const getSafeDate = (date: any): Date | null => {
@@ -112,7 +111,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, showLikeButton = true }) => {
             <span className="truncate">{post.authorName || '名無し'}</span>
           </Link>
           <div className="flex items-center gap-2 ml-auto shrink-0">
-            {showLikeButton && <LikeButton postId={post.id} collectionName={post.collectionName} />}
             <span>{postDate}</span>
           </div>
         </div>

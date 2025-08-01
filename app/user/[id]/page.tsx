@@ -263,7 +263,7 @@ export default function UserPostsPage() {
         if (item.postType === 'spot') {
           return <SpotCard key={item.id} spot={item.originalData as SpotData} />;
         } else {
-          return <PostCard key={item.id} post={item} showLikeButton={false} />;
+          return <PostCard key={item.id} post={item} />;
         }
       })}
     </div>
