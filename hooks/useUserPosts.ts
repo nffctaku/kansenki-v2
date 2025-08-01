@@ -122,20 +122,26 @@ export const useUserPosts = (user: User | null, currentUserProfile: { nickname: 
     fetchData();
   }, [fetchData]);
 
-    const handleDelete = async (postId: string, collectionName: string) => {
-    if (!user) return;
+      const handleDelete = async (postId: string, collectionName: string) => {
+    console.log(`[useUserPosts] handleDelete called with postId: ${postId}, collectionName: ${collectionName}`);
+    if (!user) {
+      console.error('[useUserPosts] User not found, aborting delete.');
+      return;
+    }
 
-    if (!collectionName) {
-      console.error('Collection name not provided for post:', postId);
+        if (!collectionName) {
+      console.error(`[useUserPosts] Collection name not provided for post: ${postId}`);
       return;
     }
 
     try {
+            console.log(`[useUserPosts] Attempting to delete doc: /${collectionName}/${postId}`);
       await deleteDoc(doc(db, collectionName, postId));
+      console.log(`[useUserPosts] Deletion successful. Refetching data...`);
       // 削除後にデータを再取得してUIを更新
       await fetchData();
     } catch (error) {
-      console.error('Error deleting post:', error);
+            console.error('[useUserPosts] Error deleting post:', error);
     }
   };
 

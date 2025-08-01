@@ -44,6 +44,7 @@ const PostGrid = ({ posts, handleDelete, isBookmark, refetchPosts }: { posts: Un
                 size="sm"
                 className="flex-1"
                 onClick={() => {
+                console.log(`[UserPostsTabs] Delete button clicked for post ID: ${post.id}, collection: ${post.collectionName}`);
                 if (window.confirm('この投稿を削除しますか？')) {
                   handleDelete(post.id, post.collectionName);
                 }
