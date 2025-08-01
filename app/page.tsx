@@ -71,10 +71,12 @@ export default function HomePage() {
             authorName: profile?.nickname || (typeof data.author === 'object' && data.author !== null ? data.author.name : data.author) || data.authorName || '名無し',
             authorImage: profile?.avatarUrl || (typeof data.author === 'object' && data.author !== null ? data.author.image : data.authorImage),
             createdAt: (() => {
-              if (!data.createdAt) return null;
-              if (data.createdAt instanceof Timestamp) return data.createdAt.toDate();
-              if (typeof data.createdAt === 'string') return new Date(data.createdAt);
-              if (typeof data.createdAt.seconds === 'number') return new Timestamp(data.createdAt.seconds, data.createdAt.nanoseconds).toDate();
+              const d = data.createdAt;
+              if (!d) return null;
+              if (d instanceof Timestamp) return d.toDate();
+              if (d instanceof Date) return d;
+              if (typeof d === 'string') return new Date(d);
+              if (typeof d.seconds === 'number') return new Timestamp(d.seconds, d.nanoseconds).toDate();
               return null;
             })(),
             league: data.match?.league || '',

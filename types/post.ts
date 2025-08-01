@@ -31,7 +31,7 @@ export interface Post {
   images: string[];
   categories: string[];
   match?: MatchInfo;
-  createdAt: any; // Consider using Timestamp type
+  createdAt: Date | null; // Consider using Timestamp type
   updatedAt: any; // Consider using Timestamp type
   parentPostId?: string | null;
   travelId?: string;
