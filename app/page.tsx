@@ -60,11 +60,18 @@ export default function HomePage() {
           const authorId = data.authorId || data.userId || (data.author && data.author.id);
           const profile = authorProfiles.get(authorId);
 
+          const getTitle = () => {
+            if ((type === 'posts' || type === 'simple-posts') && data.match) {
+              return `${data.match.homeTeam} vs ${data.match.awayTeam}`;
+            }
+            return data.title || data.spotName || '無題';
+          };
+
           return {
             id: data.id,
             postType: type.replace(/s$/, '') as any,
             collectionName: type,
-            title: data.title || data.spotName || '無題',
+            title: getTitle(),
             subtext: data.match?.stadium?.name || data.spotName || null,
             imageUrls: data.imageUrls || data.images || (data.imageUrl ? [data.imageUrl] : []),
             authorId: authorId,

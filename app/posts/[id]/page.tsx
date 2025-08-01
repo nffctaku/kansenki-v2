@@ -121,6 +121,7 @@ export default function PostDetailPage() {
   const { user } = useAuth();
 
   const [post, setPost] = useState<Post | null>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [collectionName, setCollectionName] = useState<string | null>(null);
   const [travel, setTravel] = useState<SimpleTravel | null>(null);
   const [loading, setLoading] = useState(true);
@@ -144,6 +145,14 @@ export default function PostDetailPage() {
             const postData = normalizePostData(docSnap.data(), docSnap.id);
             setPost(postData);
             setCollectionName(name);
+
+            if (postData.authorId) {
+              const userDocRef = doc(db, 'users', postData.authorId);
+              const userDocSnap = await getDoc(userDocRef);
+              if (userDocSnap.exists()) {
+                setUserInfo(userDocSnap.data() as UserInfo);
+              }
+            }
             foundPost = true;
             break; // Exit loop once post is found
           }
@@ -172,27 +181,13 @@ export default function PostDetailPage() {
   if (error) return <div className="p-6 text-red-500 text-center">{error}</div>;
   if (!post) return null;
 
-  const {
-    title,
-    content,
-    images,
-    match,
-    costs,
-    transports,
-    hotels,
-    spots,
-    goods,
-    firstAdvice,
-    authorId,
-    authorName,
-    authorImage,
+  const { title, authorId, authorName: postAuthorName, authorImage: postAuthorImage, createdAt, match, hotels, transports, spots, costs, content, goods, firstAdvice, images, outboundTotalDuration, inboundTotalDuration } = post;
 
-    outboundTotalDuration,
-    inboundTotalDuration,
-  } = post;
+  const displayAuthorName = userInfo?.nickname || postAuthorName || '名無し';
+  const displayAuthorImage = userInfo?.avatarUrl || postAuthorImage || '/default-avatar.svg';
 
-  const outboundTransports = (transports || []).filter(t => t.direction === 'outbound');
-  const inboundTransports = (transports || []).filter(t => t.direction === 'inbound');
+  const outboundTransports = (transports || []).filter((t: Transport) => t.direction === 'outbound');
+  const inboundTransports = (transports || []).filter((t: Transport) => t.direction === 'inbound');
 
   const airlineLabelMap = new Map(airlineOptions.map(opt => [opt.value, opt.label]));
   const seatClassLabelMap = new Map(seatClassOptions.map(opt => [opt.value, opt.label]));
@@ -244,13 +239,13 @@ export default function PostDetailPage() {
           <div className="flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400">
             <Link href={`/user/${authorId}`} className="flex items-center space-x-2 hover:underline">
               <Image
-                src={authorImage || '/default-avatar.png'}
-                alt={authorName || 'Avatar'}
+                src={displayAuthorImage}
+                alt={displayAuthorName}
                 width={24}
                 height={24}
-                className="rounded-full"
+                className="rounded-full object-cover"
               />
-              <span>{authorName || '投稿者'}</span>
+              <span>{displayAuthorName}</span>
             </Link>
             <span className="text-slate-500 dark:text-slate-400">•</span>
             <span className="text-sm text-slate-500 dark:text-slate-400">

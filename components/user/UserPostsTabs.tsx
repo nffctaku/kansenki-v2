@@ -31,7 +31,7 @@ const PostGrid = ({ posts, handleDelete, isBookmark, refetchPosts }: { posts: Un
     {posts.length > 0 ? (
       posts.map((post) => (
         <div key={post.id} className="flex flex-col">
-          <PostCard post={post} />
+          <PostCard post={post} showLikeButton={false} />
           {!isBookmark && (
             <div className="flex items-center gap-2 mt-2">
               {post.editHref && (
