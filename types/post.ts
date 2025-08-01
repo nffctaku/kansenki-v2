@@ -31,7 +31,7 @@ export interface Post {
   images: string[];
   categories: string[];
   match?: MatchInfo;
-  createdAt: Date | null; // Consider using Timestamp type
+
   updatedAt: any; // Consider using Timestamp type
   parentPostId?: string | null;
   travelId?: string;
@@ -106,6 +106,10 @@ export interface PostFormData {
   travelFrequency?: string;
 }
 
+export interface UnifiedPostWithDate extends UnifiedPost {
+  createdAt: Date | null;
+}
+
 export interface UnifiedPost {
   id: string;
   postType: 'post' | 'simple-post' | 'spot';
@@ -120,8 +124,8 @@ export interface UnifiedPost {
   league: string;
   country: string;
   href: string;
+  originalData: any;
   editHref?: string; // 投稿編集ページへのリンク
-  originalData: any; 
 }
 
 export const toUnifiedPost = (

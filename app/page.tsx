@@ -7,7 +7,7 @@ import { collection, getDocs, query, where, orderBy, limit } from 'firebase/fire
 import { db } from '@/lib/firebase';
 import { teamsByCountry } from '../lib/teamData';
 import { SimplePost, Match } from '@/types/match';
-import { UnifiedPost } from '@/types/post';
+import { UnifiedPost, UnifiedPostWithDate } from '@/types/post';
 import { Timestamp } from 'firebase/firestore';
 import PostCard from '@/components/PostCard';
 import SpotCard, { SpotData } from '@/components/SpotCard';
@@ -18,7 +18,7 @@ import AnnouncementBanner from './components/AnnouncementBanner';
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [items, setItems] = useState<UnifiedPost[]>([]);
+  const [items, setItems] = useState<UnifiedPostWithDate[]>([]);
   const [teamNameSuggestions, setTeamNameSuggestions] = useState<{ [key: string]: string[] }>({});
   const [isLoading, setIsLoading] = useState(true);
 
@@ -56,7 +56,7 @@ export default function HomePage() {
           });
         }
 
-        const unifiedItems: UnifiedPost[] = allItems.map(({ data, type }) => {
+        const unifiedItems: UnifiedPostWithDate[] = allItems.map(({ data, type }) => {
           const authorId = data.authorId || data.userId || (data.author && data.author.id);
           const profile = authorProfiles.get(authorId);
 
