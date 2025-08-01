@@ -30,7 +30,11 @@ interface SpotCardProps {
 }
 
 export default function SpotCard({ spot }: SpotCardProps) {
-  const spotDate = spot.createdAt ? format(spot.createdAt, 'yyyy.MM.dd') : '';
+  const dateToFormat = spot.createdAt && typeof (spot.createdAt as any).toDate === 'function' 
+    ? (spot.createdAt as any).toDate() 
+    : spot.createdAt;
+
+  const spotDate = dateToFormat ? format(dateToFormat, 'yyyy.MM.dd') : '';
   const rating = spot.type === 'hotel' ? spot.overallRating : spot.rating;
   const href = spot.id ? `/${spot.type === 'hotel' ? 'hotels' : 'spots'}/${spot.id}` : '/'; // Safe href generation
 

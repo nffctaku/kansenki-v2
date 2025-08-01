@@ -18,109 +18,75 @@ import AnnouncementBanner from './components/AnnouncementBanner';
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [posts, setPosts] = useState<UnifiedPost[]>([]);
-  const [spots, setSpots] = useState<SpotData[]>([]);
+  const [items, setItems] = useState<UnifiedPost[]>([]);
   const [teamNameSuggestions, setTeamNameSuggestions] = useState<{ [key: string]: string[] }>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPosts = async () => {
+    const fetchItems = async () => {
       setIsLoading(true);
       try {
-        // Fetch from 'posts' (new format)
-        const postsCollection = collection(db, 'posts');
-        const qNew = query(postsCollection, orderBy('createdAt', 'desc'), limit(50));
-        const snapshotNew = await getDocs(qNew);
-        const newPosts: SimplePost[] = snapshotNew.docs.map((doc) => {
-          const d = doc.data();
+        const collectionsToQuery = ['posts', 'simple-posts', 'simple-travels', 'spots'];
+        const allItems: { data: any; type: string }[] = [];
+        const authorIds = new Set<string>();
+
+        for (const collectionName of collectionsToQuery) {
+          const q = query(collection(db, collectionName), orderBy('createdAt', 'desc'), limit(50));
+          const querySnapshot = await getDocs(q);
+          querySnapshot.forEach(doc => {
+            const data = doc.data();
+            allItems.push({ data: { ...data, id: doc.id }, type: collectionName });
+            const authorId = data.authorId || data.userId || (data.author && data.author.id);
+            if (authorId) {
+              authorIds.add(authorId);
+            }
+          });
+        }
+
+        const authorProfiles = new Map<string, { nickname: string; avatarUrl: string }>();
+        if (authorIds.size > 0) {
+          const usersQuery = query(collection(db, 'users'), where('__name__', 'in', Array.from(authorIds)));
+          const usersSnapshot = await getDocs(usersQuery);
+          usersSnapshot.forEach(doc => {
+            const userData = doc.data();
+            authorProfiles.set(doc.id, { 
+              nickname: userData.nickname || '名無し',
+              avatarUrl: userData.avatarUrl || '/default-avatar.svg'
+            });
+          });
+        }
+
+        const unifiedItems: UnifiedPost[] = allItems.map(({ data, type }) => {
+          const authorId = data.authorId || data.userId || (data.author && data.author.id);
+          const profile = authorProfiles.get(authorId);
+
           return {
-            id: doc.id,
-            imageUrls: d.images || d.imageUrls || d.existingImageUrls || [],
-            season: d.match?.season ?? '',
-            episode: d.title ?? '',
-            author: d.authorNickname ?? '',
-            authorId: d.authorId ?? '',
-            league: d.match?.competition ?? '',
-            matches: d.match ? [d.match] : [],
-            likeCount: d.likeCount ?? 0,
-            helpfulCount: d.helpfulCount ?? 0,
-            createdAt: d.createdAt?.toDate() || new Date(0),
-            postType: 'new',
-          } as SimplePost;
-        });
+            id: data.id,
+            postType: type.replace(/s$/, '') as any,
+            collectionName: type,
+            title: data.title || data.spotName || '無題',
+            subtext: data.match?.stadium?.name || data.spotName || null,
+            imageUrls: data.imageUrls || data.images || (data.imageUrl ? [data.imageUrl] : []),
+            authorId: authorId,
+            authorName: profile?.nickname || (typeof data.author === 'object' && data.author !== null ? data.author.name : data.author) || data.authorName || '名無し',
+            authorImage: profile?.avatarUrl || (typeof data.author === 'object' && data.author !== null ? data.author.image : data.authorImage),
+            createdAt: (() => {
+              if (!data.createdAt) return null;
+              if (data.createdAt instanceof Timestamp) return data.createdAt.toDate();
+              if (typeof data.createdAt === 'string') return new Date(data.createdAt);
+              if (typeof data.createdAt.seconds === 'number') return new Timestamp(data.createdAt.seconds, data.createdAt.nanoseconds).toDate();
+              return null;
+            })(),
+            league: data.match?.league || '',
+            country: data.match?.country || data.country || '',
+            href: `/${type}/${data.id}`,
+            originalData: data,
+          };
+        }).filter(item => item.imageUrls && item.imageUrls.length > 0);
 
-        // Fetch from 'simple-posts' (legacy format)
-        const simplePostsCollection = collection(db, 'simple-posts');
-        const qLegacy = query(simplePostsCollection, orderBy('createdAt', 'desc'), limit(50));
-        const snapshotLegacy = await getDocs(qLegacy);
-        const legacyPosts: SimplePost[] = snapshotLegacy.docs.map((doc) => {
-          const d = doc.data();
-          const matchesWithCompat = (Array.isArray(d.matches) ? d.matches : []).map((match: any) => ({
-            ...match,
-            homeTeam: match.homeTeam || match.teamA,
-            awayTeam: match.awayTeam || match.teamB,
-          }));
-          return {
-            id: doc.id,
-            imageUrls: d.imageUrls ?? [],
-            season: d.season ?? '',
-            episode: d.episode ?? '',
-            author: d.nickname ?? '',
-            authorId: d.uid ?? '',
-            league: matchesWithCompat[0]?.competition ?? '',
-            matches: matchesWithCompat,
-            likeCount: d.likeCount ?? 0,
-            helpfulCount: d.helpfulCount ?? 0,
-            createdAt: d.createdAt?.toDate() || new Date(0),
-            postType: 'simple',
-          } as SimplePost;
-        });
+        unifiedItems.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
 
-        const combined = [...newPosts, ...legacyPosts];
-        const postsWithImages = combined.filter(p => p.imageUrls && p.imageUrls.length > 0);
-        const uniquePostsRaw = Array.from(new Map(postsWithImages.map(p => [p.id, p])).values());
-        uniquePostsRaw.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
-
-        const uniquePosts: UnifiedPost[] = uniquePostsRaw.map(post => ({
-          id: post.id,
-          postType: 'post',
-          title: post.episode,
-          subtext: (post.matches?.[0] ? `${post.matches[0].homeTeam || post.matches[0].teamA} vs ${post.matches[0].awayTeam || post.matches[0].teamB}` : '試合情報なし') || null,
-          imageUrls: post.imageUrls || [],
-          authorId: post.authorId || '',
-          authorName: post.author as string,
-          authorImage: post.authorAvatar,
-          createdAt: post.createdAt ?? null,
-          league: post.league || '',
-          country: post.country || '',
-          href: `/posts/${post.id}`,
-          originalData: post,
-        }));
-        const spotsCollection = collection(db, 'spots');
-        const qSpots = query(spotsCollection, orderBy('createdAt', 'desc'), limit(50));
-        const spotsSnapshot = await getDocs(qSpots);
-        const allSpots: SpotData[] = spotsSnapshot.docs.map((doc) => {
-          const d = doc.data();
-          return {
-            id: doc.id,
-            spotName: d.spotName,
-            comment: d.comment,
-            imageUrls: d.imageUrls || [],
-            createdAt: d.createdAt?.toDate() || new Date(0),
-            url: d.url,
-            country: d.country,
-            category: d.category,
-            type: d.type || 'spot',
-            author: d.author,
-            authorAvatar: d.authorAvatar,
-            rating: d.rating,
-            city: d.city,
-            overallRating: d.overallRating,
-          } as SpotData;
-        });
-
-        setPosts(uniquePosts.slice(0, 10));
-        setSpots(allSpots.slice(0, 10));
+        setItems(unifiedItems.slice(0, 20));
 
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -129,7 +95,7 @@ export default function HomePage() {
       }
     };
 
-    fetchPosts();
+    fetchItems();
   }, []);
 
   useEffect(() => {
@@ -199,27 +165,18 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Posts Feed */}
+      {/* All Items Feed */}
       <div className="px-2 py-3">
         <h2 className="text-lg font-bold my-3 text-center text-gray-900 dark:text-gray-200">
-          最新の観戦記
+          最新の投稿
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3">
-          {posts.map((post) => (
-            <PostCard key={post.id} post={post} />
-          ))}
-        </div>
-      </div>
-
-      {/* Spots Feed */}
-      <div className="px-2 py-3">
-        <h2 className="text-lg font-bold my-3 text-center text-gray-900 dark:text-gray-200">
-          最新のおすすめスポット
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3">
-          {spots.map((spot) => (
-            <SpotCard key={spot.id} spot={spot} />
-          ))}
+          {items.map((item) => {
+            if (item.postType === 'spot') {
+              return <SpotCard key={item.id} spot={item.originalData as SpotData} />;
+            }
+            return <PostCard key={item.id} post={item} />;
+          })}
         </div>
       </div>
     </>

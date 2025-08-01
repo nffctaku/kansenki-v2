@@ -3,7 +3,19 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { doc, getDoc, serverTimestamp, setDoc, collection, DocumentData, query, where, getDocs } from 'firebase/firestore';
+import { 
+  doc, 
+  getDoc, 
+  serverTimestamp, 
+  setDoc, 
+  collection, 
+  DocumentData, 
+  query, 
+  where, 
+  getDocs, 
+  orderBy,
+  updateDoc,
+} from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { PostFormData, MatchInfo, Post } from '@/types/post';
 import { v4 as uuidv4 } from 'uuid';
@@ -84,467 +96,219 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
   const [isFetching, setIsFetching] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
-  const [isLegacyPost, setIsLegacyPost] = useState(false);
   const [navigationUrl, setNavigationUrl] = useState<string | null>(null);
   const [userPosts, setUserPosts] = useState<Partial<PostFormData>[]>([]);
   const [selectedParentPostId, setSelectedParentPostId] = useState<string | null>(null);
   const [loadingUserPosts, setLoadingUserPosts] = useState(false);
 
   useEffect(() => {
-    if (navigationUrl) {
-      router.push(navigationUrl);
-    }
-  }, [navigationUrl, router]);
-
-  const normalizeOldPostToFormData = (oldData: DocumentData): Partial<PostFormData> => {
-    const oldMatch = (oldData.matches && oldData.matches[0]) || {};
-    const matchInfo: MatchInfo = {
-      competition: oldMatch.competition || '',
-      season: oldData.season || oldMatch.season || '',
-      date: oldMatch.date || '',
-      kickoff: oldMatch.kickoff || '',
-      homeTeam: oldMatch.homeTeam || oldMatch.teamA || '',
-      awayTeam: oldMatch.awayTeam || oldMatch.teamB || '',
-      homeScore: String(oldMatch.homeScore ?? ''),
-      awayScore: String(oldMatch.awayScore ?? ''),
-      stadium: oldMatch.stadium || '',
-      ticketPrice: String(oldMatch.ticketPrice ?? ''),
-      ticketPurchaseRoute: oldMatch.ticketPurchaseRoute || '',
-      ticketPurchaseRouteUrl: oldMatch.ticketPurchaseRouteUrl || '',
-      ticketTeam: oldMatch.ticketTeam || '',
-      isTour: oldMatch.isTour || false,
-      isHospitality: oldMatch.isHospitality || false,
-      hospitalityDetail: oldMatch.hospitalityDetail || '',
-      seat: oldMatch.seat || '',
-      seatReview: oldMatch.seatReview || '',
-    };
-
-    const costs = oldData.cost ? Object.entries(oldData.cost).map(([category, amount]) => ({
-      id: uuidv4(),
-      category: category as string,
-      amount: Number(amount) || 0,
-    })) : [];
-
-    const hotels = (oldData.hotels || []).map((h: any) => ({
-      ...h,
-      id: h.id || uuidv4(),
-      comment: h.comment || h.review || '',
-    }));
-
-    const spots = (oldData.spots || []).map((s: any) => ({
-      ...s,
-      id: s.id || uuidv4(),
-      description: s.description || s.review || '',
-    }));
-
-    return {
-      id: oldData.id,
-      title: oldData.title || '',
-      status: oldData.isPublic ? 'published' : 'draft',
-      match: matchInfo,
-      travelStartDate: oldData.travelStartDate || oldData.travel_start_date || '',
-      travelEndDate: oldData.travelEndDate || oldData.travel_end_date || '',
-      visitedCities: oldData.visitedCities || [],
-      outboundTotalDuration: oldData.outboundTotalDuration || '',
-      inboundTotalDuration: oldData.inboundTotalDuration || '',
-      transports: oldData.transports || [],
-      hotels: hotels,
-      spots: spots,
-      costs: costs,
-      belongings: oldData.belongings || '',
-      goods: oldData.goods || '',
-      memories: oldData.content || '',
-      message: oldData.firstAdvice || '',
-      existingImageUrls: oldData.imageUrls || [],
-    };
-  };
-
-  const normalizeNewPostToFormData = (post: Post): Partial<PostFormData> => {
-    const match: MatchInfo = {
-      competition: post.match?.competition || '',
-      season: post.match?.season || '',
-      date: post.match?.date || '',
-      kickoff: post.match?.kickoff || '',
-      homeTeam: post.match?.homeTeam || '',
-      awayTeam: post.match?.awayTeam || '',
-      homeScore: String(post.match?.homeScore ?? ''),
-      awayScore: String(post.match?.awayScore ?? ''),
-      stadium: post.match?.stadium || '',
-      ticketPrice: post.match?.ticketPrice || '',
-      ticketPurchaseRoute: post.match?.ticketPurchaseRoute || '',
-      ticketPurchaseRouteUrl: post.match?.ticketPurchaseRouteUrl || '',
-      ticketTeam: post.match?.ticketTeam || '',
-      isTour: post.match?.isTour || false,
-      isHospitality: post.match?.isHospitality || false,
-      hospitalityDetail: post.match?.hospitalityDetail || '',
-      seat: post.match?.seat || '',
-      seatReview: post.match?.seatReview || '',
-    };
-
-    const hotels = (post.hotels || []).map((h: any) => ({
-      ...h,
-      id: h.id || uuidv4(),
-      comment: h.comment || h.review || '', // Handle legacy 'review' field
-    }));
-
-    const spots = (post.spots || []).map((s: any) => ({
-      ...s,
-      id: s.id || uuidv4(),
-      description: s.description || s.review || '', // Handle legacy 'review' field
-    }));
-
-    return {
-      id: post.id,
-      postType: post.postType || 'new',
-      parentPostId: post.parentPostId,
-      title: post.title || '',
-      status: post.status,
-      match: match,
-      travelStartDate: post.travelStartDate || '',
-      travelEndDate: post.travelEndDate || '',
-      visitedCities: post.visitedCities || [],
-      outboundTotalDuration: post.outboundTotalDuration || '',
-      inboundTotalDuration: post.inboundTotalDuration || '',
-      transports: post.transports || [],
-      hotels: hotels,
-      spots: spots,
-      costs: post.costs || [],
-      belongings: post.belongings || '',
-      goods: post.goods || '',
-      memories: post.content || '',
-      message: post.firstAdvice || '',
-      existingImageUrls: post.images || [],
-      categories: post.categories || [],
-    };
-  };
-
-  useEffect(() => {
     const fetchUserDataAndPost = async () => {
-      if (authLoading) {
-        setIsFetching(true);
-        return;
-      }
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-
-      if (!isEditMode || !postId) {
-        setFormData({ ...initialFormData, postType: 'new' });
-        setIsFetching(false);
-        return;
-      }
-
-      if (!collectionName) {
-        console.error("Collection name is missing in edit mode.");
-        setMessage('投稿情報の読み込みに失敗しました。URLが正しくありません。');
-        setIsFetching(false);
-        return;
-      }
-
+      if (!user) return;
       setIsFetching(true);
+
       try {
-        const postRef = doc(db, collectionName, postId);
-        const postSnap = await getDoc(postRef);
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        const userProfile = userDocSnap.exists() ? userDocSnap.data() : null;
 
-        if (postSnap.exists()) {
-          const postData = postSnap.data();
-          
-          const authorId = collectionName === 'posts' ? postData.authorId : postData.uid;
-          if (authorId !== user.uid) {
-            setMessage('この投稿を編集する権限がありません。');
-            router.push('/mypage');
-            return;
+        if (isEditMode && postId && collectionName) {
+          const postDocRef = doc(db, collectionName, postId);
+          const postDocSnap = await getDoc(postDocRef);
+
+          if (postDocSnap.exists()) {
+            const postData = postDocSnap.data();
+            const normalizedData = normalizeOldPostToFormData(postData);
+
+            setFormData({
+              ...initialFormData,
+              ...normalizedData,
+              id: postId,
+              authorId: user.uid,
+              authorName: userProfile?.nickname || user.displayName || '',
+              authorImage: userProfile?.avatarUrl || user.photoURL || '',
+              visitedCountries: postData.visitedCountries || userProfile?.visitedCountries?.map((c: any) => c.name) || [],
+              overseasMatchCount: postData.overseasMatchCount || userProfile?.overseasMatchCount || '',
+              travelFrequency: postData.travelFrequency || userProfile?.travelFrequency || '',
+            });
+          } else {
+            setMessage('投稿が見つかりませんでした。');
           }
-
-          const normalizedData = collectionName === 'posts'
-            ? normalizeNewPostToFormData(postData as Post)
-            : normalizeOldPostToFormData(postData);
-
-          setFormData({
-            ...initialFormData,
-            ...normalizedData,
-            id: postId,
-  
-          });
-          setIsLegacyPost(collectionName === 'simple-posts');
-
         } else {
-          setMessage('投稿が見つかりませんでした。');
+          setFormData(prev => ({
+            ...prev,
+            authorId: user.uid,
+            authorName: userProfile?.nickname || user.displayName || '',
+            authorImage: userProfile?.avatarUrl || user.photoURL || '',
+            visitedCountries: userProfile?.visitedCountries?.map((c: any) => c.name) || [],
+            overseasMatchCount: userProfile?.overseasMatchCount || '',
+            travelFrequency: userProfile?.travelFrequency || '',
+          }));
         }
       } catch (error) {
-        console.error('投稿データの取得中にエラーが発生しました:', error);
-        setMessage('投稿データの読み込みに失敗しました。');
+        console.error('Error fetching data:', error);
+        setMessage('データの取得中にエラーが発生しました。');
       } finally {
         setIsFetching(false);
       }
     };
 
-    fetchUserDataAndPost();
-  }, [postId, collectionName, isEditMode, user, authLoading, router]);
-
-  useEffect(() => {
     const fetchUserPosts = async () => {
       if (!user) return;
-
       setLoadingUserPosts(true);
       try {
         const postsQuery = query(
           collection(db, 'posts'),
-          where('authorId', '==', user.uid)
+          where('authorId', '==', user.uid),
+          orderBy('createdAt', 'desc')
         );
-        const postsSnapshot = await getDocs(postsQuery);
-        const newPosts = postsSnapshot.docs.map(doc => normalizeNewPostToFormData({ id: doc.id, ...doc.data() } as Post));
-
-        const legacyPostsQueryByUid = query(
-          collection(db, 'simple-posts'),
-          where('uid', '==', user.uid)
-        );
-        const legacyPostsQueryByAuthorId = query(
-          collection(db, 'simple-posts'),
-          where('authorId', '==', user.uid)
-        );
-
-        const [legacyPostsSnapshotByUid, legacyPostsSnapshotByAuthorId] = await Promise.all([
-          getDocs(legacyPostsQueryByUid),
-          getDocs(legacyPostsQueryByAuthorId),
-        ]);
-
-        const legacyPostsByUid = legacyPostsSnapshotByUid.docs.map(doc => normalizeOldPostToFormData({ id: doc.id, ...doc.data() }));
-        const legacyPostsByAuthorId = legacyPostsSnapshotByAuthorId.docs.map(doc => normalizeOldPostToFormData({ id: doc.id, ...doc.data() }));
-
-        const allPosts = [...newPosts, ...legacyPostsByUid, ...legacyPostsByAuthorId];
-        const uniquePosts = allPosts.filter((post, index, self) =>
-          index === self.findIndex((p) => p.id === post.id)
-        );
-
-        uniquePosts.sort((a, b) => {
-          const dateA = a.match?.date || '';
-          const dateB = b.match?.date || '';
-          if (dateA < dateB) return 1;
-          if (dateA > dateB) return -1;
-          return 0;
-        });
-
-        setUserPosts(uniquePosts);
+        const querySnapshot = await getDocs(postsQuery);
+        const posts = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as PostFormData));
+        setUserPosts(posts);
       } catch (error) {
-        console.error("ユーザーの投稿の取得に失敗しました:", error);
-        setMessage("過去の投稿の読み込みに失敗しました。");
+        console.error('Error fetching user posts:', error);
       } finally {
         setLoadingUserPosts(false);
       }
     };
 
-    if (formData.postType === 'additional') {
+    if (user) {
+      fetchUserDataAndPost();
       fetchUserPosts();
-    } else {
-      setUserPosts([]);
+    } else if (!authLoading) {
+      router.push('/login');
     }
-  }, [formData.postType, user, isEditMode]);
-
-  useEffect(() => {
-    if (isEditMode) return;
-
-    if (selectedParentPostId) {
-      const parentPost = userPosts.find(p => p.id === selectedParentPostId);
-      if (parentPost) {
-        const parentHotels = (parentPost.hotels || []).map((h: any) => ({ ...h, id: h.id || uuidv4(), comment: h.comment || h.review || '' }));
-        const parentSpots = (parentPost.spots || []).map((s: any) => ({ ...s, id: s.id || uuidv4(), description: s.description || s.review || '' }));
-
-        setFormData({
-          ...initialFormData,
-          postType: 'additional',
-          parentPostId: parentPost.id,
-          travelStartDate: parentPost.travelStartDate || '',
-          travelEndDate: parentPost.travelEndDate || '',
-          visitedCities: parentPost.visitedCities || [],
-          transports: parentPost.transports || [],
-          hotels: parentHotels,
-          spots: parentSpots,
-          costs: parentPost.costs || [],
-          belongings: parentPost.belongings || '',
-          goods: parentPost.goods || '',
-          title: '',
-          match: initialFormData.match,
-          memories: '',
-          message: '',
-          imageFiles: [],
-          existingImageUrls: [],
-          categories: [],
-          id: null,
-          status: parentPost.status ?? 'published',
-        });
-      }
-    } else if (formData.postType === 'additional') {
-      setFormData({
-        ...initialFormData,
-        postType: 'additional',
-      });
-    }
-  }, [selectedParentPostId, userPosts, formData.postType, isEditMode]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authLoading, postId]);
 
   const handlePostTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPostType = e.target.value as 'new' | 'additional';
-    setFormData(prev => ({ ...initialFormData, postType: newPostType }));
+    setFormData(prev => ({ ...prev, postType: newPostType }));
     if (newPostType === 'new') {
       setSelectedParentPostId(null);
+      setFormData(prev => ({ ...prev, parentPostId: undefined }));
     }
   };
 
   const handleParentPostChange = (option: { value: string; label: string } | null) => {
     setSelectedParentPostId(option ? option.value : null);
-
     if (option) {
-      const parentPost = userPosts.find(p => p.id === option.value);
-      if (parentPost) {
-        const parentHotels = (parentPost.hotels || []).map((h: any) => ({ ...h, id: uuidv4() }));
-        const parentSpots = (parentPost.spots || []).map((s: any) => ({ ...s, id: uuidv4() }));
-        const parentCosts = (parentPost.costs || []).map((c: any) => ({ ...c, id: uuidv4() }));
-        const parentTransports = (parentPost.transports || []).map((t: any) => ({ ...t, id: uuidv4() }));
-        const parentVisitedCities = (parentPost.visitedCities || []).map((city: any) => ({ ...city, id: uuidv4() }));
-
-        setFormData(prevData => ({
-          ...initialFormData,
-          travelStartDate: parentPost.travelStartDate || '',
-          travelEndDate: parentPost.travelEndDate || '',
-          visitedCities: parentVisitedCities,
-          outboundTotalDuration: parentPost.outboundTotalDuration || '',
-          inboundTotalDuration: parentPost.inboundTotalDuration || '',
-          transports: parentTransports,
-          costs: parentCosts,
-          belongings: parentPost.belongings || '',
-          goods: parentPost.goods || '',
-          hotels: parentHotels,
-          spots: parentSpots,
-
-          id: null,
-          postType: 'additional',
-          parentPostId: parentPost.id,
-          status: parentPost.status ?? 'published',
-          title: '',
-          match: initialFormData.match,
-          memories: '',
-          message: '',
-          imageFiles: [],
-          existingImageUrls: [],
-          categories: [],
+      const selectedPost = userPosts.find(p => p.id === option.value);
+      if (selectedPost) {
+        const normalizedData = normalizeNewPostToFormData(selectedPost as Post);
+        setFormData(prev => ({
+          ...prev,
+          parentPostId: selectedPost.id,
+          travelStartDate: normalizedData.travelStartDate,
+          travelEndDate: normalizedData.travelEndDate,
+          visitedCities: normalizedData.visitedCities,
+          transports: normalizedData.transports,
+          hotels: normalizedData.hotels,
+          spots: normalizedData.spots,
+          costs: normalizedData.costs,
+          belongings: normalizedData.belongings,
         }));
       }
     } else {
-      setFormData(prevData => ({
-        ...initialFormData,
-        postType: 'additional',
+      setFormData(prev => ({
+        ...prev,
+        parentPostId: undefined,
+        travelStartDate: '',
+        travelEndDate: '',
+        visitedCities: [],
+        transports: [],
+        hotels: [],
+        spots: [],
+        costs: [],
+        belongings: '',
       }));
     }
   };
 
   const uploadImagesToCloudinary = async (files: File[]): Promise<string[]> => {
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-    if (!cloudName || !uploadPreset) {
-      setMessage('Cloudinaryの設定がされていません。');
-      throw new Error('Cloudinary configuration is missing.');
-    }
-
-    const uploadPromises = files.map(async (file) => {
+    const uploadedUrls: string[] = [];
+    for (const file of files) {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', uploadPreset);
+      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'default_preset');
 
       try {
-        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, {
           method: 'POST',
           body: formData,
         });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Cloudinary upload error:', errorData);
-          throw new Error(`Cloudinary image upload failed: ${errorData.error.message}`);
-        }
-
         const data = await response.json();
-        return data.secure_url;
+        if (data.secure_url) {
+          uploadedUrls.push(data.secure_url);
+        } else {
+          throw new Error('Image upload failed, no secure_url returned.');
+        }
       } catch (error) {
-        console.error('Error uploading image:', error);
-        setMessage(`画像のアップロードに失敗しました: ${file.name}`);
-        return null;
+        console.error('Error uploading to Cloudinary:', error);
+        throw error;
       }
-    });
-
-    const results = await Promise.all(uploadPromises);
-    return results.filter((url): url is string => url !== null);
+    }
+    return uploadedUrls;
   };
 
   const handleSubmit = async (submissionStatus: 'published' | 'draft') => {
     if (!user) {
-      setMessage('ログインしてください。');
-      return;
-    }
-    if (!formData.title) {
-      setMessage('タイトルは必須です。');
+      setMessage('ログインが必要です。');
       return;
     }
 
     setIsSubmitting(true);
-    setMessage('投稿処理中...');
+    setMessage('');
 
     try {
-      const newImageUrls = await uploadImagesToCloudinary(formData.imageFiles);
-      const finalImageUrls = [...formData.existingImageUrls, ...newImageUrls];
+      const uploadedImageUrls = await uploadImagesToCloudinary(formData.imageFiles);
+      const finalImageUrls = [...formData.existingImageUrls, ...uploadedImageUrls];
 
-      // Map form data to the Firestore Post schema
-      const postData: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'likeCount' | 'helpfulCount'> & { updatedAt: any, createdAt?: any } = {
+      const postDoc: Omit<Post, 'id' | 'createdAt' | 'updatedAt'> & { updatedAt: any, createdAt?: any } = {
         authorId: user.uid,
-        authorName: user.displayName || user.email || '名無し',
-        authorImage: user.photoURL || '',
+        authorName: formData.authorName,
+        authorImage: formData.authorImage,
         postType: formData.postType,
-        parentPostId: formData.parentPostId || null,
+        parentPostId: formData.parentPostId,
         title: formData.title,
         status: submissionStatus,
-        match: formData.match || undefined,
+        isPublic: submissionStatus === 'published',
+        match: formData.match,
         travelStartDate: formData.travelStartDate,
         travelEndDate: formData.travelEndDate,
         visitedCities: formData.visitedCities,
+        transports: formData.transports,
         outboundTotalDuration: formData.outboundTotalDuration,
         inboundTotalDuration: formData.inboundTotalDuration,
-        transports: formData.transports,
         hotels: formData.hotels,
         spots: formData.spots,
         costs: formData.costs,
-        belongings: formData.belongings ?? '',
-        goods: formData.goods ?? '',
-        content: formData.memories || '', // memories
-        firstAdvice: formData.message || '', // message
+        belongings: formData.belongings,
+        goods: formData.goods,
+        memories: formData.memories,
+        message: formData.message,
+        youtubeUrl: formData.youtubeUrl,
         images: finalImageUrls,
         categories: formData.categories,
-        youtubeUrl: formData.youtubeUrl ?? '',
+        likeCount: 0,
+        helpfulCount: 0,
         updatedAt: serverTimestamp(),
       };
 
-      const docId = isEditMode && postId ? postId : doc(collection(db, 'posts')).id;
-      const postRef = doc(db, 'posts', docId);
+      const docId = isEditMode && formData.id ? formData.id : uuidv4();
+      const docRef = doc(db, 'posts', docId);
 
-      const dataToSave = isEditMode
-        ? postData
-        : { ...postData, createdAt: serverTimestamp() };
-
-      await setDoc(postRef, dataToSave, { merge: true });
-
-      if (isLegacyPost && postId) {
-        // Optionally, delete the old post from 'simple-posts' after migration
-        // const legacyPostRef = doc(db, 'simple-posts', postId);
-        // await deleteDoc(legacyPostRef);
+      if (isEditMode) {
+        await updateDoc(docRef, postDoc);
+        setMessage('投稿を更新しました。');
+      } else {
+        await setDoc(docRef, { ...postDoc, createdAt: serverTimestamp() });
+        setMessage('投稿を作成しました。');
       }
-
-      setMessage(isEditMode ? '投稿を更新しました！' : '投稿に成功しました！');
-      setNavigationUrl(`/posts/${docId}`); // Trigger navigation via useEffect
+      
+      setNavigationUrl(`/mypage`);
 
     } catch (error) {
-      console.error('投稿エラー:', error);
+      console.error('Error submitting post:', error);
       setMessage(`エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsSubmitting(false);
@@ -552,83 +316,58 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
   };
 
   const selectStyles = {
-    control: (base: any) => ({
-      ...base,
-      minHeight: '40px',
-      padding: '8px',
-      fontSize: '16px',
-      borderRadius: '4px',
-      border: '1px solid #ccc',
-      boxShadow: 'none',
-      '&:hover': {
-        borderColor: '#999',
-      },
-    }),
-    option: (base: any, state: any) => ({
-      ...base,
-      fontSize: '16px',
-      padding: '8px',
-      backgroundColor: state.isFocused ? '#f0f0f0' : 'white',
-      color: state.isFocused ? '#333' : '#666',
-    }),
+    control: (base: any) => ({ ...base, backgroundColor: 'var(--select-bg)', borderColor: 'var(--select-border)', color: 'var(--select-text)', '&:hover': { borderColor: 'var(--select-border-hover)' } }),
+    option: (base: any, state: any) => ({ ...base, backgroundColor: state.isSelected ? 'var(--select-option-selected-bg)' : 'var(--select-option-bg)', color: state.isSelected ? 'var(--select-option-selected-text)' : 'var(--select-option-text)', '&:hover': { backgroundColor: 'var(--select-option-hover-bg)' } }),
+    singleValue: (base: any) => ({ ...base, color: 'var(--select-text)' }),
+    menu: (base: any) => ({ ...base, backgroundColor: 'var(--select-menu-bg)' }),
+    input: (base: any) => ({ ...base, color: 'var(--select-text)' }),
   };
 
   if (authLoading || isFetching) {
-    return <div className="text-center p-10">読み込み中...</div>;
-  }
-
-  if (!user) {
-    return <div className="text-center p-10">ログインしてください。</div>;
+    return <div className="flex justify-center items-center h-screen"><p>読み込み中...</p></div>;
   }
 
   return (
-    <form className="space-y-8 max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+    <form className="space-y-8 max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 bg-white dark:bg-gray-900 rounded-lg shadow-md">
       {!isEditMode && (
-        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl shadow-sm">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">投稿の種類を選択</h2>
           <div className="flex items-center space-x-4">
-            <div className="flex items-center">
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  name="postType"
-                  value="new"
-                  checked={formData.postType === 'new'}
-                  onChange={handlePostTypeChange}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-                />
-                <span className="ml-2 text-gray-700 dark:text-gray-300">新規投稿</span>
-              </label>
-            </div>
-            <div className="flex items-center">
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  name="postType"
-                  value="additional"
-                  checked={formData.postType === 'additional'}
-                  onChange={handlePostTypeChange}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-                />
-                <span className="ml-2 text-gray-700 dark:text-gray-300">追加投稿</span>
-              </label>
-            </div>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="postType"
+                value="new"
+                checked={formData.postType === 'new'}
+                onChange={handlePostTypeChange}
+                className="form-radio h-4 w-4 text-blue-600 dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-gray-700 dark:text-gray-300">新規の旅行</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="postType"
+                value="additional"
+                checked={formData.postType === 'additional'}
+                onChange={handlePostTypeChange}
+                className="form-radio h-4 w-4 text-blue-600 dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-gray-700 dark:text-gray-300">過去の旅行に追加</span>
+            </label>
           </div>
-
           {formData.postType === 'additional' && (
-            <div className="w-full mt-4">
-              <label htmlFor="parentPost-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                追加元の投稿を選択
-              </label>
+            <div className="mt-4">
+              <label htmlFor="parentPost" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">関連する過去の投稿</label>
               <Select
+                id="parentPost"
                 instanceId="parentPost-select"
-                inputId="parentPost-select"
                 options={userPosts
-                  .filter(post => post.id && post.title)
-                  .map(post => ({ value: post.id!, label: `${post.match?.date || '日付不明'} - ${post.title!}` }))
-                }
+                  .filter(p => p.id && p.title)
+                  .map(p => ({ value: p.id!, label: `${p.match?.date || '日付不明'} - ${p.title!}` }))}
                 onChange={handleParentPostChange}
                 value={userPosts
-                  .filter(post => post.id && post.title)
+                  .filter(p => p.id && p.title)
                   .map(p => ({ value: p.id!, label: `${p.match?.date || '日付不明'} - ${p.title!}` }))
                   .find(o => o.value === selectedParentPostId)
                 }
@@ -646,7 +385,7 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
         </div>
       )}
 
-            <div className="bg-blue-100 dark:bg-blue-900/30 border-l-4 border-blue-500 dark:border-blue-400 text-blue-700 dark:text-blue-300 p-4 my-6 rounded-md text-sm" role="alert">
+      <div className="bg-blue-100 dark:bg-blue-900/30 border-l-4 border-blue-500 dark:border-blue-400 text-blue-700 dark:text-blue-300 p-4 my-6 rounded-md text-sm" role="alert">
         <p className="font-bold text-base mb-2">キャンペーン参加者様への投稿項目お知らせ</p>
         <p>現在開催中の投稿キャンペーンでは、</p>
         <div className="mt-2 pl-2 space-y-1">
@@ -691,3 +430,79 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
     </form>
   );
 }
+
+const normalizeOldPostToFormData = (oldData: DocumentData): Partial<PostFormData> => {
+  const oldMatch = (oldData.matches && oldData.matches[0]) || {};
+  const matchInfo: MatchInfo = {
+    competition: oldMatch.competition || '',
+    season: oldData.season || oldMatch.season || '',
+    date: oldMatch.date || '',
+    kickoff: oldMatch.kickoff || '',
+    homeTeam: oldMatch.homeTeam || oldMatch.teamA || '',
+    awayTeam: oldMatch.awayTeam || oldMatch.teamB || '',
+    homeScore: String(oldMatch.homeScore ?? ''),
+    awayScore: String(oldMatch.awayScore ?? ''),
+    stadium: oldMatch.stadium || '',
+    ticketPrice: String(oldMatch.ticketPrice ?? ''),
+    ticketPurchaseRoute: oldMatch.ticketPurchaseRoute || '',
+    ticketPurchaseRouteUrl: oldMatch.ticketPurchaseRouteUrl || '',
+    ticketTeam: oldMatch.ticketTeam || '',
+    isTour: oldMatch.isTour || false,
+    isHospitality: oldMatch.isHospitality || false,
+    hospitalityDetail: oldMatch.hospitalityDetail || '',
+    seat: oldMatch.seat || '',
+    seatReview: oldMatch.seatReview || '',
+  };
+
+  const imageUrls = oldData.imageUrls || (oldData.images ? (Array.isArray(oldData.images) ? oldData.images : [oldData.images]) : []);
+
+  return {
+    id: oldData.id,
+    title: oldData.title || '',
+    status: oldData.isPublic ? 'published' : 'draft',
+    match: matchInfo,
+    travelStartDate: oldData.travelStartDate || oldData.travel_start_date || '',
+    travelEndDate: oldData.travelEndDate || oldData.travel_end_date || '',
+    visitedCities: oldData.visitedCities || [],
+    outboundTotalDuration: oldData.outboundTotalDuration || '',
+    inboundTotalDuration: oldData.inboundTotalDuration || '',
+    transports: oldData.transports || [],
+    hotels: oldData.hotels || [],
+    spots: oldData.spots || [],
+    costs: oldData.costs || [],
+    belongings: oldData.belongings || '',
+    goods: oldData.goods || oldData.souvenirs || '',
+    memories: oldData.memories || oldData.thoughts || '',
+    message: oldData.message || oldData.firstAdvice || '',
+    youtubeUrl: oldData.youtubeUrl || '',
+    existingImageUrls: imageUrls,
+    categories: oldData.categories || [],
+    isPublic: oldData.isPublic !== undefined ? oldData.isPublic : true,
+    postType: oldData.postType || 'new',
+  };
+};
+
+const normalizeNewPostToFormData = (post: Post): Partial<PostFormData> => {
+  return {
+    id: post.id,
+    title: post.title,
+    status: post.isPublic ? 'published' : 'draft',
+    match: post.match,
+    travelStartDate: post.travelStartDate,
+    travelEndDate: post.travelEndDate,
+    visitedCities: post.visitedCities,
+    transports: post.transports,
+    hotels: post.hotels,
+    spots: post.spots,
+    costs: post.costs,
+    belongings: post.belongings,
+    goods: post.goods,
+    memories: post.memories,
+    message: post.message,
+    youtubeUrl: post.youtubeUrl,
+    existingImageUrls: post.images,
+    categories: post.categories,
+    isPublic: post.isPublic !== undefined ? post.isPublic : true,
+    postType: post.postType,
+  };
+};

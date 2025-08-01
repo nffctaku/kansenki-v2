@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, doc, getDoc, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, limit, Timestamp } from 'firebase/firestore';
 export const dynamic = 'force-dynamic';
 
 import { db } from '@/lib/firebase';
@@ -32,69 +32,72 @@ type UserInfo = {
   visitedCountries?: string[];
 };
 
-
-
-const toUnifiedPost = (item: any, type: 'post' | 'simple-post' | 'spot', authorProfile?: UserInfo): UnifiedPost | null => {
+const toUnifiedPost = (
+    item: any, 
+    type: string, 
+    authorProfile?: UserInfo
+  ): UnifiedPost | null => {
   if (!item || !item.id) return null;
 
   // Prioritize authorProfile for consistent author info on the user page
-  const authorId = authorProfile?.id || item.authorId || (item.author?.id) || '';
-  const authorName = authorProfile?.nickname || item.authorName || (item.author?.name) || '名無し';
-  const authorImage = authorProfile?.avatarUrl || item.authorImage || (item.author?.image) || '/default-avatar.svg';
+  const post = item as any;
+  const authorId = authorProfile?.id || post.author?.id || post.authorId || post.userId || '';
+  const authorName = authorProfile?.nickname || post.author?.name || post.authorName || '名無し';
+  const authorImage = authorProfile?.avatarUrl || post.author?.image || post.authorImage || '/default-avatar.svg';
 
-  const basePost = {
-    id: item.id,
-    imageUrls: item.imageUrls || [],
+
+
+  let subtext: string | null = null;
+  if (post.match?.stadium?.name) {
+    subtext = `${post.match.league} | ${post.match.stadium.name}`;
+  } else if (post.spotName) {
+    subtext = post.spotName;
+  }
+
+  let createdAt: Date | null = null;
+  if (post.createdAt) {
+    if (post.createdAt instanceof Timestamp) {
+      createdAt = post.createdAt.toDate();
+    } else if (typeof post.createdAt === 'string') {
+      createdAt = new Date(post.createdAt);
+    } else if (post.createdAt.seconds) {
+      createdAt = new Timestamp(post.createdAt.seconds, post.createdAt.nanoseconds).toDate();
+    }
+  }
+
+  const unifiedPost: UnifiedPost = {
+    id: post.id,
+    postType: type as any,
+    collectionName: type,
+    title: post.title || post.spotName || '無題',
+    subtext,
+    imageUrls: post.imageUrls || post.images || (post.imageUrl ? [post.imageUrl] : []),
     authorId,
     authorName,
     authorImage,
-    createdAt: item.createdAt?.toDate() || new Date(),
+    createdAt,
+    league: post.match?.league || '',
+    country: post.match?.country || '',
+    href: `/${type}/${post.id}`,
     originalData: item,
   };
 
-  switch (type) {
-    case 'post':
-      return {
-        ...basePost,
-        postType: 'post',
-        title: item.title || '無題の投稿',
-        subtext: item.match?.homeTeam && item.match?.awayTeam ? `${item.match.homeTeam} vs ${item.match.awayTeam}` : '試合情報なし',
-        league: item.match?.competition || '',
-        country: item.match?.country || '',
-        href: `/posts/${item.id}`,
-      };
-    case 'simple-post':
-      return {
-        ...basePost,
-        postType: 'simple-post',
-        title: item.title || '無題の投稿',
-        subtext: item.teamA?.name && item.teamB?.name ? `${item.teamA.name} vs ${item.teamB.name}` : '試合情報なし',
-        league: item.league || '',
-        country: item.country || '',
-        href: `/simple-posts/${item.id}`,
-      };
-    case 'spot':
-      return {
-        ...basePost,
-        postType: 'spot',
-        title: item.spotName || '無題のスポット',
-        subtext: item.address || '住所情報なし',
-        league: '',
-        country: item.country || '',
-        href: `/spots/${item.id}`,
-      };
-    default:
-      return null;
-  }
+  return unifiedPost;
 };
 
 export default function UserPostsPage() {
   const { id } = useParams();
   useTheme();
-    const [items, setItems] = useState<UnifiedPost[]>([]);
+  const [items, setItems] = useState<UnifiedPost[]>([]);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  const getMillis = (date: Date | Timestamp | null): number => {
+    if (!date) return 0;
+    if (date instanceof Timestamp) return date.toMillis();
+    return date.getTime();
+  };
 
   useEffect(() => {
     const fetchUserAndPosts = async (userId: string) => {
@@ -135,17 +138,14 @@ export default function UserPostsPage() {
           return uniquePosts;
         };
 
-        const postPromises = [
-          fetchCollection('posts', 'post'),
-          fetchCollection('simple-posts', 'simple-post'),
-          fetchCollection('spots', 'spot'),
-        ];
+        const posts = await fetchCollection('posts', 'post');
+        const simplePosts = await fetchCollection('simple-posts', 'simple-post');
+        const simpleTravels = await fetchCollection('simple-travels', 'simple-travel');
+        const spots = await fetchCollection('spots', 'spot');
 
-        const [posts, simplePosts, spots] = await Promise.all(postPromises);
-
-        const combinedItems = [...posts, ...simplePosts, ...spots];
-        combinedItems.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
-        setItems(combinedItems);
+        const allItems = [...posts, ...simplePosts, ...simpleTravels, ...spots];
+        allItems.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
+        setItems(allItems);
 
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -259,10 +259,12 @@ export default function UserPostsPage() {
   ) : (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
       {items.map((item) => {
+        // 'simple-travel'の場合もPostCardを使用するなどの分岐を追加
         if (item.postType === 'spot') {
           return <SpotCard key={item.id} spot={item.originalData as SpotData} />;
+        } else {
+          return <PostCard key={item.id} post={item} />;
         }
-        return <PostCard key={item.id} post={item} />;
       })}
     </div>
   )}

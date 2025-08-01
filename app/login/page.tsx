@@ -153,13 +153,15 @@ export default function LoginPage() {
       // 一意なID（ハンドル）を自動生成
       const uniqueId = 'user' + Math.random().toString(36).substring(2, 8);
 
-      await setDoc(userRef, {
-        uid: user.uid,
-        id: uniqueId, // ← 公開ID（@◯◯）
-        nickname: user.displayName || 'no-name', // ← 表示名（後で変更可能）
-        photoURL: user.photoURL || '',
+      const newUserProfile = {
+        nickname: '', // 初期ニックネームは空に
+        avatarUrl: '', // 初期アバターは空に
+        bio: '',
         createdAt: new Date(),
-      });
+        updatedAt: new Date(),
+      };
+
+      await setDoc(userRef, newUserProfile);
       console.log(`✅ Firestore にプロフィール作成: @${uniqueId}`);
     } else {
       console.log('🔁 Firestore プロフィールは既に存在');
