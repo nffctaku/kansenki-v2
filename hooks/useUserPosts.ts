@@ -18,6 +18,7 @@ export const useUserPosts = (user: User | null, currentUserProfile: { nickname: 
   };
 
     const toUnifiedPostCallback = useCallback((item: any, type: string): UnifiedPost | null => {
+        if (!currentUserProfile) return null;
     return toUnifiedPost(item, type, user, currentUserProfile, authorProfiles);
   }, [user, currentUserProfile, authorProfiles]);
 
