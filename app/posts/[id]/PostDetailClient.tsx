@@ -23,13 +23,13 @@ const DetailSection = ({ title, children }: { title: string; children: React.Rea
   </div>
 );
 
-export default function PostDetailClient({ initialPost }: { initialPost: Post }) {
+export default function PostDetailClient({ post, id, collectionName }: { post: Post; id: string; collectionName: string | null }) {
   const router = useRouter();
-  const [post] = useState<Post>(initialPost);
+  const [postState] = useState<Post>(post);
 
 
 
-  if (!post) {
+  if (!postState) {
     return (
         <div className="flex justify-center items-center h-screen">
             <div className="text-center">
@@ -42,7 +42,7 @@ export default function PostDetailClient({ initialPost }: { initialPost: Post })
     );
   }
 
-  const { id, title, images, match } = post;
+  const { title, images, match } = post;
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 font-sans">
@@ -78,7 +78,7 @@ export default function PostDetailClient({ initialPost }: { initialPost: Post })
       {/* Other sections like Hotels, Spots, Costs etc. */}
 
       <div className="my-8 py-6 border-y border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-center gap-4">
-        <LikeButton postId={id} size="md" />
+        {collectionName && <LikeButton postId={id} collectionName={collectionName} size="md" />}
 
         <ShareButton title={post.title} url={`https://kansenki.footballtop.net/posts/${id}`} />
       </div>

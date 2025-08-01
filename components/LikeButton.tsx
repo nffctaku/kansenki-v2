@@ -8,17 +8,17 @@ import { doc, getDoc, runTransaction } from 'firebase/firestore';
 
 interface LikeButtonProps {
   postId: string;
-  postType?: 'simple' | 'new';
+  collectionName: string;
   size?: 'xs' | 'sm' | 'md';
 }
 
-const LikeButton: React.FC<LikeButtonProps> = ({ postId, postType = 'new', size = 'md' }) => {
+const LikeButton: React.FC<LikeButtonProps> = ({ postId, collectionName, size = 'md' }) => {
   const [user, setUser] = useState<User | null>(null);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const collectionName = postType === 'simple' ? 'simple-posts' : 'posts';
+  
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {

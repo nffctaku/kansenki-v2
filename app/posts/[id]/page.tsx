@@ -121,6 +121,7 @@ export default function PostDetailPage() {
   const { user } = useAuth();
 
   const [post, setPost] = useState<Post | null>(null);
+  const [collectionName, setCollectionName] = useState<string | null>(null);
   const [travel, setTravel] = useState<SimpleTravel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -128,66 +129,34 @@ export default function PostDetailPage() {
 
   useEffect(() => {
     const fetchPost = async () => {
-      if (!id || typeof id !== 'string') {
+      if (!id) return;
+      setLoading(true);
+
+      const collectionNames = ['posts', 'simple-posts', 'spots', 'simple-travels'];
+      let foundPost = false;
+
+      for (const name of collectionNames) {
+        try {
+          const docRef = doc(db, name, id);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+            const postData = normalizePostData(docSnap.data(), docSnap.id);
+            setPost(postData);
+            setCollectionName(name);
+            foundPost = true;
+            break; // Exit loop once post is found
+          }
+        } catch (error) {
+          console.error(`Error fetching from ${name}:`, error);
+        }
+      }
+
+      if (!foundPost) {
         setNotFound(true);
-        setLoading(false);
-        return;
       }
 
-      try {
-        const postRef = doc(db, 'posts', id);
-        const postDoc = await getDoc(postRef);
-
-        if (!postDoc.exists()) {
-          setNotFound(true);
-          setLoading(false);
-          return;
-        }
-
-        const postData = postDoc.data();
-        let authorData: { nickname?: string; avatarUrl?: string } = {};
-
-        if (postData.authorId) {
-          try {
-            const usersCollection = collection(db, 'users');
-            const userQuery = query(usersCollection, where('uid', '==', postData.authorId));
-            const userSnapshot = await getDocs(userQuery);
-
-            if (!userSnapshot.empty) {
-              const userDoc = userSnapshot.docs[0];
-              const userData = userDoc.data();
-              authorData = {
-                nickname: userData.nickname,
-                avatarUrl: userData.avatarUrl,
-              };
-            }
-          } catch (error) {
-            console.error("Error fetching author's user data:", error);
-          }
-        }
-
-        const combinedData = {
-          ...postData,
-          authorName: authorData.nickname || postData.author,
-          authorImage: authorData.avatarUrl,
-        };
-
-        const normalizedPost = normalizePostData(combinedData, postDoc.id);
-        setPost(normalizedPost);
-
-        if (normalizedPost.travelId) {
-          const travelRef = doc(db, 'simple-travels', normalizedPost.travelId);
-          const travelDoc = await getDoc(travelRef);
-          if (travelDoc.exists()) {
-            setTravel(travelDoc.data() as SimpleTravel);
-          }
-        }
-      } catch (e) {
-        console.error('Error fetching post:', e);
-        setError('投稿の読み込み中にエラーが発生しました。');
-      } finally {
-        setLoading(false);
-      }
+      setLoading(false);
     };
 
     fetchPost();
@@ -553,9 +522,9 @@ export default function PostDetailPage() {
 
       {/* Post Actions */}
       <div className="my-8 py-6 border-y border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-center gap-4">
-        <LikeButton postId={id} size="md" />
+        {collectionName && post && <LikeButton postId={id} collectionName={collectionName} size="md" />}
         <BookmarkButton postId={id} size="md" />
-        <ShareButton title={post.title} url={`https://kansenki.footballtop.net/posts/${id}`} />
+        {post && <ShareButton title={post.title} url={`https://kansenki.footballtop.net/posts/${id}`} />}
       </div>
 
       {/* Back Button */}
