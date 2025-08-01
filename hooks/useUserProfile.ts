@@ -5,6 +5,7 @@ import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, auth } from '@/lib/firebase';
 import { User } from 'firebase/auth';
+import { UserProfile } from '@/types/user';
 
 export const useUserProfile = (user: User | null) => {
   const [nickname, setNickname] = useState('');
@@ -22,6 +23,7 @@ export const useUserProfile = (user: User | null) => {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   const fetchUserProfile = useCallback(async (uid: string) => {
     console.log('[useUserProfile] Fetching profile for UID:', uid);
@@ -46,6 +48,7 @@ export const useUserProfile = (user: User | null) => {
         // Firestoreの'avatarUrl'を正として読み込む。
         // Googleアカウントの'photoURL'とは完全に分離されているため、ログイン時に上書きされることはない。
         setAvatarUrl(userData.avatarUrl || '');
+        setProfile(userDocSnap.data() as UserProfile);
       } else {
         console.log('[useUserProfile] User doc does not exist.');
       }
@@ -113,5 +116,6 @@ export const useUserProfile = (user: User | null) => {
     message, setMessage,
     loading,
     handleSave,
+    profile,
   };
 };

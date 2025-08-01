@@ -1,149 +1,134 @@
 import { useState, useEffect, useCallback } from 'react';
 import { User } from 'firebase/auth';
+import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, getDoc, deleteDoc, Timestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 import { UnifiedPost, toUnifiedPost } from '../types/post';
+import { UserProfile } from '../types/user';
 
-export const useUserPosts = (user: User | null, currentUserProfile: { nickname: string; avatarUrl: string } | null) => {
-  const [combinedItems, setCombinedItems] = useState<UnifiedPost[]>([]);
-  const [bookmarkedItems, setBookmarkedItems] = useState<UnifiedPost[]>([]);
+export const useUserPosts = (user: User | null, currentUserProfile: UserProfile | null) => {
+  const [userPosts, setUserPosts] = useState<UnifiedPost[]>([]);
+  const [bookmarkedPosts, setBookmarkedPosts] = useState<UnifiedPost[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  const [authorProfiles, setAuthorProfiles] = useState<Map<string, { nickname: string; photoURL: string }>>(new Map());
+  const [error, setError] = useState<string | null>(null);
+  const [authorProfiles, setAuthorProfiles] = useState<Map<string, { nickname: string; photoURL: string; }>>(new Map());
 
   const getMillis = (date: Date | Timestamp | null): number => {
     if (!date) return 0;
-    if (date instanceof Timestamp) return date.toMillis();
+    if (date instanceof Timestamp) {
+      return date.toMillis();
+    }
     return date.getTime();
   };
 
-    const toUnifiedPostCallback = useCallback((item: any, type: string): UnifiedPost | null => {
-        if (!currentUserProfile) return null;
-    return toUnifiedPost(item, type, user, currentUserProfile, authorProfiles);
-  }, [user, currentUserProfile, authorProfiles]);
+  const toUnifiedPostCallback = useCallback((item: any, type: string, profiles: Map<string, { nickname: string; photoURL: string; }>): UnifiedPost | null => {
+    if (!currentUserProfile || !user) return null;
+    return toUnifiedPost(item, type, user, currentUserProfile, profiles);
+  }, [user, currentUserProfile]);
 
-  const fetchData = useCallback(async () => {
-    // ユーザー情報またはプロフィール情報がまだ読み込まれていない場合は、処理を開始しない
-        if (!user || !currentUserProfile) {
-      setCombinedItems([]);
-      setBookmarkedItems([]);
+  const processPosts = useCallback(async () => {
+    if (!user || !currentUserProfile) {
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    const uid = user.uid;
-
-    
-
-    const fetchPosts = async () => {
-      const collectionsToQuery = ['posts', 'simple-posts', 'simple-travels', 'spots'];
-      const allPosts: UnifiedPost[] = [];
-      
-
-      for (const collectionName of collectionsToQuery) {
-        const q = query(collection(db, collectionName), where('authorId', '==', uid));
+    setError(null);
+    try {
+      // 1. Fetch all raw post and bookmark data
+      const rawPosts: { id: string; data: any; type: string }[] = [];
+      const postCollections = ['posts', 'simple-posts', 'simple-travels', 'spots'];
+      for (const collectionName of postCollections) {
+        const q = query(collection(db, collectionName), where('authorId', '==', user.uid));
         const querySnapshot = await getDocs(q);
-        const posts = querySnapshot.docs.map(doc => {
-          const data = doc.data();
-          
-          return toUnifiedPostCallback({ id: doc.id, ...data }, collectionName);
-        }).filter((p): p is UnifiedPost => p !== null);
-        allPosts.push(...posts);
+        querySnapshot.docs.forEach(doc => {
+          rawPosts.push({ id: doc.id, data: doc.data(), type: collectionName });
+        });
       }
 
-      allPosts.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
-      setCombinedItems(allPosts);
-      
-    };
-
-    const fetchBookmarkedPosts = async () => {
-      const bookmarksRef = collection(db, 'users', uid, 'bookmarks');
-      const bookmarksSnap = await getDocs(bookmarksRef);
       const bookmarkedPostInfo: { data: any; type: string }[] = [];
-      const authorIdsToFetch = new Set<string>();
-
-      for (const bookmarkDoc of bookmarksSnap.docs) {
-        const bookmark = bookmarkDoc.data();
-        const postTypes = ['posts', 'simple-posts', 'simple-travels', 'spots'];
-        for (const type of postTypes) {
-          const postRef = doc(db, type, bookmark.postId);
-          const postSnap = await getDoc(postRef);
-          if (postSnap.exists()) {
-            const postData = { ...postSnap.data(), id: postSnap.id } as any;
-            const authorId = postData.author?.id || postData.authorId || postData.userId;
-            if (authorId && authorId !== uid) {
-              authorIdsToFetch.add(authorId);
-            }
-            bookmarkedPostInfo.push({ data: postData, type });
-                        
-            break;
+      if (currentUserProfile.bookmarks && currentUserProfile.bookmarks.length > 0) {
+        const bookmarkPromises = currentUserProfile.bookmarks.map(async (bookmark) => {
+          const { collectionName, postId } = bookmark;
+          const postDocRef = doc(db, collectionName, postId);
+          const postDocSnap = await getDoc(postDocRef);
+          if (postDocSnap.exists()) {
+            return { data: { id: postDocSnap.id, ...postDocSnap.data() }, type: collectionName };
           }
-        }
+          return null;
+        });
+        const results = await Promise.all(bookmarkPromises);
+        bookmarkedPostInfo.push(...results.filter((p): p is { data: any; type: string } => p !== null));
       }
 
-      const newProfiles = new Map<string, { nickname: string; photoURL: string }>();
-      for (const authorId of Array.from(authorIdsToFetch)) {
-        if (!authorProfiles.has(authorId)) {
-          const userDocRef = doc(db, 'users', authorId);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            newProfiles.set(authorId, {
-              nickname: userData.nickname || '名無し',
-              photoURL: userData.photoURL || '/default-avatar.svg',
-            });
+      const allRawData: (any & { id: string; type: string })[] = [
+        ...rawPosts.map(p => ({ ...p.data, id: p.id, type: p.type })),
+        ...bookmarkedPostInfo.map(p => ({ ...p.data, type: p.type }))
+      ];
+
+      // 2. Collect all author IDs
+      const authorIds = [...new Set(allRawData.map(p => p.authorId).filter(Boolean))];
+
+      // 3. Fetch missing author profiles
+      const newProfiles = new Map<string, { nickname: string; photoURL: string; }>();
+      const profilesToFetch = authorIds.filter(id => !authorProfiles.has(id));
+
+      if (profilesToFetch.length > 0) {
+        const profilePromises = profilesToFetch.map(async (authorId) => {
+          const profileDocRef = doc(db, 'users', authorId);
+          const profileDocSnap = await getDoc(profileDocRef);
+          if (profileDocSnap.exists()) {
+            const profileData = profileDocSnap.data();
+            return { id: authorId, profile: { nickname: profileData.nickname || '名無し', photoURL: profileData.avatarUrl || '/default-avatar.svg' } };
           }
-        }
+          return null;
+        });
+        const profileResults = await Promise.all(profilePromises);
+        profileResults.forEach(result => {
+          if (result) {
+            newProfiles.set(result.id, result.profile);
+          }
+        });
       }
 
+      const updatedProfiles = new Map([...authorProfiles, ...newProfiles]);
       if (newProfiles.size > 0) {
-        setAuthorProfiles(prev => new Map([...Array.from(prev), ...Array.from(newProfiles)]));
+        setAuthorProfiles(updatedProfiles);
       }
-
-      const unifiedBookmarks = bookmarkedPostInfo
-        .map(p => toUnifiedPostCallback(p.data, p.type))
+      
+      // 4. Unify all posts with complete profiles
+      const allUnifiedPosts = allRawData.map(p => toUnifiedPostCallback(p, p.type, updatedProfiles))
         .filter((p): p is UnifiedPost => p !== null);
 
-      unifiedBookmarks.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
-      setBookmarkedItems(unifiedBookmarks);
-    };
+      // Separate user posts and bookmarked posts
+      const userPostsData = allUnifiedPosts.filter(p => p.authorId === user.uid);
+      const bookmarkedPostsData = allUnifiedPosts.filter(p => currentUserProfile.bookmarks?.some(b => b.postId === p.id));
 
-    try {
-      await Promise.all([fetchPosts(), fetchBookmarkedPosts()]);
+      userPostsData.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
+      bookmarkedPostsData.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
+
+      setUserPosts(userPostsData);
+      setBookmarkedPosts(bookmarkedPostsData);
     } catch (error) {
-      console.error("Error fetching user posts and bookmarks:", error);
+      console.error("Error fetching user posts:", error);
+      setError('投稿の読み込み中にエラーが発生しました。');
     } finally {
       setLoading(false);
     }
-    }, [user, currentUserProfile, toUnifiedPostCallback]);
+  }, [user, currentUserProfile, authorProfiles, toUnifiedPostCallback]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    processPosts();
+  }, [processPosts]);
 
-      const handleDelete = async (postId: string, collectionName: string) => {
-    console.log(`[useUserPosts] handleDelete called with postId: ${postId}, collectionName: ${collectionName}`);
-    if (!user) {
-      console.error('[useUserPosts] User not found, aborting delete.');
-      return;
-    }
-
-        if (!collectionName) {
-      console.error(`[useUserPosts] Collection name not provided for post: ${postId}`);
-      return;
-    }
-
+  const handleDelete = async (postId: string, collectionName: string) => {
     try {
-            console.log(`[useUserPosts] Attempting to delete doc: /${collectionName}/${postId}`);
       await deleteDoc(doc(db, collectionName, postId));
-      console.log(`[useUserPosts] Deletion successful. Refetching data...`);
-      // 削除後にデータを再取得してUIを更新
-      await fetchData();
+      setUserPosts(prev => prev.filter(p => p.id !== postId));
+      setBookmarkedPosts(prev => prev.filter(p => p.id !== postId));
     } catch (error) {
-            console.error('[useUserPosts] Error deleting post:', error);
+      console.error(`Error deleting post ${postId} from ${collectionName}:`, error);
     }
   };
 
-  return { combinedItems, bookmarkedItems, loading, handleDelete, refetch: fetchData };
+  return { userPosts, bookmarkedPosts, loading, error, handleDelete, refetch: processPosts };
 };

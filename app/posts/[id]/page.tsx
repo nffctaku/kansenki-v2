@@ -181,10 +181,27 @@ export default function PostDetailPage() {
   if (error) return <div className="p-6 text-red-500 text-center">{error}</div>;
   if (!post) return null;
 
-  const { title, authorId, authorName: postAuthorName, authorImage: postAuthorImage, createdAt, match, hotels, transports, spots, costs, content, goods, firstAdvice, images, outboundTotalDuration, inboundTotalDuration } = post;
+  const { 
+    title, 
+    authorId, 
+    authorName, 
+    authorImage, 
+    createdAt, 
+    match, 
+    hotels, 
+    transports, 
+    spots, 
+    costs, 
+    content, 
+    goods, 
+    firstAdvice, 
+    images, 
+    outboundTotalDuration, 
+    inboundTotalDuration 
+  } = post;
 
-  const displayAuthorName = userInfo?.nickname || postAuthorName || '名無し';
-  const displayAuthorImage = userInfo?.avatarUrl || postAuthorImage || '/default-avatar.svg';
+  const displayAuthorName = userInfo?.nickname || authorName || '名無し';
+  const displayAuthorImage = userInfo?.avatarUrl || authorImage || '/default-avatar.svg';
 
   const outboundTransports = (transports || []).filter((t: Transport) => t.direction === 'outbound');
   const inboundTransports = (transports || []).filter((t: Transport) => t.direction === 'inbound');

@@ -2,6 +2,7 @@ import { Timestamp } from 'firebase/firestore';
 import { MatchInfo, Hotel, Spot, IndividualCost } from './match';
 export type { MatchInfo, Hotel, Spot, IndividualCost };
 import { User } from 'firebase/auth';
+import { UserProfile } from './user';
 
 // NOTE: This is a placeholder type. You may need to adjust it
 // based on the actual data structure used in the Transport section.
@@ -40,6 +41,8 @@ export interface Post {
   likeCount?: number;
   helpfulCount?: number;
   season?: string;
+  league?: string | null;
+  category?: string;
 
   // Fields from PostFormData to be included in Post
   postType: 'new' | 'additional' | 'simple' | 'add';
@@ -127,30 +130,35 @@ export interface UnifiedPost {
   league: string;
   country: string;
   href: string;
+  category?: string;
   originalData: any;
   editHref?: string; // 投稿編集ページへのリンク
 }
 
 export const toUnifiedPost = (
-    item: any, 
-    type: string, 
-    user: User | null, 
-    currentUserProfile: { nickname: string; avatarUrl: string }, 
-    authorProfiles: Map<string, { nickname: string; photoURL: string }>
-  ): UnifiedPost | null => {
+  item: any, 
+  type: string, 
+  user: User | null,
+  currentUserProfile: UserProfile | null,
+  authorProfiles: Map<string, { nickname: string; photoURL: string; }>
+): UnifiedPost | null => {
   if (!item || !item.id) return null;
 
   const post = item as any;
   const authorId = post.author?.id || post.authorId || post.userId || '';
   const isCurrentUser = user && authorId === user.uid;
-  
-  const authorProfile = isCurrentUser 
-    ? { nickname: currentUserProfile.nickname, photoURL: currentUserProfile.avatarUrl } 
-    : authorProfiles.get(authorId);
 
-  const authorName = authorProfile?.nickname || post.author?.name || post.authorName || '名無し';
-  const authorImage = authorProfile?.photoURL || post.author?.image || post.authorImage || '/default-avatar.svg';
+  const authorProfile = authorProfiles.get(authorId);
 
+  const authorName = isCurrentUser
+    ? currentUserProfile?.nickname || post.author?.name || '名無し'
+    : authorProfile?.nickname || post.author?.name || '名無し';
+
+  const authorImage = isCurrentUser
+    ? currentUserProfile?.avatarUrl || post.author?.image || '/default-avatar.svg'
+    : authorProfile?.photoURL || post.author?.image || '/default-avatar.svg';
+
+  const title = post.title || post.spotName || '無題';
   let subtext: string | null = null;
   if (post.match?.stadium?.name) {
     subtext = `${post.match.league} | ${post.match.stadium.name}`;
@@ -173,7 +181,7 @@ export const toUnifiedPost = (
     id: post.id,
     postType: type as any,
     collectionName: type,
-    title: post.title || post.spotName || '無題',
+    title,
     subtext,
     imageUrls: post.imageUrls || post.images || (post.imageUrl ? [post.imageUrl] : []),
     authorId,
@@ -181,6 +189,7 @@ export const toUnifiedPost = (
     authorImage,
     createdAt,
     league: post.match?.league || '',
+    category: (post.categories && post.categories.length > 0) ? post.categories[0] : (post.match?.category || ''),
     country: post.match?.country || '',
     href: `/posts/${post.id}`,
     originalData: item,

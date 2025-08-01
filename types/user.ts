@@ -4,10 +4,11 @@ export interface UserProfile {
   uid: string;
   displayName: string;
   email: string;
-  photoURL: string;
-  username: string; // nickname
+  avatarUrl: string;
+  nickname: string;
   bio?: string;
   favoriteTeam?: string;
+  bookmarks?: { collectionName: string; postId: string }[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

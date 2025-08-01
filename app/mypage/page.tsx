@@ -14,22 +14,10 @@ import { auth } from '@/lib/firebase';
 
 function MyPageContent({ user }: { user: User }) {
   const router = useRouter();
-  const profileProps = useUserProfile(user);
-
-  // useMemoを使用して、profilePropsの値が変更されたときだけ新しいオブジェクトを作成する
-  // これにより、useUserPostsフックの無限ループを防ぐ
-  const currentUserProfile = useMemo(() => {
-    if (profileProps.loading) {
-      return null;
-    }
-    return {
-      nickname: profileProps.nickname,
-      avatarUrl: profileProps.avatarUrl,
-    };
-  }, [profileProps.loading, profileProps.nickname, profileProps.avatarUrl]);
+  const userProfileProps = useUserProfile(user);
 
   // プロフィール情報が読み込まれた後に投稿を取得する
-  const { combinedItems, bookmarkedItems, loading: postsLoading, handleDelete, refetch } = useUserPosts(user, currentUserProfile);
+  const { userPosts, bookmarkedPosts, loading, error, handleDelete, refetch } = useUserPosts(user, userProfileProps.profile);
 
   const handleLogout = async () => {
     try {
@@ -42,19 +30,20 @@ function MyPageContent({ user }: { user: User }) {
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-4xl">
-      <UserProfileCard {...profileProps} loading={profileProps.loading} />
+      <UserProfileCard {...userProfileProps} />
 
       {/* プロフィールの読み込みが完了してから投稿セクションを表示 */}
       <div className="mt-8">
-        {!profileProps.loading && (
+        {!userProfileProps.loading && (
           <UserPostsTabs 
-            userPosts={combinedItems} 
-            bookmarkedPosts={bookmarkedItems} 
+            userPosts={userPosts} 
+            bookmarkedPosts={bookmarkedPosts} 
             handleDelete={handleDelete} 
             refetchPosts={refetch}
           />
         )}
-        {postsLoading && <div className="text-center p-4">投稿を読み込んでいます...</div>}
+        {(userProfileProps.loading || loading) && <div className="text-center p-4">情報を読み込んでいます...</div>}
+        {error && <div className="text-center p-4 text-red-500">エラー: {error}</div>}
       </div>
 
       <div className="mt-8 text-center">

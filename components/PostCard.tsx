@@ -22,9 +22,49 @@ const PostCard: React.FC<PostCardProps> = ({ post, showLikeButton = true }) => {
   const safeCreatedAt = getSafeDate(post.createdAt);
   const postDate = safeCreatedAt ? format(safeCreatedAt, 'yyyy.MM.dd') : '';
 
-  const title = post.title || '投稿';
-  const subtext = post.subtext || '';
+  const collection = post.collectionName;
+  const match = post.originalData?.match;
+  const userTitle = post.originalData?.title?.trim();
+
+  let displayTitle: string = post.title || '投稿';
+  let displaySubtext: string | null = post.subtext;
+
+  if (match && match.homeTeam && match.awayTeam) {
+    const matchCard = `${match.homeTeam} vs ${match.awayTeam}`;
+    if (collection === 'posts' && userTitle) {
+      // Case 1: 'posts' with a user-defined title.
+      displayTitle = userTitle;
+      displaySubtext = matchCard;
+    } else {
+      // Case 2: 'simple-posts' OR 'posts' without a user-defined title.
+      displayTitle = matchCard;
+      displaySubtext = match.league || null;
+    }
+  }
   const href = post.href || '/'; // Fallback to root if href is missing
+
+  const getCategoryLabel = (p: UnifiedPost): string | null => {
+    if (p.category && p.category.trim() !== '') {
+      return p.category;
+    }
+    if (p.league && p.league.trim() !== '') {
+      return p.league;
+    }
+    // Fallback logic when category and league are not available
+    switch (p.collectionName) {
+      case 'simple-travels':
+        return '旅行記';
+      case 'posts':
+      case 'simple-posts':
+        return '観戦記録';
+      case 'spots':
+        return 'スポット';
+      default:
+        return null;
+    }
+  };
+
+  const categoryLabel = getCategoryLabel(post);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden flex flex-col h-full relative">
@@ -33,7 +73,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, showLikeButton = true }) => {
           {post.imageUrls && post.imageUrls.length > 0 ? (
             <Image
               src={post.imageUrls && post.imageUrls.length > 0 ? post.imageUrls[0] : '/default-avatar.svg'}
-              alt={title || 'Post image'}
+              alt={displayTitle || 'Post image'}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
               className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -43,9 +83,9 @@ const PostCard: React.FC<PostCardProps> = ({ post, showLikeButton = true }) => {
               <span className="text-gray-500">No Image</span>
             </div>
           )}
-          {post.league && (
-            <div className="absolute top-1.5 left-1.5 bg-black bg-opacity-60 text-white text-[10px] px-2 py-0.5 rounded">
-              {post.league}
+          {categoryLabel && (
+            <div className="absolute top-1.5 left-1.5 bg-black bg-opacity-60 text-white text-[10px] px-2 py-0.5 rounded z-10">
+              {categoryLabel}
             </div>
           )}
         </div>
@@ -53,10 +93,10 @@ const PostCard: React.FC<PostCardProps> = ({ post, showLikeButton = true }) => {
       <div className="p-2 flex flex-col flex-grow">
         <Link href={href} className="no-underline">
           <p className="text-sm font-bold text-gray-800 dark:text-gray-200 line-clamp-2 leading-tight h-10 mb-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-            {title}
+            {displayTitle}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 h-4">
-            {subtext}
+            {displaySubtext}
           </p>
         </Link>
         <div className="mt-auto flex items-center text-xs text-gray-500 dark:text-gray-400 pt-2">
