@@ -10,7 +10,15 @@ interface PostCardProps {
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const authorImage = post.authorImage || '/default-avatar.svg';
   console.log('PostCard authorImage:', authorImage);
-  const postDate = post.createdAt ? format(post.createdAt, 'yyyy.MM.dd') : '';
+  const getSafeDate = (date: any): Date | null => {
+    if (!date) return null;
+    if (date instanceof Date) return date;
+    if (typeof date.toDate === 'function') return date.toDate();
+    return null;
+  };
+
+  const safeCreatedAt = getSafeDate(post.createdAt);
+  const postDate = safeCreatedAt ? format(safeCreatedAt, 'yyyy.MM.dd') : '';
 
   const title = post.title || '投稿';
   const subtext = post.subtext || '';
