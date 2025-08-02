@@ -45,15 +45,24 @@ export default function HomePage() {
 
         const authorProfiles = new Map<string, { nickname: string; avatarUrl: string }>();
         if (authorIds.size > 0) {
-          const usersQuery = query(collection(db, 'users'), where('__name__', 'in', Array.from(authorIds)));
-          const usersSnapshot = await getDocs(usersQuery);
-          usersSnapshot.forEach(doc => {
-            const userData = doc.data();
-            authorProfiles.set(doc.id, { 
-              nickname: userData.nickname,
-              avatarUrl: userData.avatarUrl
+          const authorIdList = Array.from(authorIds);
+          const chunks = [];
+          for (let i = 0; i < authorIdList.length; i += 30) {
+            chunks.push(authorIdList.slice(i, i + 30));
+          }
+
+          for (const chunk of chunks) {
+            if (chunk.length === 0) continue;
+            const usersQuery = query(collection(db, 'users'), where('__name__', 'in', chunk));
+            const usersSnapshot = await getDocs(usersQuery);
+            usersSnapshot.forEach(doc => {
+              const userData = doc.data();
+              authorProfiles.set(doc.id, {
+                nickname: userData.nickname,
+                avatarUrl: userData.avatarUrl
+              });
             });
-          });
+          }
         }
 
         const unifiedItems: UnifiedPostWithDate[] = allItems.map(({ data, type }) => {
