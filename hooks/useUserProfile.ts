@@ -37,10 +37,10 @@ export const useUserProfile = (user: User | null) => {
         const userData = userDocSnap.data();
         setNickname(userData.nickname || '');
         setBio(userData.bio || '');
-        setXLink(userData.xLink || '');
-        setInstagramLink(userData.instagramLink || '');
-        setYoutubeLink(userData.youtubeLink || '');
-        setNoteLink(userData.noteLink || '');
+        setXLink(userData.xLink || userData.twitter || '');
+        setInstagramLink(userData.instagramLink || userData.instagram || '');
+        setYoutubeLink(userData.youtubeLink || userData.youtube || '');
+        setNoteLink(userData.noteLink || userData.note || '');
         setResidence(userData.residence || '');
         setTravelFrequency(userData.travelFrequency || '');
         setOverseasMatchCount(userData.overseasMatchCount || '');

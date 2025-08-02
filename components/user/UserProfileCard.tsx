@@ -6,6 +6,9 @@ import { Textarea } from '../ui/textarea';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { FaInstagram, FaYoutube } from 'react-icons/fa';
+import { FaXTwitter } from 'react-icons/fa6';
+
 
 type UserProfileProps = ReturnType<typeof useUserProfile>;
 
@@ -16,7 +19,11 @@ export const UserProfileCard = (props: UserProfileProps) => {
     travelFrequency, setTravelFrequency,
     overseasMatchCount, setOverseasMatchCount,
     visitedCountries, setVisitedCountries,
-    residence, setResidence
+    residence, setResidence,
+    xLink, setXLink,
+    instagramLink, setInstagramLink,
+    youtubeLink, setYoutubeLink,
+    noteLink, setNoteLink
   } = props;
   const [isEditing, setIsEditing] = useState(false);
 
@@ -84,6 +91,22 @@ export const UserProfileCard = (props: UserProfileProps) => {
             <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} />
           </div>
           <div>
+            <label htmlFor="xLink" className="block text-sm font-medium text-gray-700 dark:text-gray-300">X (旧Twitter) リンク</label>
+            <Input id="xLink" value={xLink} onChange={(e) => setXLink(e.target.value)} placeholder="https://twitter.com/your_account" />
+          </div>
+          <div>
+            <label htmlFor="instagramLink" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Instagram リンク</label>
+            <Input id="instagramLink" value={instagramLink} onChange={(e) => setInstagramLink(e.target.value)} placeholder="https://instagram.com/your_account" />
+          </div>
+          <div>
+            <label htmlFor="youtubeLink" className="block text-sm font-medium text-gray-700 dark:text-gray-300">YouTube リンク</label>
+            <Input id="youtubeLink" value={youtubeLink} onChange={(e) => setYoutubeLink(e.target.value)} placeholder="https://youtube.com/your_channel" />
+          </div>
+          <div>
+            <label htmlFor="noteLink" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Note リンク</label>
+            <Input id="noteLink" value={noteLink} onChange={(e) => setNoteLink(e.target.value)} placeholder="https://note.com/your_account" />
+          </div>
+          <div>
             <label htmlFor="residence" className="block text-sm font-medium text-gray-700 dark:text-gray-300">居住地</label>
             <Input id="residence" value={residence} onChange={(e) => setResidence(e.target.value)} />
           </div>
@@ -132,6 +155,12 @@ export const UserProfileCard = (props: UserProfileProps) => {
         className="w-32 h-32 rounded-full mx-auto mb-4 object-cover border-4 border-gray-200 dark:border-gray-600"
       />
       <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">{nickname}</h2>
+            <div className="flex justify-center items-center space-x-4 my-4">
+        {xLink && <a href={xLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"><FaXTwitter size={24} /></a>}
+        {instagramLink && <a href={instagramLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"><FaInstagram size={24} /></a>}
+        {youtubeLink && <a href={youtubeLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"><FaYoutube size={24} /></a>}
+        {noteLink && <a href={noteLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"><span className="font-bold text-lg">note</span></a>}
+      </div>
       <p className="text-gray-600 dark:text-gray-300 mt-2 whitespace-pre-wrap">{bio}</p>
       <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
         <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
