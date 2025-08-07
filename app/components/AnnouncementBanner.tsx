@@ -26,14 +26,14 @@ const banners = [
     imageUrl: '/世界中のFOOTBALL (9).png',
     title: 'アップデート',
     subtitle: '追加投稿が簡単に！',
-    link: '/features/champions-league',
+    link: '/',
   },
   {
     id: 3,
     imageUrl: '/世界中のFOOTBALL (10).png',
     title: '海外サッカーファンにフォーカス',
     subtitle: 'ファンメディアはこちらから！',
-    link: '/campaign/post-2025',
+    link: '/',
   },
 ];
 
@@ -58,7 +58,7 @@ const AnnouncementBanner = () => {
             spaceBetween: 40,
           },
         }}
-        loop={true}
+        loop={false}
         autoplay={{
           delay: 4000,
           disableOnInteraction: false,
