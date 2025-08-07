@@ -169,14 +169,14 @@ const CreateSpotPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!user) {
       alert('ログインしてください。');
       return;
     }
 
+    // Validation
     if (type === 'hotel') {
-      if (!spot.country || !spot.spotName || !spot.accessRating || !spot.cleanlinessRating || !spot.comfortRating || !spot.facilityRating || !spot.staffRating) {
+      if (!spot.country || !spot.category || !spot.spotName || !spot.comment || !spot.accessRating || !spot.cleanlinessRating || !spot.comfortRating || !spot.facilityRating || !spot.staffRating) {
         alert('必須項目を入力してください。');
         return;
       }
@@ -190,23 +190,26 @@ const CreateSpotPage = () => {
     setIsSubmitting(true);
 
     try {
-      const imageUrls = await uploadImagesToCloudinary(imageFiles);
-      
+      let imageUrls: string[] = [];
+      if (imageFiles.length > 0) {
+        try {
+          imageUrls = await uploadImagesToCloudinary(imageFiles);
+        } catch (uploadError) {
+          console.error('Error uploading images:', uploadError);
+          alert('画像アップロードに失敗しました。');
+          setIsSubmitting(false); // Prevent further execution
+          return;
+        }
+      }
+
       const spotData: { [key: string]: any } = {
         ...spot,
-        imageUrls,
+        imageUrls, // Will be an empty array for now
         authorId: user.uid,
         nickname: authorNickname,
         createdAt: new Date(),
         type: type,
       };
-
-      // Remove undefined fields before sending to Firestore
-      Object.keys(spotData).forEach(key => {
-        if (spotData[key] === undefined) {
-          delete spotData[key];
-        }
-      });
 
       // Remove undefined fields before sending to Firestore
       Object.keys(spotData).forEach(key => {
@@ -221,31 +224,21 @@ const CreateSpotPage = () => {
       console.log('Document written with ID: ', docRef.id);
 
       alert('投稿が完了しました！');
+      // Reset form state after successful submission
       setSpot({
-        spotName: '',
-        url: '',
-        comment: '',
-        rating: 0,
-        overallRating: 0,
-        accessRating: 0,
-        cleanlinessRating: 0,
-        comfortRating: 0,
-        facilityRating: 0,
-        staffRating: 0,
-        country: '',
-        category: '',
-        price: undefined,
-        bookingSite: '',
-        city: '',
-        nights: 1,
+        spotName: '', url: '', comment: '', rating: 0,
+        overallRating: 0, accessRating: 0, cleanlinessRating: 0,
+        comfortRating: 0, facilityRating: 0, staffRating: 0,
+        country: '', category: '', price: undefined, bookingSite: '',
+        city: '', nights: 1,
       });
       setImageFiles([]);
       setImagePreviews([]);
       router.push('/mypage');
 
     } catch (error) {
-      console.error('Error submitting spot: ', error);
-      alert('投稿中にエラーが発生しました。');
+      console.error('Error submitting spot to Firestore: ', error);
+      alert('投稿に失敗しました。コンソールでエラー内容を確認してください。');
     } finally {
       setIsSubmitting(false);
     }
