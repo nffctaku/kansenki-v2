@@ -208,6 +208,13 @@ const CreateSpotPage = () => {
         }
       });
 
+      // Remove undefined fields before sending to Firestore
+      Object.keys(spotData).forEach(key => {
+        if (spotData[key] === undefined) {
+          delete spotData[key];
+        }
+      });
+
 
 
       const docRef = await addDoc(collection(db, 'spots'), spotData);
