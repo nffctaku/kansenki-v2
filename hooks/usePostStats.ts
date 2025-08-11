@@ -4,7 +4,6 @@ import { db } from '@/lib/firebase';
 
 export interface PostStats {
   totalPosts: number;
-  publicPosts: number;
   loading: boolean;
   error: string | null;
 }
@@ -12,7 +11,6 @@ export interface PostStats {
 export function usePostStats(): PostStats {
   const [stats, setStats] = useState<PostStats>({
     totalPosts: 0,
-    publicPosts: 0,
     loading: true,
     error: null,
   });
@@ -30,7 +28,6 @@ export function usePostStats(): PostStats {
 
         setStats({
           totalPosts: data.totalPosts,
-          publicPosts: 0, // Public posts count is not available from this function yet
           loading: false,
           error: null,
         });

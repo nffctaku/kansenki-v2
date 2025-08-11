@@ -8,6 +8,7 @@ const db = admin.firestore();
 export const getPostStats = onCall({
   cors: [
     'http://localhost:3000',
+    'http://localhost:3001',
     'http://localhost:3007',
     'https://kansenki-v2.web.app',
     'https://kansenki-v2.firebaseapp.com',

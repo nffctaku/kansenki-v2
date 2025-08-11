@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
-import { usePostStats } from '@/hooks/usePostStats';
+
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -85,7 +85,7 @@ export default function MenuDrawer() {
   useTheme();
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { totalPosts, publicPosts, loading } = usePostStats();
+
   const router = useRouter();
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -153,58 +153,7 @@ export default function MenuDrawer() {
             ))}
           </div>
 
-          {/* 投稿数統計セクション */}
-          <div className="mt-8 px-6 py-6 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 mx-4 rounded-xl">
-            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-4 text-center">サイト統計</h3>
-            {loading ? (
-              <div className="flex flex-col items-center justify-center h-24">
-                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                <span className="mt-3 text-xs text-gray-500 dark:text-gray-400 font-medium">統計を取得中...</span>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-3">
-                <div className="relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300">
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-bl-full"></div>
-                  <div className="relative">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">総投稿数</span>
-                      </div>
-                      <div className="text-xs text-blue-500 font-semibold">📝</div>
-                    </div>
-                    <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent">
-                      {totalPosts.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">件の観戦記</div>
-                  </div>
-                </div>
-                <div className="relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300">
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-green-500/10 to-green-600/5 rounded-bl-full"></div>
-                  <div className="relative">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">公開投稿数</span>
-                      </div>
-                      <div className="text-xs text-green-500 font-semibold">🌟</div>
-                    </div>
-                    <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-500 dark:from-green-400 dark:to-green-300 bg-clip-text text-transparent">
-                      {publicPosts.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">件が公開中</div>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div className="mt-4 flex justify-center">
-              <div className="flex space-x-1">
-                <div className="w-1 h-1 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
-                <div className="w-1 h-1 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
-                <div className="w-1 h-1 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
-              </div>
-            </div>
-          </div>
+
         </div>
       </aside>
 

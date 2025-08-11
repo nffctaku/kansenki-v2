@@ -15,6 +15,7 @@ export interface SpotData {
   category?: string;
   type: 'spot' | 'hotel';
   postType?: 'spot' | 'hotel';
+  authorId?: string;
   author?: string;
   nickname?: string;
   authorAvatar?: string;

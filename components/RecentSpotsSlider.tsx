@@ -12,18 +12,17 @@ import { UnifiedPost } from '@/types/post';
 import { useEffect, useState } from 'react';
 
 export const RecentSpotsSlider = () => {
-  const { spots, loading, error } = useRecentSpots(10);
+  const { spots, authorProfiles, loading, error } = useRecentSpots(10);
   const [unifiedSpots, setUnifiedSpots] = useState<UnifiedPost[]>([]);
 
   useEffect(() => {
-    if (spots.length > 0) {
-      const authorProfiles = new Map<string, { nickname: string; photoURL: string; }>();
+    if (spots.length > 0 && authorProfiles.size > 0) {
       const transformedSpots = spots
         .map(spot => toUnifiedPost(spot, 'spots', null, null, authorProfiles))
         .filter((post): post is UnifiedPost => post !== null);
       setUnifiedSpots(transformedSpots);
     }
-  }, [spots]);
+  }, [spots, authorProfiles]);
 
   if (error) {
     return <div className="text-red-500 text-center my-4">{error}</div>;

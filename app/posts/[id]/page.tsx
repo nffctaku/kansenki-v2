@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
-import type { DocumentData, DocumentSnapshot, FirestoreError } from 'firebase/firestore';
+import { Timestamp, type DocumentData, type DocumentSnapshot, type FirestoreError } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Hotel, SimpleTravel, IndividualCost, Transport, Spot } from '@/types/match';
 import type { Post } from '@/types/post';
@@ -90,8 +90,16 @@ const normalizePostData = (data: DocumentData, docId: string): Post => {
     content: data.content || '',
     images: data.images || [],
     status: data.status || 'published',
-    createdAt: data.createdAt,
-    updatedAt: data.updatedAt,
+    createdAt: (() => {
+      const d = data.createdAt;
+      if (!d) return null;
+      if (d instanceof Timestamp) return d.toDate();
+      if (typeof d === 'string') return new Date(d);
+      if (d.seconds !== undefined && d.nanoseconds !== undefined) {
+        return new Timestamp(d.seconds, d.nanoseconds).toDate();
+      }
+      return null;
+    })(),
     match: matchInfo,
     tags: data.tags || [],
     goods: data.goods || '',
