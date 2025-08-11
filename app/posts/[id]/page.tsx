@@ -19,8 +19,9 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import { airlineOptions, seatClassOptions } from '@/components/data';
 import LikeButton from '@/components/LikeButton';
+import ThanksButton from '@/components/ThanksButton';
+import BookmarkButton from '@/components/BookmarkButton';
 import ShareButton from '@/components/ShareButton';
-import BookmarkButton from '../../components/BookmarkButton';
 
 type UserInfo = {
   nickname: string;
@@ -534,10 +535,28 @@ export default function PostDetailPage() {
 
 
       {/* Post Actions */}
-      <div className="my-8 py-6 border-y border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-center gap-4">
-        {/* {collectionName && post && <LikeButton postId={id} collectionName={collectionName} size="md" />} */}
-        <BookmarkButton postId={id} size="md" />
-        {post && <ShareButton title={post.title} url={`https://kansenki.footballtop.net/posts/${id}`} />}
+      <div className="my-8 py-6 border-y border-slate-200 dark:border-slate-700">
+        <div className="flex items-start justify-around">
+          {collectionName && post && (
+            <>
+              <div className="flex flex-col items-center gap-2">
+                <LikeButton postId={post.id} collectionName={collectionName} size="md" />
+                <span className="text-sm text-slate-600 dark:text-slate-400">いいね</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <ThanksButton postId={post.id} collectionName={collectionName} size="md" />
+                <span className="text-sm text-slate-600 dark:text-slate-400">参考になった</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <BookmarkButton postId={post.id} collectionName={collectionName} size="md" />
+                <span className="text-sm text-slate-600 dark:text-slate-400">保存</span>
+              </div>
+            </>
+          )}
+        </div>
+        <div className="mt-6 flex justify-center">
+          {post && <ShareButton title={post.title} url={`https://kansenki.footballtop.net/posts/${id}`} />}
+        </div>
       </div>
 
       {/* Back Button */}

@@ -34,7 +34,7 @@ export const useUserPosts = (user: User | null, currentUserProfile: UserProfile 
     setLoading(true);
     setError(null);
     try {
-      // 1. Fetch all raw post and bookmark data
+      // 1. Fetch user's own posts
       const rawPosts: { id: string; data: any; type: string }[] = [];
       const postCollections = ['posts', 'simple-posts', 'simple-travels', 'spots'];
       for (const collectionName of postCollections) {
@@ -45,30 +45,45 @@ export const useUserPosts = (user: User | null, currentUserProfile: UserProfile 
         });
       }
 
+      // 2. Fetch bookmarked posts from the user's subcollection
       const bookmarkedPostInfo: { data: any; type: string }[] = [];
-      if (currentUserProfile.bookmarks && currentUserProfile.bookmarks.length > 0) {
-        const bookmarkPromises = currentUserProfile.bookmarks.map(async (bookmark) => {
-          const { collectionName, postId } = bookmark;
+      const userBookmarksRef = collection(db, 'users', user.uid, 'bookmarks');
+      const bookmarksSnapshot = await getDocs(userBookmarksRef);
+      console.log(`[Debug] Found ${bookmarksSnapshot.size} bookmarks in users subcollection.`);
+
+      if (!bookmarksSnapshot.empty) {
+        const bookmarkPromises = bookmarksSnapshot.docs.map(async (bookmarkDoc) => {
+          const bookmarkData = bookmarkDoc.data();
+          const postId = bookmarkDoc.id;
+          const collectionName = bookmarkData.collection;
+
+          if (!collectionName) return null;
+
           const postDocRef = doc(db, collectionName, postId);
           const postDocSnap = await getDoc(postDocRef);
+
           if (postDocSnap.exists()) {
             return { data: { id: postDocSnap.id, ...postDocSnap.data() }, type: collectionName };
           }
           return null;
         });
         const results = await Promise.all(bookmarkPromises);
-        bookmarkedPostInfo.push(...results.filter((p): p is { data: any; type: string } => p !== null));
+        const fetchedBookmarks = results.filter((p): p is { data: any; type: string } => p !== null);
+        console.log('[Debug] Fetched bookmarked post details:', fetchedBookmarks);
+        bookmarkedPostInfo.push(...fetchedBookmarks);
       }
+
+      const bookmarkedPostIds = new Set(bookmarkedPostInfo.map(p => p.data.id));
 
       const allRawData: (any & { id: string; type: string })[] = [
         ...rawPosts.map(p => ({ ...p.data, id: p.id, type: p.type })),
         ...bookmarkedPostInfo.map(p => ({ ...p.data, type: p.type }))
       ];
 
-      // 2. Collect all author IDs
+      // 3. Collect all author IDs
       const authorIds = [...new Set(allRawData.map(p => p.authorId).filter(Boolean))];
 
-      // 3. Fetch missing author profiles
+      // 4. Fetch missing author profiles
       const newProfiles = new Map<string, { nickname: string; photoURL: string; }>();
       const profilesToFetch = authorIds.filter(id => !authorProfiles.has(id));
 
@@ -95,17 +110,19 @@ export const useUserPosts = (user: User | null, currentUserProfile: UserProfile 
         setAuthorProfiles(updatedProfiles);
       }
       
-      // 4. Unify all posts with complete profiles
+      // 5. Unify all posts with complete profiles
       const allUnifiedPosts = allRawData.map(p => toUnifiedPostCallback(p, p.type, updatedProfiles))
         .filter((p): p is UnifiedPost => p !== null);
 
-      // Separate user posts and bookmarked posts
+      // 6. Separate user posts and bookmarked posts
       const userPostsData = allUnifiedPosts.filter(p => p.authorId === user.uid);
-      const bookmarkedPostsData = allUnifiedPosts.filter(p => currentUserProfile.bookmarks?.some(b => b.postId === p.id));
+      const bookmarkedPostsData = allUnifiedPosts.filter(p => bookmarkedPostIds.has(p.id));
 
       userPostsData.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
       bookmarkedPostsData.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
 
+      console.log('[Debug] Final user posts data:', userPostsData);
+      console.log('[Debug] Final bookmarked posts data:', bookmarkedPostsData);
       setUserPosts(userPostsData);
       setBookmarkedPosts(bookmarkedPostsData);
     } catch (error) {

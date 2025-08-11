@@ -125,6 +125,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             <span>{postDate}</span>
           </div>
         </div>
+
       </div>
     </div>
   );

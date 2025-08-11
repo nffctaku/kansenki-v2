@@ -150,13 +150,15 @@ export const toUnifiedPost = (
 
   const authorProfile = authorProfiles.get(authorId);
 
-  const authorName = isCurrentUser
-    ? currentUserProfile?.nickname || post.author?.name || '名無し'
-    : authorProfile?.nickname || post.author?.name || '名無し';
+  const authorName = post.authorName || 
+    (isCurrentUser ? currentUserProfile?.nickname : authorProfile?.nickname) || 
+    post.author?.name || 
+    '名無し';
 
-  const authorImage = isCurrentUser
-    ? currentUserProfile?.avatarUrl || post.author?.image || '/default-avatar.svg'
-    : authorProfile?.photoURL || post.author?.image || '/default-avatar.svg';
+  const authorImage = post.authorImage || 
+    (isCurrentUser ? currentUserProfile?.avatarUrl : authorProfile?.photoURL) || 
+    post.author?.image || 
+    '/default-avatar.svg';
 
   const getTitle = () => {
     if (post.title?.trim()) {
