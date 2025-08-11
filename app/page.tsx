@@ -13,6 +13,8 @@ import PostCard from '@/components/PostCard';
 import SpotCard, { SpotData } from '@/components/SpotCard';
 import { format } from 'date-fns';
 import AnnouncementBanner from './components/AnnouncementBanner';
+import PopularPostsSlider from '@/components/PopularPostsSlider';
+import { RecentSpotsSlider } from '@/components/RecentSpotsSlider';
 
 
 
@@ -26,11 +28,11 @@ export default function HomePage() {
     const fetchItems = async () => {
       setIsLoading(true);
       try {
-        const collectionsToQuery = ['posts', 'simple-posts', 'simple-travels', 'spots'];
+        const collectionNames = ['posts', 'simple-posts', 'simple-travels'];
         const allItems: { data: any; type: string }[] = [];
         const authorIds = new Set<string>();
 
-        for (const collectionName of collectionsToQuery) {
+        for (const collectionName of collectionNames) {
           const q = query(collection(db, collectionName), orderBy('createdAt', 'desc'), limit(50));
           const querySnapshot = await getDocs(q);
           querySnapshot.forEach(doc => {
@@ -124,7 +126,7 @@ export default function HomePage() {
 
         unifiedItems.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
 
-        setItems(unifiedItems.slice(0, 20));
+        setItems(unifiedItems.slice(0, 10));
 
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -203,6 +205,8 @@ export default function HomePage() {
         </div>
       </div>
 
+      <PopularPostsSlider />
+
       {/* All Items Feed */}
       <div className="px-2 py-3">
         <h2 className="text-lg font-bold my-3 text-center text-gray-900 dark:text-gray-200">
@@ -217,6 +221,7 @@ export default function HomePage() {
           })}
         </div>
       </div>
+      <RecentSpotsSlider />
     </>
   );
 }
