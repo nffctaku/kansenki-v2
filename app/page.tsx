@@ -213,11 +213,11 @@ export default function HomePage() {
           最新の投稿
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3">
-          {items.map((item) => {
+          {items.map((item, index) => {
             if (item.postType === 'spot') {
               return <SpotCard key={item.id} spot={item.originalData as SpotData} />;
             }
-            return <PostCard key={item.id} post={item} />;
+            return <PostCard key={item.id} post={item} priority={index < 5} />; 
           })}
         </div>
       </div>

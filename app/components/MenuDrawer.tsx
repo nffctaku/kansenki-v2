@@ -99,10 +99,10 @@ export default function MenuDrawer() {
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <Link href="/" className="cursor-pointer">
             <div className="dark:hidden">
-              <Image src="/footballtop-logo-12.png" alt="Football Top Logo" width={140} height={40} />
+              <Image src="/footballtop-logo-12.png" alt="Football Top Logo" width={140} height={40} priority style={{ height: 'auto' }} sizes="140px" />
             </div>
             <div className="hidden dark:block">
-              <Image src="/footballtop-logo-13.png" alt="Football Top Logo" width={140} height={40} />
+              <Image src="/footballtop-logo-13.png" alt="Football Top Logo" width={140} height={40} priority style={{ height: 'auto' }} sizes="140px" />
             </div>
           </Link>
         </div>

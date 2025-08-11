@@ -12,6 +12,7 @@ import type { Post } from '@/types/post';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Swiper, SwiperSlide } from 'swiper/react';
+import { format } from 'date-fns';
 
 import { Navigation, Pagination, A11y } from 'swiper/modules';
 import 'swiper/css';
@@ -88,7 +89,7 @@ const normalizePostData = (data: DocumentData, docId: string): Post => {
     authorImage: authorInfo.image,
     title: data.title || '',
     content: data.content || '',
-    images: data.images || [],
+    images: data.images || data.imageUrls || (data.image ? [data.image] : []) || (data.imageUrl ? [data.imageUrl] : []),
     status: data.status || 'published',
     createdAt: (() => {
       const d = data.createdAt;
@@ -131,11 +132,26 @@ export default function PostDetailPage() {
 
   const [post, setPost] = useState<Post | null>(null);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [displayDate, setDisplayDate] = useState<string>('日付不明');
   const [collectionName, setCollectionName] = useState<string | null>(null);
   const [travel, setTravel] = useState<SimpleTravel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
+
+  const fetchUserInfo = async (authorId: string) => {
+    try {
+      const userDocRef = doc(db, 'users', authorId);
+      const userDocSnap = await getDoc(userDocRef);
+      if (userDocSnap.exists()) {
+        setUserInfo(userDocSnap.data() as UserInfo);
+      } else {
+        console.log('No such user!');
+      }
+    } catch (err) {
+      console.error('Error fetching user data:', err);
+    }
+  };
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -147,20 +163,39 @@ export default function PostDetailPage() {
 
       for (const name of collectionNames) {
         try {
-          const docRef = doc(db, name, id);
-          const docSnap = await getDoc(docRef);
+          const postRef = doc(db, name, id as string);
+          const postSnap = await getDoc(postRef);
 
-          if (docSnap.exists()) {
-            const postData = normalizePostData(docSnap.data(), docSnap.id);
-            setPost(postData);
+          console.log('Raw Firestore data:', JSON.stringify(postSnap.data(), null, 2));
+
+          if (postSnap.exists()) {
+            const normalizedData = normalizePostData(postSnap.data(), postSnap.id);
+            setPost(normalizedData);
             setCollectionName(name);
 
-            if (postData.authorId) {
-              const userDocRef = doc(db, 'users', postData.authorId);
-              const userDocSnap = await getDoc(userDocRef);
-              if (userDocSnap.exists()) {
-                setUserInfo(userDocSnap.data() as UserInfo);
+            // Determine and format the display date
+            const dateToFormat = normalizedData.match?.date || normalizedData.createdAt;
+            if (dateToFormat) {
+              try {
+                // Handle both string dates and Firestore Timestamps
+                const dateObj = typeof dateToFormat.toDate === 'function' 
+                  ? dateToFormat.toDate() 
+                  : new Date(dateToFormat);
+                // Adjust for timezone issues if date is string by adding T00:00:00
+                if (typeof dateToFormat === 'string' && !dateToFormat.includes('T')) {
+                  dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
+                }
+                setDisplayDate(format(dateObj, 'yyyy.MM.dd'));
+              } catch (error) {
+                console.error('Error formatting date:', error);
+                setDisplayDate('日付不明');
               }
+            } else {
+              setDisplayDate('日付不明');
+            }
+
+            if (normalizedData.authorId) {
+              fetchUserInfo(normalizedData.authorId);
             }
             foundPost = true;
             break; // Exit loop once post is found
@@ -250,7 +285,7 @@ export default function PostDetailPage() {
             {images.map((url: string, index: number) => (
               <SwiperSlide key={index}>
                 <div className="w-full aspect-square overflow-hidden rounded-lg shadow-lg">
-                  <Image src={url} alt={`Post image ${index + 1}`} fill className="object-cover" />
+                  <Image src={url} alt={`Post image ${index + 1}`} fill className="object-cover" priority={index === 0} sizes="(max-width: 896px) 100vw, 896px" />
                 </div>
               </SwiperSlide>
             ))}
@@ -263,20 +298,21 @@ export default function PostDetailPage() {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{title}</h1>
         <div className="mt-2 flex justify-between items-center">
           <div className="flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400">
-            <Link href={`/user/${authorId}`} className="flex items-center space-x-2 hover:underline">
+            <Link href={`/user/${post.authorId}`} className="flex items-center space-x-2 hover:underline">
               <div className="relative w-10 h-10 rounded-full overflow-hidden">
                 <Image
-                  src={displayAuthorImage}
-                  alt={displayAuthorName}
+                  src={userInfo?.avatarUrl || '/default-avatar.svg'}
+                  alt={userInfo?.nickname || post.authorName || 'avatar'}
                   fill
+                  sizes="40px"
                   className="object-cover"
                 />
               </div>
-              <span>{displayAuthorName}</span>
+              <span>{userInfo?.nickname || post.authorName}</span>
             </Link>
             <span className="text-slate-500 dark:text-slate-400">•</span>
             <span className="text-sm text-slate-500 dark:text-slate-400">
-              {post.createdAt && typeof post.createdAt.toDate === 'function' ? new Date(post.createdAt.toDate()).toLocaleDateString() : '日付不明'}
+              {displayDate}
             </span>
           </div>
 

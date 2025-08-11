@@ -6,9 +6,10 @@ import { UnifiedPost } from '@/types/post';
 
 interface PostCardProps {
   post: UnifiedPost;
+  priority?: boolean;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post }) => {
+const PostCard: React.FC<PostCardProps> = ({ post, priority = false }) => {
   const authorImage = post.authorImage || '/default-avatar.svg';
   const getSafeDate = (date: any): Date | null => {
     if (!date) return null;
@@ -87,6 +88,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
               className="object-cover transition-transform duration-300 group-hover:scale-105"
+              priority={priority}
             />
           ) : (
             <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
@@ -116,6 +118,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                 src={post.authorImage || '/default-avatar.svg'}
                 alt={post.authorName || 'avatar'}
                 fill
+                sizes="20px"
                 className="object-cover"
               />
             </div>
