@@ -66,37 +66,63 @@ export const useUserProfile = (user: User | null) => {
     // userオブジェクトの変更時のみ実行するため、fetchUserProfileを依存配列から削除
   }, [user]);
 
-  const handleSave = async () => {
+    const handleSave = async () => {
     if (!user) return;
 
-    let newAvatarUrl = avatarUrl;
-    if (avatarFile) {
-      const storageRef = ref(storage, `avatars/${user.uid}/${avatarFile.name}`);
-      await uploadBytes(storageRef, avatarFile);
-      newAvatarUrl = await getDownloadURL(storageRef);
-      setAvatarUrl(newAvatarUrl);
+    try {
+      setMessage('プロフィールを更新中...');
+      const userDocRef = doc(db, 'users', user.uid);
+      const updateData: { [key: string]: any } = {};
+
+      // 画像が選択されている場合のみアップロードしてURLを更新データに含める
+      if (avatarFile) {
+        const storageRef = ref(storage, `avatars/${user.uid}/${avatarFile.name}`);
+        await uploadBytes(storageRef, avatarFile);
+        const newAvatarUrl = await getDownloadURL(storageRef);
+        updateData.avatarUrl = newAvatarUrl;
+        setAvatarUrl(newAvatarUrl); // UIを即時反映
+      } else {
+        // 画像が選択されていない場合は、現在のavatarUrlを維持する（もし他のフィールドと同時に更新される場合）
+        // ただし、他のフィールドが変更されていない場合は何もしない
+        if(avatarUrl !== profile?.avatarUrl) {
+            updateData.avatarUrl = avatarUrl;
+        }
+      }
+
+      // 他のプロフィール項目を更新データに含める
+      const fields: (keyof UserProfile)[] = ['nickname', 'bio', 'xLink', 'instagramLink', 'youtubeLink', 'noteLink', 'residence', 'travelFrequency', 'overseasMatchCount', 'visitedCountries'];
+      const state: { [key: string]: any } = { nickname, bio, xLink, instagramLink, youtubeLink, noteLink, residence, travelFrequency, overseasMatchCount, visitedCountries };
+      
+      fields.forEach(field => {
+        // Firestoreのデータと比較し、変更があったフィールドのみを更新対象に追加
+        if (state[field] !== (profile?.[field] || '')) {
+            if(Array.isArray(state[field])){
+                if(JSON.stringify(state[field]) !== JSON.stringify(profile?.[field] || [])){
+                    updateData[field] = state[field];
+                }
+            } else {
+                updateData[field] = state[field];
+            }
+        }
+      });
+
+      // 更新するデータがある場合のみFirestoreを更新
+      if (Object.keys(updateData).length > 0) {
+        updateData.updatedAt = Timestamp.now();
+        await updateDoc(userDocRef, updateData);
+        setMessage('プロフィールを更新しました！');
+        // プロフィール情報を再取得して同期
+        await fetchUserProfile(user.uid);
+      } else {
+        setMessage('変更点はありません。');
+      }
+
+    } catch (error) {
+        console.error("プロフィール更新エラー:", error);
+        setMessage('エラーが発生しました。');
+    } finally {
+        setTimeout(() => setMessage(''), 3000);
     }
-
-    const userDocRef = doc(db, 'users', user.uid);
-    await updateDoc(userDocRef, {
-      nickname,
-      bio,
-      xLink,
-      instagramLink,
-      youtubeLink,
-      noteLink,
-      residence,
-      travelFrequency,
-      overseasMatchCount,
-      visitedCountries,
-      // Firestoreの'avatarUrl'に保存する。
-      // 'photoURL'という名前はGoogleアカウントと競合するため使用しない。
-      avatarUrl: newAvatarUrl,
-      updatedAt: Timestamp.now(),
-    });
-
-    setMessage('プロフィールを更新しました！');
-    setTimeout(() => setMessage(''), 3000);
   };
 
   return {
