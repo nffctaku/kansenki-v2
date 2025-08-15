@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage, auth } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { User } from 'firebase/auth';
 import { UserProfile } from '@/types/user';
 
@@ -74,13 +73,34 @@ export const useUserProfile = (user: User | null) => {
       const userDocRef = doc(db, 'users', user.uid);
       const updateData: { [key: string]: any } = {};
 
-      // 画像が選択されている場合のみアップロードしてURLを更新データに含める
+      // 画像が選択されている場合のみCloudinaryにアップロードしてURLを更新データに含める
       if (avatarFile) {
-        const storageRef = ref(storage, `avatars/${user.uid}/${avatarFile.name}`);
-        await uploadBytes(storageRef, avatarFile);
-        const newAvatarUrl = await getDownloadURL(storageRef);
-        updateData.avatarUrl = newAvatarUrl;
-        setAvatarUrl(newAvatarUrl); // UIを即時反映
+        const formData = new FormData();
+        formData.append('file', avatarFile);
+        formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+
+        try {
+          const response = await fetch(
+            `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+            {
+              method: 'POST',
+              body: formData,
+            }
+          );
+
+          const data = await response.json();
+          if (data.secure_url) {
+            const newAvatarUrl = data.secure_url;
+            updateData.avatarUrl = newAvatarUrl;
+            setAvatarUrl(newAvatarUrl); // UIを即時反映
+          } else {
+            throw new Error('Cloudinaryへのアップロードに失敗しました。');
+          }
+        } catch (error) {
+          console.error("Cloudinary upload error:", error);
+          setMessage('画像のアップロードに失敗しました。');
+          return; // エラーが発生した場合は処理を中断
+        }
       } else {
         // 画像が選択されていない場合は、現在のavatarUrlを維持する（もし他のフィールドと同時に更新される場合）
         // ただし、他のフィールドが変更されていない場合は何もしない
