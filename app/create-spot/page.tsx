@@ -331,6 +331,11 @@ const CreateSpotPage = () => {
               <Input id="spotName" name="spotName" value={spot.spotName} onChange={handleInputChange} placeholder={type === 'hotel' ? '例：ザ・サボイ' : '例：エンゼル・スタジアム'} />
             </div>
 
+            <div>
+              <Label htmlFor="url" className="font-semibold">URL（任意）</Label>
+              <Input id="url" name="url" value={spot.url} onChange={handleInputChange} placeholder="https://example.com" />
+            </div>
+
             {type === 'hotel' && (
               <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -363,11 +368,6 @@ const CreateSpotPage = () => {
               </div>
 
               <div>
-                <Label htmlFor="price" className="font-semibold">金額（円）（任意）</Label>
-                <Input id="price" name="price" type="number" value={spot.price || ''} onChange={handleInputChange} placeholder="例: 15000" />
-              </div>
-
-              <div>
                 <Label htmlFor="comment" className="font-semibold">
                   {type === 'hotel' ? 'コメント（任意）' : 'コメント（必須）'}
                 </Label>
@@ -375,6 +375,11 @@ const CreateSpotPage = () => {
               </div>
               </>
             )}
+
+            <div>
+              <Label htmlFor="price" className="font-semibold">金額（円）（任意）</Label>
+              <Input id="price" name="price" type="number" value={spot.price || ''} onChange={handleInputChange} placeholder="例: 15000" />
+            </div>
 
             <div>
               <Label htmlFor="spot-image" className="font-semibold">画像（任意）</Label>
