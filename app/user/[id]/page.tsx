@@ -82,7 +82,7 @@ const toUnifiedPost = (
   const unifiedPost: UnifiedPost = {
     id: post.id,
     postType: type as any,
-    collectionName: `${type}s`,
+    collectionName: type.endsWith('s') ? type : `${type}s`,
     title: getTitle(),
     subtext: post.match?.stadium?.name || post.stadium || null,
     imageUrls: post.imageUrls || post.images || (post.imageUrl ? [post.imageUrl] : []),
@@ -97,7 +97,7 @@ const toUnifiedPost = (
       'simple-post': 'simple-posts',
       'spot': 'spots',
       'simple-travel': 'simple-travels',
-    }[type as 'post' | 'simple-post' | 'spot' | 'simple-travel'] || type}s/${post.id}`,
+    }[type as 'post' | 'simple-post' | 'spot' | 'simple-travel'] || (type.endsWith('s') ? type : `${type}s`)}/${post.id}`,
     originalData: item,
   };
 

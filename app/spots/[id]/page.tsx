@@ -145,7 +145,7 @@ const SpotDetailPage = () => {
                 {spot.imageUrls.map((url, index) => (
                   <CarouselItem key={index}>
                     <div className="p-1">
-                      <AspectRatio ratio={16 / 9}>
+                      <AspectRatio ratio={1 / 1}>
                         <Image src={url} alt={`${spot.spotName}の画像 ${index + 1}`} fill className="rounded-md object-cover" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"/>
                       </AspectRatio>
                     </div>
