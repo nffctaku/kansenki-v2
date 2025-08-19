@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -8,8 +9,18 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import LikeButton from '@/components/LikeButton';
+import ThanksButton from '@/components/ThanksButton';
+import BookmarkButton from '@/components/BookmarkButton';
+import ShareButton from '@/components/ShareButton';
 
 import { format } from 'date-fns';
+
+// Spotの型定義（緯度・経度も含む）
+type UserInfo = {
+  nickname: string;
+  avatarUrl?: string;
+};
 
 // Spotの型定義（緯度・経度も含む）
 interface Spot {
@@ -24,40 +35,81 @@ interface Spot {
   createdAt: Timestamp;
   country: string;
   category: string;
+  type: 'spot' | 'hotel';
+  price?: number;
+  bookingSite?: string;
+  nights?: number;
+  overallRating?: number;
+  accessRating?: number;
+  cleanlinessRating?: number;
+  comfortRating?: number;
+  facilityRating?: number;
+  staffRating?: number;
 }
 
 const SpotDetailPage = () => {
   const params = useParams();
   const { id } = params;
   const [spot, setSpot] = useState<Spot | null>(null);
+  const [collectionName, setCollectionName] = useState<string | null>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchUserInfo = async (authorId: string) => {
+    if (!authorId) return;
+    try {
+      const userDocRef = doc(db, 'users', authorId);
+      const userDocSnap = await getDoc(userDocRef);
+      if (userDocSnap.exists()) {
+        setUserInfo(userDocSnap.data() as UserInfo);
+      } else {
+        console.log('No such user!');
+      }
+    } catch (err) {
+      console.error('Error fetching user data:', err);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
 
     const fetchSpot = async () => {
-      try {
-        const docRef = doc(db, 'spots', id as string);
-        const docSnap = await getDoc(docRef);
+      const collectionNames = ['spots', 'posts', 'simple-posts', 'simple-travels'];
+      let found = false;
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          const spotData = {
-            id: docSnap.id,
-            ...data,
-            createdAt: data.createdAt, // Keep as Timestamp
-          } as Spot;
-          setSpot(spotData);
-        } else {
-          setError('お探しのスポットは見つかりませんでした。');
+      for (const name of collectionNames) {
+        try {
+          const docRef = doc(db, name, id as string);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            // spotName or name field check for spot type
+            if (data.spotName || data.category || data.type === 'spot' || data.type === 'hotel') {
+              const spotData = {
+                id: docSnap.id,
+                ...data,
+                createdAt: data.createdAt, // Keep as Timestamp
+              } as Spot;
+              setSpot(spotData);
+              setCollectionName(name);
+              if (spotData.authorId) {
+                fetchUserInfo(spotData.authorId);
+              }
+              found = true;
+              break;
+            }
+          }
+        } catch (err) {
+          console.error(`Error fetching spot from ${name}:`, err);
         }
-      } catch (err) {
-        console.error('Error fetching spot:', err);
-        setError('データの取得中にエラーが発生しました。');
-      } finally {
-        setLoading(false);
       }
+
+      if (!found) {
+        setError('お探しのスポットは見つかりませんでした。');
+      }
+      setLoading(false);
     };
 
     fetchSpot();
@@ -105,16 +157,40 @@ const SpotDetailPage = () => {
             </Carousel>
           )}
 
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold">評価</h3>
-              <div className="flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <span key={i} className={`text-2xl ${i < spot.rating ? 'text-yellow-400' : 'text-gray-300'}`}>★</span>
-                ))}
-                 <span className='ml-2 text-lg'>({spot.rating})</span>
+          <div className="space-y-6">
+            {spot.type === 'hotel' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">総合評価</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-slate-800">{spot.overallRating?.toFixed(1)}</span>
+                    <span className="text-yellow-400">{'★'.repeat(Math.round(spot.overallRating || 0))}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">金額</h3>
+                  <p className="text-xl">{spot.price ? `${spot.price.toLocaleString()}円` : 'N/A'}</p>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">予約サイト</h3>
+                  <p>{spot.bookingSite || 'N/A'}</p>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">泊数</h3>
+                  <p>{spot.nights ? `${spot.nights}泊` : 'N/A'}</p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                <h3 className="text-lg font-semibold">評価</h3>
+                <div className="flex items-center">
+                  {[...Array(5)].map((_, i) => (
+                    <span key={i} className={`text-2xl ${i < spot.rating ? 'text-yellow-400' : 'text-gray-300'}`}>★</span>
+                  ))}
+                  <span className='ml-2 text-lg'>({spot.rating})</span>
+                </div>
+              </div>
+            )}
 
             <div>
               <h3 className="text-lg font-semibold">コメント</h3>
@@ -127,13 +203,42 @@ const SpotDetailPage = () => {
                 <a href={spot.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline break-all">{spot.url}</a>
               </div>
             )}
-
-            
-
           </div>
         </CardContent>
+
+        <div className="my-4 py-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex items-start justify-around">
+            <div className="flex flex-col items-center gap-2">
+              {collectionName && <LikeButton postId={spot.id} collectionName={collectionName} size="md" />}
+              <span className="text-sm text-slate-600 dark:text-slate-400">いいね</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              {collectionName && <ThanksButton postId={spot.id} collectionName={collectionName} size="md" />}
+              <span className="text-sm text-slate-600 dark:text-slate-400">参考になった</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              {collectionName && <BookmarkButton postId={spot.id} collectionName={collectionName} size="md" />}
+              <span className="text-sm text-slate-600 dark:text-slate-400">保存</span>
+            </div>
+          </div>
+          <div className="mt-6 flex justify-center">
+            <ShareButton title={spot.spotName} url={`https://kansenki.footballtop.net/spots/${id}`} />
+          </div>
+        </div>
+
         <CardFooter className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400 pt-4">
-            <span>投稿者: <span className="font-medium text-gray-700 dark:text-gray-300">{spot.authorNickname || '匿名ユーザー'}</span></span>
+            <Link href={`/user/${spot.authorId}`} className="flex items-center space-x-2 hover:underline">
+              <div className="relative w-8 h-8 rounded-full overflow-hidden">
+                <Image
+                  src={userInfo?.avatarUrl || '/default-avatar.svg'}
+                  alt={userInfo?.nickname || 'avatar'}
+                  fill
+                  sizes="32px"
+                  className="object-cover"
+                />
+              </div>
+              <span>{userInfo?.nickname || '匿名ユーザー'}</span>
+            </Link>
             <span>{spot.createdAt ? format(new Date(spot.createdAt.seconds * 1000), 'yyyy.MM.dd') : ''}</span>
         </CardFooter>
       </Card>

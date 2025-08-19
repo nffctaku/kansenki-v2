@@ -30,6 +30,11 @@ service cloud.firestore {
         allow read, list: if true;
         allow create, delete: if isOwner(userId);
       }
+
+      match /thanks/{userId} {
+        allow read, list: if true;
+        allow create, delete: if isOwner(userId);
+      }
     }
 
     // SIMPLE-POSTS
@@ -43,6 +48,11 @@ service cloud.firestore {
         allow read, list: if true;
         allow create, delete: if isOwner(userId);
       }
+
+      match /thanks/{userId} {
+        allow read, list: if true;
+        allow create, delete: if isOwner(userId);
+      }
     }
 
     // SIMPLE-TRAVELS
@@ -51,6 +61,16 @@ service cloud.firestore {
       allow list: if request.auth != null;
       allow create: if request.auth != null;
       allow update, delete: if isOwner(resource.data.authorId);
+
+      match /likes/{userId} {
+        allow read, list: if true;
+        allow create, delete: if isOwner(userId);
+      }
+
+      match /thanks/{userId} {
+        allow read, list: if true;
+        allow create, delete: if isOwner(userId);
+      }
     }
 
     // SPOTS
@@ -64,6 +84,16 @@ service cloud.firestore {
         allow read: if true;
         allow create: if request.auth != null;
         allow delete: if isOwner(resource.data.author.id);
+      }
+
+      match /likes/{userId} {
+        allow read, list: if true;
+        allow create, delete: if isOwner(userId);
+      }
+
+      match /thanks/{userId} {
+        allow read, list: if true;
+        allow create, delete: if isOwner(userId);
       }
     }
   }

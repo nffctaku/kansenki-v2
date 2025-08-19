@@ -89,8 +89,9 @@ const CreateSpotPage = () => {
   }, [imageFiles]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setSpot(prev => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    const processedValue = type === 'number' ? (value === '' ? undefined : parseInt(value, 10)) : value;
+    setSpot(prev => ({ ...prev, [name]: processedValue }));
   };
 
   const handleSelectChange = (name: 'country' | 'category') => (value: string) => {
@@ -206,7 +207,7 @@ const CreateSpotPage = () => {
         ...spot,
         imageUrls, // Will be an empty array for now
         authorId: user.uid,
-        nickname: authorNickname,
+        authorNickname: authorNickname,
         createdAt: new Date(),
         type: type,
       };
@@ -291,6 +292,7 @@ const CreateSpotPage = () => {
             </div>
 
             {type === 'hotel' && (
+              <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="bookingSite" className="font-semibold">予約サイト（任意）</Label>
@@ -319,19 +321,20 @@ const CreateSpotPage = () => {
                   </div>
                 </div>
               </div>
+
+              <div>
+                <Label htmlFor="price" className="font-semibold">金額（円）（任意）</Label>
+                <Input id="price" name="price" type="number" value={spot.price || ''} onChange={handleInputChange} placeholder="例: 15000" />
+              </div>
+
+              <div>
+                <Label htmlFor="comment" className="font-semibold">
+                  {type === 'hotel' ? 'コメント（任意）' : 'コメント（必須）'}
+                </Label>
+                <Textarea id="comment" name="comment" value={spot.comment} onChange={handleInputChange} placeholder={type === 'hotel' ? '例：とても快適でした。' : '例：素晴らしいスタジアムでした！'} />
+              </div>
+              </>
             )}
-
-            <div>
-              <Label htmlFor="url" className="font-semibold">URL（任意）</Label>
-              <Input id="url" name="url" value={spot.url} onChange={handleInputChange} placeholder="https://example.com" />
-            </div>
-
-            <div>
-              <Label htmlFor="comment" className="font-semibold">
-                {type === 'hotel' ? 'コメント（任意）' : 'コメント（必須）'}
-              </Label>
-              <Textarea id="comment" name="comment" value={spot.comment} onChange={handleInputChange} placeholder={type === 'hotel' ? '例：とても快適でした。' : '例：素晴らしいスタジアムでした！'} />
-            </div>
 
             <div>
               <Label htmlFor="spot-image" className="font-semibold">画像（任意）</Label>
