@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { collection, doc, getDoc, query, where, getDocs, limit, Timestamp } from 'firebase/firestore';
+import { UnifiedPost, toUnifiedPost } from '@/types/post';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfile from '@/components/user/UserProfile';
@@ -27,92 +28,6 @@ interface UserInfo {
   overseasMatchCount?: string;
 }
 
-export interface UnifiedPost {
-  id: string;
-  postType: 'post' | 'simple-post' | 'spot' | 'simple-travel';
-  author: {
-    id: string;
-    name: string;
-    image: string;
-  };
-  createdAt?: Date;
-  updatedAt?: Date;
-  imageUrl: string;
-  title: string;
-  subtext: string;
-  league: string;
-  country: string;
-  href: string;
-  originalData: any;
-}
-
-export const toUnifiedPost = (item: any, type: 'post' | 'simple-post' | 'spot' | 'simple-travel', authorProfile?: UserInfo): UnifiedPost | null => {
-  if (!item || !item.id) {
-    return null;
-  }
-
-  const authorId = authorProfile?.id || item.authorId || (item.author?.id) || '';
-  const authorName = authorProfile?.nickname || item.authorName || (item.author?.name) || '名無し';
-  const authorImage = authorProfile?.photoURL || item.authorImage || (item.author?.image) || '/default-avatar.svg';
-
-  const basePost = {
-    id: item.id,
-    author: {
-      id: authorId,
-      name: authorName,
-      image: authorImage,
-    },
-    createdAt: (item.createdAt as Timestamp)?.toDate(),
-    updatedAt: (item.updatedAt as Timestamp)?.toDate(),
-    imageUrl: item.imageUrl || item.imageUrls?.[0] || '',
-    originalData: item,
-  };
-
-  switch (type) {
-    case 'post':
-      return {
-        ...basePost,
-        postType: 'post',
-        title: item.title || '無題の投稿',
-        subtext: item.matchDate ? new Date(item.matchDate).toLocaleDateString() : '日付なし',
-        league: item.league || '',
-        country: item.country || '',
-        href: `/posts/${item.id}`,
-      };
-    case 'simple-post':
-      return {
-        ...basePost,
-        postType: 'simple-post',
-        title: item.title || '無題の観戦記録',
-        subtext: item.teamA?.name && item.teamB?.name ? `${item.teamA.name} vs ${item.teamB.name}` : '試合情報なし',
-        league: item.league || '',
-        country: item.country || '',
-        href: `/simple-posts/${item.id}`,
-      };
-    case 'spot':
-      return {
-        ...basePost,
-        postType: 'spot',
-        title: item.spotName || '無題のスポット',
-        subtext: item.address || '住所情報なし',
-        league: '',
-        country: item.country || '',
-        href: `/spots/${item.id}`,
-      };
-    case 'simple-travel':
-      return {
-        ...basePost,
-        postType: 'simple-travel',
-        title: item.title || '無題の旅行記',
-        subtext: item.country || '国情報なし',
-        league: '',
-        country: item.country || '',
-        href: `/simple-travels/${item.id}`,
-      };
-    default:
-      return null;
-  }
-};
 
 interface UserPostsProps {
   userId: string; // This can be a user ID (slug) or the special string "mypage"
@@ -121,7 +36,7 @@ interface UserPostsProps {
 export default function UserPosts({ userId }: UserPostsProps) {
   const { user } = useAuth();
 
-  const [items, setItems] = useState<UnifiedPost[]>([]);
+    const [items, setItems] = useState<UnifiedPost[]>([]);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -193,8 +108,13 @@ export default function UserPosts({ userId }: UserPostsProps) {
 
           const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
 
+                    const authorProfiles = new Map<string, { nickname: string; photoURL: string; }>();
+          if (fetchedUserInfo) {
+            authorProfiles.set(fetchedUserInfo.uid, { nickname: fetchedUserInfo.nickname, photoURL: fetchedUserInfo.photoURL || '' });
+          }
+
           const results = [...snap1.docs, ...snap2.docs]
-            .map(d => toUnifiedPost({ id: d.id, ...d.data() }, type, fetchedUserInfo))
+                        .map(d => toUnifiedPost({ id: d.id, ...d.data() }, type, user || null, null, authorProfiles))
             .filter((p): p is UnifiedPost => p !== null);
 
           return Array.from(new Map(results.map(item => [item.id, item])).values());
@@ -208,7 +128,11 @@ export default function UserPosts({ userId }: UserPostsProps) {
         ];
 
         const results = await Promise.all(postPromises);
-        const combinedItems = results.flat().sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+                const combinedItems = results.flat().sort((a, b) => {
+          const timeA = a.createdAt ? ('toDate' in a.createdAt ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
+          const timeB = b.createdAt ? ('toDate' in b.createdAt ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
+          return timeB - timeA;
+        });
 
         setItems(combinedItems);
       } catch (err) {
@@ -239,13 +163,13 @@ export default function UserPosts({ userId }: UserPostsProps) {
             {items.map((item) => {
               switch (item.postType) {
                 case 'post':
-                  return <PostCard key={item.id} post={item.originalData} />;
+                                    return <PostCard key={item.id} post={item} />;
                 case 'simple-post':
-                  return <PostCard key={item.id} post={item.originalData} />;
+                                    return <PostCard key={item.id} post={item} />;
                 case 'spot':
                   return <SpotCard key={item.id} spot={item.originalData as SpotData} />;
                 case 'simple-travel':
-                  return <PostCard key={item.id} post={item.originalData} />;
+                                    return <PostCard key={item.id} post={item} />;
                 default:
                   return null;
               }
