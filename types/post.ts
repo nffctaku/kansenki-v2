@@ -223,7 +223,21 @@ export const toUnifiedPost = (
 
   // ログインユーザーが投稿者の場合のみ編集リンクを追加
   if (isCurrentUser) {
-    unifiedPost.editHref = `/posts/${post.id}/edit?collection=${type}`;
+    switch (type) {
+      case 'spot':
+      case 'spots':
+        unifiedPost.editHref = `/create-spot?id=${post.id}`;
+        break;
+      case 'post':
+      case 'posts':
+      case 'simple-post':
+      case 'simple-posts':
+      case 'simple-travel':
+      case 'simple-travels':
+      default:
+        unifiedPost.editHref = `/posts/${post.id}/edit?collection=${type}`;
+        break;
+    }
   }
 
   return unifiedPost;

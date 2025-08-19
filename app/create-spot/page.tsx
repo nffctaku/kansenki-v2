@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import StarRating from '../../components/StarRating';
 import Image from 'next/image';
-import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 interface Spot {
   spotName: string;
@@ -39,7 +39,8 @@ const CreateSpotPage = () => {
   const [user, loading, error] = useAuthState(auth);
   const searchParams = useSearchParams();
   const router = useRouter();
-  const type = searchParams.get('type');
+    const type = searchParams.get('type') || 'spot';
+  const id = searchParams.get('id');
 
   const [spot, setSpot] = useState<Spot>({
     spotName: '',
@@ -61,8 +62,29 @@ const CreateSpotPage = () => {
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
   const [authorNickname, setAuthorNickname] = useState('');
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
+
+    useEffect(() => {
+    if (id) {
+      const fetchSpotData = async () => {
+        const docRef = doc(db, 'spots', id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setSpot(data as Spot);
+          if (data.imageUrls) {
+            setExistingImageUrls(data.imageUrls);
+          }
+        } else {
+          console.error('No such document!');
+          router.push('/create-spot');
+        }
+      };
+      fetchSpotData();
+    }
+  }, [id, router]);
 
   useEffect(() => {
     if (user) {
@@ -79,8 +101,8 @@ const CreateSpotPage = () => {
 
   useEffect(() => {
     // Create image previews
-    const previews = imageFiles.map(file => URL.createObjectURL(file));
-    setImagePreviews(previews);
+    const newImagePreviews = imageFiles.map(file => URL.createObjectURL(file));
+    setImagePreviews(newImagePreviews);
 
     // Cleanup
     return () => {
@@ -128,7 +150,12 @@ const CreateSpotPage = () => {
 
   const handleRemoveImage = (indexToRemove: number) => {
     setImageFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove));
-    setImagePreviews(prevPreviews => prevPreviews.filter((_, index) => index !== indexToRemove));
+    if (indexToRemove < existingImageUrls.length) {
+      setExistingImageUrls(prev => prev.filter((_, index) => index !== indexToRemove));
+    } else {
+      const fileIndexToRemove = indexToRemove - existingImageUrls.length;
+      setImageFiles(prevFiles => prevFiles.filter((_, index) => index !== fileIndexToRemove));
+    }
   };
 
   const handleBookingSiteChange = (value: string) => {
@@ -191,10 +218,10 @@ const CreateSpotPage = () => {
     setIsSubmitting(true);
 
     try {
-      let imageUrls: string[] = [];
+      let uploadedImageUrls: string[] = [];
       if (imageFiles.length > 0) {
         try {
-          imageUrls = await uploadImagesToCloudinary(imageFiles);
+          uploadedImageUrls = await uploadImagesToCloudinary(imageFiles);
         } catch (uploadError) {
           console.error('Error uploading images:', uploadError);
           alert('画像アップロードに失敗しました。');
@@ -203,13 +230,15 @@ const CreateSpotPage = () => {
         }
       }
 
+      const finalImageUrls = [...existingImageUrls, ...uploadedImageUrls];
+
       const spotData: { [key: string]: any } = {
         ...spot,
-        imageUrls, // Will be an empty array for now
+        imageUrls: finalImageUrls,
         authorId: user.uid,
         authorNickname: authorNickname,
-        createdAt: new Date(),
         type: type,
+        ...(id ? { updatedAt: serverTimestamp() } : { createdAt: serverTimestamp() }),
       };
 
       // Remove undefined fields before sending to Firestore
@@ -221,8 +250,16 @@ const CreateSpotPage = () => {
 
 
 
-      const docRef = await addDoc(collection(db, 'spots'), spotData);
-      console.log('Document written with ID: ', docRef.id);
+      if (id) {
+        const docRef = doc(db, 'spots', id);
+        await updateDoc(docRef, spotData);
+        console.log('Document updated with ID: ', id);
+        alert('投稿を更新しました！');
+      } else {
+        const docRef = await addDoc(collection(db, 'spots'), spotData);
+        console.log('Document written with ID: ', docRef.id);
+        alert('投稿が完了しました！');
+      }
 
       alert('投稿が完了しました！');
       // Reset form state after successful submission
@@ -235,6 +272,7 @@ const CreateSpotPage = () => {
       });
       setImageFiles([]);
       setImagePreviews([]);
+      setExistingImageUrls([]);
       router.push('/mypage');
 
     } catch (error) {
@@ -249,7 +287,9 @@ const CreateSpotPage = () => {
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">{type === 'hotel' ? '宿泊先を投稿' : 'おすすめスポットを投稿'}</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+              {id ? (type === 'hotel' ? '宿泊先を編集' : 'おすすめスポットを編集') : (type === 'hotel' ? '宿泊先を投稿' : 'おすすめスポットを投稿')}
+            </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6 pt-4">
@@ -339,9 +379,9 @@ const CreateSpotPage = () => {
             <div>
               <Label htmlFor="spot-image" className="font-semibold">画像（任意）</Label>
               <div className="flex items-center gap-4 mt-2 flex-wrap">
-                {imagePreviews.map((preview, index) => (
+                {[...existingImageUrls, ...imagePreviews].map((preview, index) => (
                   <div key={index} className="relative w-48 h-32">
-                    <Image src={preview} alt={`プレビュー ${index + 1}`} layout="fill" className="rounded-lg object-cover" />
+                    <Image src={preview} alt={`プレビュー ${index + 1}`} fill style={{ objectFit: 'cover' }} className="rounded-lg" />
                     <button type="button" onClick={() => handleRemoveImage(index)} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 leading-none">
                       ✕
                     </button>
@@ -399,7 +439,7 @@ const CreateSpotPage = () => {
             </div>
 
             <Button type="submit" disabled={loading || isSubmitting} className="w-full !mt-8 font-bold py-6 text-base">
-              {isSubmitting ? '投稿中...' : '投稿する'}
+              {isSubmitting ? (id ? '更新中...' : '投稿中...') : (id ? '更新する' : '投稿する')}
             </Button>
           </form>
         </CardContent>
