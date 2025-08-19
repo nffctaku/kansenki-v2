@@ -106,7 +106,7 @@ const CreateSpotPage = () => {
 
     // Cleanup
     return () => {
-      previews.forEach(preview => URL.revokeObjectURL(preview));
+      newImagePreviews.forEach(preview => URL.revokeObjectURL(preview));
     };
   }, [imageFiles]);
 
