@@ -200,7 +200,7 @@ export const toUnifiedPost = (
     league: post.category || post.match?.competition || post.match?.league || post.league || '',
     category: (post.categories && post.categories.length > 0) ? post.categories[0] : (post.match?.category || ''),
     country: post.match?.country || post.country || '',
-    href: `/${type.replace(/s$/, '')}s/${post.id}`,
+            href: `/${type.endsWith('s') ? type : type + 's'}/${post.id}`,
     originalData: item,
   };
 
