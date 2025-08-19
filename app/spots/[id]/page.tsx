@@ -135,8 +135,12 @@ const SpotDetailPage = () => {
           <CardTitle className="text-2xl font-bold">{spot.spotName}</CardTitle>
           <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
             <span className="font-semibold">{spot.country}{spot.city && `, ${spot.city}`}</span>
-            <span>/</span>
-            <span>{spot.category}</span>
+            {spot.type !== 'hotel' && (
+              <>
+                <span>/</span>
+                <span>{spot.category}</span>
+              </>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-6">

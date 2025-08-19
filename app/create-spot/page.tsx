@@ -305,17 +305,19 @@ const CreateSpotPage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              {type === 'spot' && (
-                <div>
-                  <Label htmlFor="category" className="font-semibold">カテゴリー（必須）</Label>
+              {type !== 'hotel' && (
+                <div className="space-y-2">
+                  <Label htmlFor="category">カテゴリー（必須）</Label>
                   <Select onValueChange={handleSelectChange('category')} value={spot.category}>
                     <SelectTrigger>
                       <SelectValue placeholder="カテゴリーを選択" />
                     </SelectTrigger>
                     <SelectContent>
-                      {['レストラン', 'カフェ', 'バー', 'パブ', '観光地', 'フォトスポット','ユニフォームショップ','公式ストア'].map(category => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
-                      ))}
+                      <SelectItem value="stadium">スタジアム</SelectItem>
+                      <SelectItem value="museum">ミュージアム</SelectItem>
+                      <SelectItem value="shop">ショップ</SelectItem>
+                      <SelectItem value="bar-restaurant">バー・レストラン</SelectItem>
+                      <SelectItem value="other">その他</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -336,47 +338,50 @@ const CreateSpotPage = () => {
 
             <div className="space-y-2">
               <Label htmlFor="city">都市名（任意）</Label>
-              <Input id="city" name="city" value={spot.city} onChange={handleInputChange} placeholder="例: 東京" />
+              <Input id="city" name="city" value={spot.city || ''} onChange={handleInputChange} placeholder="例: 東京" />
             </div>
 
-            {type === 'hotel' && (
+            {type === 'hotel' ? (
               <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="bookingSite" className="font-semibold">予約サイト（任意）</Label>
-                  <Select onValueChange={handleBookingSiteChange} value={spot.bookingSite}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="予約サイトを選択" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {['Booking.com', 'Expedia', 'Agoda', 'Hotels.com', 'Trip.com', 'その他'].map(site => (
-                        <SelectItem key={site} value={site}>{site}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="bookingSite" className="font-semibold">予約サイト（任意）</Label>
+                    <Select onValueChange={handleBookingSiteChange} value={spot.bookingSite}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="予約サイトを選択" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {['Booking.com', 'Expedia', 'Agoda', 'Hotels.com', 'Trip.com', 'その他'].map(site => (
+                          <SelectItem key={site} value={site}>{site}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div>
-                  <Label htmlFor="nights" className="font-semibold">泊数（任意）</Label>
-                  <div className="flex items-center gap-2">
-                    <Button type="button" variant="outline" size="icon" onClick={() => handleNightsChange((spot.nights || 1) - 1)}>
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <Input id="nights" name="nights" type="number" value={spot.nights || ''} onChange={(e) => handleNightsChange(parseInt(e.target.value, 10) || 0)} className="text-center w-16" placeholder="1" />
-                    <Button type="button" variant="outline" size="icon" onClick={() => handleNightsChange((spot.nights || 0) + 1)}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                  <div>
+                    <Label htmlFor="nights" className="font-semibold">泊数（任意）</Label>
+                    <div className="flex items-center gap-2">
+                      <Button type="button" variant="outline" size="icon" onClick={() => handleNightsChange((spot.nights || 1) - 1)}>
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <Input id="nights" name="nights" type="number" value={spot.nights || ''} onChange={(e) => handleNightsChange(parseInt(e.target.value, 10) || 0)} className="text-center w-16" placeholder="1" />
+                      <Button type="button" variant="outline" size="icon" onClick={() => handleNightsChange((spot.nights || 0) + 1)}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div>
-                <Label htmlFor="comment" className="font-semibold">
-                  {type === 'hotel' ? 'コメント（任意）' : 'コメント（必須）'}
-                </Label>
-                <Textarea id="comment" name="comment" value={spot.comment} onChange={handleInputChange} placeholder={type === 'hotel' ? '例：とても快適でした。' : '例：素晴らしいスタジアムでした！'} />
-              </div>
+                <div>
+                  <Label htmlFor="comment" className="font-semibold">コメント（任意）</Label>
+                  <Textarea id="comment" name="comment" value={spot.comment} onChange={handleInputChange} placeholder={'例：とても快適でした。'} />
+                </div>
               </>
+            ) : (
+              <div>
+                <Label htmlFor="comment" className="font-semibold">コメント（必須）</Label>
+                <Textarea id="comment" name="comment" value={spot.comment} onChange={handleInputChange} placeholder={'例：素晴らしいスタジアムでした！'} />
+              </div>
             )}
 
             <div>
