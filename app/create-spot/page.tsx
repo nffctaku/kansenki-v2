@@ -176,7 +176,7 @@ const CreateSpotPage = () => {
 
     // Validation
     if (type === 'hotel') {
-      if (!spot.country || !spot.category || !spot.spotName || !spot.comment || !spot.accessRating || !spot.cleanlinessRating || !spot.comfortRating || !spot.facilityRating || !spot.staffRating) {
+            if (!spot.country || !spot.spotName || !spot.accessRating || !spot.cleanlinessRating || !spot.comfortRating || !spot.facilityRating || !spot.staffRating) {
         alert('必須項目を入力してください。');
         return;
       }

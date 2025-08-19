@@ -26,7 +26,7 @@ import BasicInfoSection from './post-form/BasicInfoSection';
 import MatchInfoSection from './post-form/MatchInfoSection';
 import TravelInfoSection from './post-form/TravelInfoSection';
 import TicketInfoSection from './post-form/TicketInfoSection';
-// import AccommodationSection from './post-form/AccommodationSection';
+import AccommodationSection from './post-form/AccommodationSection';
 // import SpotsSection from './post-form/SpotsSection';
 import CostsSection from './post-form/CostsSection';
 import OtherInfoSection from './post-form/OtherInfoSection';
@@ -413,7 +413,7 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
       <MatchInfoSection formData={formData} setFormData={setFormData} />
       <TicketInfoSection formData={formData} setFormData={setFormData} />
       <TravelInfoSection formData={formData} setFormData={setFormData} />
-      {/* <AccommodationSection formData={formData} setFormData={setFormData} /> */}
+      <AccommodationSection formData={formData} setFormData={setFormData} />
       {/* <SpotsSection formData={formData} setFormData={setFormData} /> */}
       <CostsSection formData={formData} setFormData={setFormData} />
       <OtherInfoSection formData={formData} setFormData={setFormData} />
