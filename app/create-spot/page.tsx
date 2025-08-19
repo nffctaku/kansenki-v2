@@ -39,7 +39,7 @@ const CreateSpotPage = () => {
   const [user, loading, error] = useAuthState(auth);
   const searchParams = useSearchParams();
   const router = useRouter();
-    const type = searchParams.get('type') || 'spot';
+  const type = searchParams.get('type') || 'spot';
   const id = searchParams.get('id');
 
   const [spot, setSpot] = useState<Spot>({
@@ -62,11 +62,11 @@ const CreateSpotPage = () => {
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [authorNickname, setAuthorNickname] = useState('');
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
 
-    useEffect(() => {
+  useEffect(() => {
     if (id) {
       const fetchSpotData = async () => {
         const docRef = doc(db, 'spots', id);
@@ -204,7 +204,7 @@ const CreateSpotPage = () => {
 
     // Validation
     if (type === 'hotel') {
-            if (!spot.country || !spot.spotName || !spot.accessRating || !spot.cleanlinessRating || !spot.comfortRating || !spot.facilityRating || !spot.staffRating) {
+      if (!spot.country || !spot.spotName || !spot.accessRating || !spot.cleanlinessRating || !spot.comfortRating || !spot.facilityRating || !spot.staffRating) {
         alert('必須項目を入力してください。');
         return;
       }
@@ -248,8 +248,6 @@ const CreateSpotPage = () => {
         }
       });
 
-
-
       if (id) {
         const docRef = doc(db, 'spots', id);
         await updateDoc(docRef, spotData);
@@ -288,8 +286,8 @@ const CreateSpotPage = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl font-bold">
-              {id ? (type === 'hotel' ? '宿泊先を編集' : 'おすすめスポットを編集') : (type === 'hotel' ? '宿泊先を投稿' : 'おすすめスポットを投稿')}
-            </CardTitle>
+            {id ? (type === 'hotel' ? '宿泊先を編集' : 'おすすめスポットを編集') : (type === 'hotel' ? '宿泊先を投稿' : 'おすすめスポットを投稿')}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6 pt-4">
@@ -334,6 +332,11 @@ const CreateSpotPage = () => {
             <div>
               <Label htmlFor="url" className="font-semibold">URL（任意）</Label>
               <Input id="url" name="url" value={spot.url} onChange={handleInputChange} placeholder="https://example.com" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="city">都市名（任意）</Label>
+              <Input id="city" name="city" value={spot.city} onChange={handleInputChange} placeholder="例: 東京" />
             </div>
 
             {type === 'hotel' && (
