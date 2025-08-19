@@ -200,7 +200,24 @@ export const toUnifiedPost = (
     league: post.category || post.match?.competition || post.match?.league || post.league || '',
     category: (post.categories && post.categories.length > 0) ? post.categories[0] : (post.match?.category || ''),
     country: post.match?.country || post.country || '',
-            href: `/${type.endsWith('s') ? type : type + 's'}/${post.id}`,
+                href: (() => {
+      switch (type) {
+        case 'post':
+        case 'posts':
+          return `/posts/${post.id}`;
+        case 'simple-post':
+        case 'simple-posts':
+          return `/simple-posts/${post.id}`;
+        case 'spot':
+        case 'spots':
+          return `/spots/${post.id}`;
+        case 'simple-travel':
+        case 'simple-travels':
+          return `/simple-travels/${post.id}`;
+        default:
+          return `/posts/${post.id}`;
+      }
+    })(),
     originalData: item,
   };
 
