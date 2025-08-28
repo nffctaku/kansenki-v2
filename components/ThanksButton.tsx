@@ -1,56 +1,57 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import { User, onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { PiHandsClapping, PiHandsClappingFill } from 'react-icons/pi';
-import { doc, getDoc, runTransaction } from 'firebase/firestore';
 
 interface ThanksButtonProps {
   postId: string;
-  collectionName: string;
+  collectionName: string; // Kept for consistency, not used in new logic
   size?: 'xs' | 'sm' | 'md';
 }
 
-const ThanksButton: React.FC<ThanksButtonProps> = ({ postId, collectionName, size = 'md' }) => {
+const ThanksButton: React.FC<ThanksButtonProps> = ({ postId, size = 'md' }) => {
   const [user, setUser] = useState<User | null>(null);
   const [thanked, setThanked] = useState(false);
-  const [thanksCount, setThanksCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      if (!currentUser) {
+        setLoading(false);
+      }
     });
     return () => unsubscribe();
   }, []);
 
-  const getThanksCount = useCallback(async () => {
-    const postRef = doc(db, collectionName, postId);
-    const postSnap = await getDoc(postRef);
-    if (postSnap.exists()) {
-      setThanksCount(postSnap.data().helpfulCount || 0);
+  const checkThanksStatus = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
     }
-  }, [postId, collectionName]);
+
+    setLoading(true);
+    try {
+      const thanksRef = doc(db, 'users', user.uid, 'thanks', postId);
+      const docSnap = await getDoc(thanksRef);
+      setThanked(docSnap.exists());
+    } catch (error) {
+      console.error('Error checking thanks status:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, postId]);
 
   useEffect(() => {
-    const checkThanksStatus = async () => {
-      setLoading(true);
-      await getThanksCount();
-      if (user) {
-        const thanksRef = doc(db, collectionName, postId, 'thanks', user.uid);
-        const thanksSnap = await getDoc(thanksRef);
-        setThanked(thanksSnap.exists());
-      } else {
-        setThanked(false);
-      }
-      setLoading(false);
-    };
-
-    if (postId) {
+    if (user) {
       checkThanksStatus();
+    } else {
+      setThanked(false);
     }
-  }, [postId, user, getThanksCount, collectionName]);
+  }, [user, checkThanksStatus]);
 
   const handleThanks = async () => {
     if (!user) {
@@ -60,47 +61,25 @@ const ThanksButton: React.FC<ThanksButtonProps> = ({ postId, collectionName, siz
     if (loading) return;
 
     setLoading(true);
-
-    const postRef = doc(db, collectionName, postId);
-    const thanksRef = doc(db, collectionName, postId, 'thanks', user.uid);
+    const thanksRef = doc(db, 'users', user.uid, 'thanks', postId);
 
     try {
-      await runTransaction(db, async (transaction) => {
-        const postDoc = await transaction.get(postRef);
-        if (!postDoc.exists()) {
-          throw new Error('Post does not exist!');
-        }
-
-        const thanksDoc = await transaction.get(thanksRef);
-        const currentThanksCount = postDoc.data().helpfulCount || 0;
-
-        if (thanked) {
-          if (thanksDoc.exists()) {
-            transaction.update(postRef, { helpfulCount: Math.max(0, currentThanksCount - 1) });
-            transaction.delete(thanksRef);
-          }
-        } else {
-          if (!thanksDoc.exists()) {
-            transaction.update(postRef, { helpfulCount: currentThanksCount + 1 });
-            transaction.set(thanksRef, { createdAt: new Date() });
-          }
-        }
-      });
-
-      setThanked(!thanked);
-      await getThanksCount();
+      if (thanked) {
+        await deleteDoc(thanksRef);
+        setThanked(false);
+      } else {
+        await setDoc(thanksRef, {
+          postId: postId,
+          createdAt: serverTimestamp(),
+        });
+        setThanked(true);
+      }
     } catch (error) {
-      console.error('Error processing thanks: ', error);
+      console.error('Error updating thanks:', error);
       alert('エラーが発生しました。もう一度お試しください。');
     } finally {
       setLoading(false);
     }
-  };
-
-  const sizeStyles = {
-    xs: 'px-1.5 py-0 text-[9px] leading-tight',
-    sm: 'px-2.5 py-1 text-xs',
-    md: 'px-4 py-2 text-base',
   };
 
   const iconStyles = {
@@ -108,35 +87,26 @@ const ThanksButton: React.FC<ThanksButtonProps> = ({ postId, collectionName, siz
     sm: 'text-xl',
     md: 'text-2xl',
   };
-
-  const gapStyles = {
-    xs: 'gap-px',
-    sm: 'gap-1',
-    md: 'gap-1',
-  };
-
-  const loadingStyles = {
-    xs: 'h-4 w-9',
-    sm: 'h-7 w-14',
-    md: 'h-10 w-20',
-  };
-
+  
   if (loading) {
-    return <div className={`bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse ${loadingStyles[size]}`}></div>;
+    return <div className="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>;
   }
 
   return (
     <button
       onClick={handleThanks}
-      disabled={loading || !user}
-      className={`flex items-center justify-center ${gapStyles[size]} rounded-full transition-colors duration-200 ease-in-out ${sizeStyles[size]} bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed`}
+      disabled={!user}
+      className={`flex items-center justify-center rounded-full transition-colors duration-200 ease-in-out p-2 disabled:opacity-50 disabled:cursor-not-allowed
+        ${thanked
+          ? 'text-blue-500 hover:bg-blue-100 dark:hover:bg-gray-800'
+          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`
+      }
     >
       {thanked ? (
-        <PiHandsClappingFill className={`${iconStyles[size]} text-blue-500`} />
+        <PiHandsClappingFill className={`${iconStyles[size]}`} />
       ) : (
-        <PiHandsClapping className={`${iconStyles[size]} text-gray-600 dark:text-gray-300`} />
+        <PiHandsClapping className={`${iconStyles[size]}`} />
       )}
-      <span className={`font-semibold ${thanked ? 'text-blue-500' : 'text-gray-600 dark:text-gray-300'}`}>{thanksCount}</span>
     </button>
   );
 };
