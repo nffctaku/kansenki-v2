@@ -28,12 +28,12 @@ service cloud.firestore {
 
       match /likes/{userId} {
         allow read, list: if true;
-        allow create, delete: if isOwner(userId);
+        allow create, delete: if request.auth != null;
       }
 
       match /thanks/{userId} {
         allow read, list: if true;
-        allow create, delete: if isOwner(userId);
+        allow create, delete: if request.auth != null;
       }
     }
 
@@ -46,12 +46,12 @@ service cloud.firestore {
 
        match /likes/{userId} {
         allow read, list: if true;
-        allow create, delete: if isOwner(userId);
+        allow create, delete: if request.auth != null;
       }
 
       match /thanks/{userId} {
         allow read, list: if true;
-        allow create, delete: if isOwner(userId);
+        allow create, delete: if request.auth != null;
       }
     }
 
@@ -64,12 +64,12 @@ service cloud.firestore {
 
       match /likes/{userId} {
         allow read, list: if true;
-        allow create, delete: if isOwner(userId);
+        allow create, delete: if request.auth != null;
       }
 
       match /thanks/{userId} {
         allow read, list: if true;
-        allow create, delete: if isOwner(userId);
+        allow create, delete: if request.auth != null;
       }
     }
 
@@ -88,12 +88,12 @@ service cloud.firestore {
 
       match /likes/{userId} {
         allow read, list: if true;
-        allow create, delete: if isOwner(userId);
+        allow create, delete: if request.auth != null;
       }
 
       match /thanks/{userId} {
         allow read, list: if true;
-        allow create, delete: if isOwner(userId);
+        allow create, delete: if request.auth != null;
       }
     }
   }
