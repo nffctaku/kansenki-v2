@@ -30,7 +30,7 @@ export const RecentSpotsSlider = () => {
 
   return (
     <div className="my-8">
-      <h2 className="text-2xl font-bold mb-4">おすすめスポット</h2>
+      <h2 className="text-2xl font-bold mb-4 text-white">おすすめスポット</h2>
       <Swiper
         modules={[Navigation]}
         spaceBetween={20}

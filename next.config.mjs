@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_ADMIN_UID: 'WrNiMMdeVZTNtxZPNa102qZGI8y1',
+  },
   images: {
     remotePatterns: [
       {

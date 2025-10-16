@@ -205,11 +205,12 @@ export default function HomePage() {
         </div>
       </div>
 
+
       <PopularPostsSlider />
 
       {/* All Items Feed */}
       <div className="px-2 py-3">
-        <h2 className="text-lg font-bold my-3 text-center text-gray-900 dark:text-gray-200">
+        <h2 className="text-lg font-bold my-3 text-center text-white">
           最新の投稿
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3">
@@ -221,7 +222,14 @@ export default function HomePage() {
           })}
         </div>
       </div>
-      <RecentSpotsSlider />
+
+      <div className="px-4 my-6">
+        <Link href="/spots" passHref legacyBehavior>
+          <a className="block w-full text-center bg-white hover:bg-gray-200 text-black font-bold py-3 px-4 rounded-lg transition-colors shadow-md">
+            宿・ホテル・スポット情報
+          </a>
+        </Link>
+      </div>
     </>
   );
 }

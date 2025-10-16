@@ -159,8 +159,8 @@ export default function MenuDrawer() {
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
-          <Button className="fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full shadow-lg transition-transform transform hover:scale-110 ease-in-out duration-200">
-            <Plus className="h-8 w-8" />
+          <Button className="fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full shadow-lg transition-transform transform hover:scale-110 ease-in-out duration-200 bg-white hover:bg-gray-200">
+            <Plus className="h-8 w-8 text-blue-500" />
           </Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">

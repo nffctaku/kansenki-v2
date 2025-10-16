@@ -1,43 +1,45 @@
 // app/components/AnnouncementBanner.tsx
 'use client';
 
-import React from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Autoplay, Navigation } from 'swiper/modules';
 import Image from 'next/image';
 import Link from 'next/link';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 // Import Swiper styles
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
-// お知らせバナーのサンプルデータ。将来的には外部から取得するように変更できます。
-const banners = [
-  {
-    id: 1,
-    imageUrl: '/世界中のFOOTBALL (12).png',
-    title: 'プレゼントキャンペーン開催！',
-    subtitle: '観戦記投稿でリヴァプールグッズをGET',
-    link: 'https://note.com/football_top/n/nacd67cc7aa8e?sub_rt=share_pw',
-  },
-  {
-    id: 2,
-    imageUrl: '/世界中のFOOTBALL (9).png',
-    title: 'アップデート',
-    subtitle: '追加投稿が簡単に！',
-    link: '/',
-  },
-  {
-    id: 3,
-    imageUrl: '/世界中のFOOTBALL (10).png',
-    title: '海外サッカーファンにフォーカス',
-    subtitle: 'ファンメディアはこちらから！',
-    link: '/',
-  },
-];
+interface Banner {
+  id: string;
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+  link: string;
+  order: number;
+}
 
 const AnnouncementBanner = () => {
+  const [banners, setBanners] = useState<Banner[]>([]);
+
+  useEffect(() => {
+    const fetchBanners = async () => {
+      const q = query(collection(db, 'banners'), orderBy('order'));
+      const querySnapshot = await getDocs(q);
+      const bannersData = querySnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as Banner))
+        .filter(banner => banner.imageUrl);
+      setBanners(bannersData);
+    };
+
+    fetchBanners();
+  }, []);
   return (
     <div className="w-full my-3 px-3 md:px-6 lg:px-8">
       <Swiper

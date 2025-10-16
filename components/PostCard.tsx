@@ -10,6 +10,9 @@ interface PostCardProps {
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post, priority = false }) => {
+  if (post.imageUrls && post.imageUrls.length > 0) {
+    console.log('PostCard Image URL:', post.imageUrls[0]);
+  }
   const authorImage = post.authorImage || '/default-avatar.svg';
   const getSafeDate = (date: any): Date | null => {
     if (!date) return null;

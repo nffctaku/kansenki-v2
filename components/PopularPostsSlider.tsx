@@ -34,7 +34,7 @@ const PopularPostsSlider = () => {
 
   return (
     <div className="my-8">
-      <h2 className="text-2xl font-bold mb-4 px-4">人気の観戦記</h2>
+      <h2 className="text-2xl font-bold mb-4 px-4 text-white">人気の観戦記</h2>
       <Swiper
         modules={[Navigation, Pagination, Autoplay]}
         spaceBetween={16}

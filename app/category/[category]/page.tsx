@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -85,6 +85,7 @@ export default function CategoryPage() {
   const { category } = useParams();
   const [posts, setPosts] = useState<Travel[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedLeague, setSelectedLeague] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -160,16 +161,26 @@ export default function CategoryPage() {
   const { style: pageStyle, titleClassName } = getCategoryStyles(category);
   const title = categoryLabelMap[category as string] || category;
 
+  const leagueOptions = useMemo(() => {
+    const leagues = new Set<string>();
+    posts.forEach(post => {
+      if (post.league) leagues.add(post.league);
+    });
+    return Array.from(leagues);
+  }, [posts]);
+
   const displayedPosts = posts.filter((post) => {
     const match = post.matches?.[0] as any;
-    const matchText = match
-      ? `${match.homeTeam || ''} vs ${match.awayTeam || ''}`.toLowerCase()
-      : '';
-    const seasonText = post.season?.toLowerCase() || '';
-    return (
-      matchText.includes(searchTerm.toLowerCase()) ||
-      seasonText.includes(searchTerm.toLowerCase())
-    );
+    const searchText = searchTerm.toLowerCase();
+    const searchMatch = 
+      !searchText ||
+      (post.matches?.[0]?.homeTeam?.toLowerCase().includes(searchText)) ||
+      (post.matches?.[0]?.awayTeam?.toLowerCase().includes(searchText)) ||
+      (post.season?.toLowerCase().includes(searchText));
+
+    const leagueMatch = !selectedLeague || post.league === selectedLeague;
+
+    return searchMatch && leagueMatch;
   });
 
   return (
@@ -180,13 +191,25 @@ export default function CategoryPage() {
       <h1 className={`text-2xl font-bold mb-4 ${titleClassName}`}>{title}の観戦記</h1>
 
       <div className="mb-6">
-        <input
-          type="text"
-          placeholder="試合名やシーズンで検索"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring focus:border-blue-400"
-        />
+        <div className="flex flex-wrap gap-4">
+          <input
+            type="text"
+            placeholder="試合名やシーズンで検索"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring focus:border-blue-400"
+          />
+          <select
+            value={selectedLeague}
+            onChange={(e) => setSelectedLeague(e.target.value)}
+            className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring focus:border-blue-400 bg-white dark:bg-gray-700 dark:text-white"
+          >
+            <option value="">すべての大会</option>
+            {leagueOptions.map(league => (
+              <option key={league} value={league}>{league}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 w-full max-w-full">
