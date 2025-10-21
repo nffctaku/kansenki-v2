@@ -1,8 +1,31 @@
 export default function UpdatesPage() {
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">更新履歴 <span className="text-lg font-normal text-gray-500 dark:text-gray-400">v0.1.4</span></h1>
+      <h1 className="text-3xl font-bold mb-6">更新履歴 <span className="text-lg font-normal text-gray-500 dark:text-gray-400">v0.1.5</span></h1>
                   <div className="space-y-6">
+        <div className="p-4 border bg-white dark:bg-slate-800/50 dark:border-slate-700 rounded-lg shadow-sm">
+          <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">2025-10-22</p>
+          <ul className="list-disc list-inside mt-2 space-y-1 text-slate-600 dark:text-slate-300">
+            <li><strong>マイページ機能の大幅改善:</strong>
+              <ul className="list-disc list-inside ml-4 mt-1">
+                <li>プロフィール編集画面のUIを改善し、ダークモードでの視認性を向上させました。</li>
+                <li>「行ったことのある国」の入力を、大陸ごとに分類された複数選択可能なプルダウン形式に刷新しました。</li>
+                <li>不要になった「居住地」の項目を、プロフィール編集・表示画面から完全に削除しました。</li>
+              </ul>
+            </li>
+            <li><strong>UI/UXの全体的な改善:</strong>
+              <ul className="list-disc list-inside ml-4 mt-1">
+                <li>サイト全体のテーマ（ライト/ダークモード）の表示不具合を修正し、どのページでもデザインが崩れないようにしました。</li>
+                <li>投稿詳細ページやトップページで、ライトモード時に文字が見えなくなる問題を解決しました。</li>
+              </ul>
+            </li>
+            <li><strong>安定性の向上:</strong>
+              <ul className="list-disc list-inside ml-4 mt-1">
+                <li>アプリケーションのビルドエラーを解消し、システムの安定性を高めました。</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
         <div className="p-4 border bg-white dark:bg-slate-800/50 dark:border-slate-700 rounded-lg shadow-sm">
           <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">2025-07-27</p>
           <ul className="list-disc list-inside mt-2 space-y-1 text-slate-600 dark:text-slate-300">

@@ -2,12 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/components/*": ["./components/*"],
-      "@/contexts/*": ["./contexts/*"],
-      "@/lib/*": ["./lib/*"],
-      "@/types/*": ["./types/*"],
-      "@/hooks/*": ["./hooks/*"],
-      "@/*": ["./app/*"]
+      "@/*": ["./*"]
     },
     "target": "es2015",
     "lib": [

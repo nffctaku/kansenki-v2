@@ -13,7 +13,6 @@ export const useUserProfile = (user: User | null) => {
   const [instagramLink, setInstagramLink] = useState('');
   const [youtubeLink, setYoutubeLink] = useState('');
   const [noteLink, setNoteLink] = useState('');
-  const [residence, setResidence] = useState('');
   const [travelFrequency, setTravelFrequency] = useState('');
   const [overseasMatchCount, setOverseasMatchCount] = useState('');
   const [visitedCountries, setVisitedCountries] = useState<string[]>([]);
@@ -40,7 +39,6 @@ export const useUserProfile = (user: User | null) => {
         setInstagramLink(userData.instagramLink || userData.instagram || '');
         setYoutubeLink(userData.youtubeLink || userData.youtube || '');
         setNoteLink(userData.noteLink || userData.note || '');
-        setResidence(userData.residence || '');
         setTravelFrequency(userData.travelFrequency || '');
         setOverseasMatchCount(userData.overseasMatchCount || '');
         setVisitedCountries(userData.visitedCountries || []);
@@ -110,8 +108,8 @@ export const useUserProfile = (user: User | null) => {
       }
 
       // 他のプロフィール項目を更新データに含める
-      const fields: (keyof UserProfile)[] = ['nickname', 'bio', 'xLink', 'instagramLink', 'youtubeLink', 'noteLink', 'residence', 'travelFrequency', 'overseasMatchCount', 'visitedCountries'];
-      const state: { [key: string]: any } = { nickname, bio, xLink, instagramLink, youtubeLink, noteLink, residence, travelFrequency, overseasMatchCount, visitedCountries };
+      const fields: (keyof UserProfile)[] = ['nickname', 'bio', 'xLink', 'instagramLink', 'youtubeLink', 'noteLink', 'travelFrequency', 'overseasMatchCount', 'visitedCountries'];
+      const state: { [key: string]: any } = { nickname, bio, xLink, instagramLink, youtubeLink, noteLink, travelFrequency, overseasMatchCount, visitedCountries };
       
       fields.forEach(field => {
         // Firestoreのデータと比較し、変更があったフィールドのみを更新対象に追加
@@ -152,7 +150,6 @@ export const useUserProfile = (user: User | null) => {
     instagramLink, setInstagramLink,
     youtubeLink, setYoutubeLink,
     noteLink, setNoteLink,
-    residence, setResidence,
     travelFrequency, setTravelFrequency,
     overseasMatchCount, setOverseasMatchCount,
     visitedCountries, setVisitedCountries,

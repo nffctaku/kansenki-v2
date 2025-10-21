@@ -19,7 +19,6 @@ export interface UserProfile {
   noteLink?: string;
 
   // Travel Profile
-  residence?: string;
   travelFrequency?: string;
   overseasMatchCount?: string;
   visitedCountries?: string[];

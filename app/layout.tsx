@@ -2,7 +2,7 @@ import './globals.css';
 import MenuDrawer from './components/MenuDrawer';
 
 import { Analytics } from '@vercel/analytics/react';
-import { ThemeProvider } from './components/ThemeProvider';
+import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

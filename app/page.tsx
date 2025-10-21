@@ -192,7 +192,7 @@ export default function HomePage() {
                     <React.Fragment key={country}>
                       <li className="p-2 font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-900 sticky top-0">{country}</li>
                       {teams.map((team) => (
-                        <li key={team} onClick={() => handleSuggestionClick(team)} className="p-3 cursor-pointer hover:bg-blue-100 dark:hover:bg-gray-700">
+                        <li key={team} onClick={() => handleSuggestionClick(team)} className="p-3 cursor-pointer text-gray-900 dark:text-gray-200 hover:bg-blue-100 dark:hover:bg-gray-700">
                           {team}
                         </li>
                       ))}
@@ -210,7 +210,7 @@ export default function HomePage() {
 
       {/* All Items Feed */}
       <div className="px-2 py-3">
-        <h2 className="text-lg font-bold my-3 text-center text-white">
+        <h2 className="text-lg font-bold my-3 text-center text-gray-900 dark:text-white">
           最新の投稿
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3">

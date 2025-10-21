@@ -48,7 +48,7 @@ const StarRating = ({ rating }: { rating: number }) => (
 // Helper component for content sections
 const DetailSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div className="border-t border-slate-200 dark:border-slate-700 pt-6 mt-6">
-    <h2 className="text-lg font-semibold mb-4 text-white">{title}</h2>
+    <h2 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">{title}</h2>
     {children}
   </div>
 );
@@ -295,9 +295,9 @@ export default function PostDetailPage() {
 
       {/* Title and Author */}
       <div className="mb-4 px-2">
-        <h1 className="text-3xl font-bold text-white">{title}</h1>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{title}</h1>
         <div className="mt-2 flex justify-between items-center">
-          <div className="flex items-center space-x-2 text-sm text-slate-200">
+          <div className="flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400">
             <Link href={`/user/${post.authorId}`} className="flex items-center space-x-2 hover:underline">
               <div className="relative w-10 h-10 rounded-full overflow-hidden">
                 <Image
@@ -310,8 +310,8 @@ export default function PostDetailPage() {
               </div>
               <span>{userInfo?.nickname || post.authorName}</span>
             </Link>
-            <span className="text-slate-200">•</span>
-            <span className="text-sm text-slate-200">
+            <span className="text-slate-500 dark:text-slate-400">•</span>
+            <span className="text-sm text-slate-500 dark:text-slate-400">
               {displayDate}
             </span>
           </div>
@@ -325,21 +325,21 @@ export default function PostDetailPage() {
       {match && (
         <DetailSection title="試合情報">
           <div className="text-center mb-4">
-            <p className="text-sm text-slate-200">{match.competition} {match.season}</p>
-            <p className="text-sm text-slate-200">{new Date(match.date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })} {match.kickoff} K.O.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{match.competition} {match.season}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{new Date(match.date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })} {match.kickoff} K.O.</p>
           </div>
           <div className="flex items-center justify-center space-x-4 text-center">
             <div className="flex-1">
-              <p className="font-bold text-lg text-white">{match.homeTeam}</p>
+              <p className="font-bold text-lg text-slate-900 dark:text-white">{match.homeTeam}</p>
             </div>
-            <div className="text-2xl font-bold text-white">
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">
               <span>{match.homeScore} - {match.awayScore}</span>
             </div>
             <div className="flex-1">
-              <p className="font-bold text-lg text-white">{match.awayTeam}</p>
+              <p className="font-bold text-lg text-slate-900 dark:text-white">{match.awayTeam}</p>
             </div>
           </div>
-          <div className="text-center mt-2 text-sm text-slate-200">
+          <div className="text-center mt-2 text-sm text-slate-500 dark:text-slate-400">
             <p>at {match.stadium}</p>
           </div>
         </DetailSection>

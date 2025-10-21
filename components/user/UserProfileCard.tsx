@@ -7,6 +7,8 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { FaInstagram, FaYoutube } from 'react-icons/fa';
+import { MultiSelect } from '../ui/MultiSelect';
+import { countriesByContinent } from '@/lib/countriesData';
 import { FaXTwitter } from 'react-icons/fa6';
 
 
@@ -107,10 +109,6 @@ export const UserProfileCard = (props: UserProfileProps) => {
             <Input id="noteLink" value={noteLink} onChange={(e) => setNoteLink(e.target.value)} placeholder="https://note.com/your_account" />
           </div>
           <div>
-            <label htmlFor="residence" className="block text-sm font-medium text-gray-700 dark:text-gray-300">居住地</label>
-            <Input id="residence" value={residence} onChange={(e) => setResidence(e.target.value)} />
-          </div>
-          <div>
             <label htmlFor="travelFrequency" className="block text-sm font-medium text-gray-700 dark:text-gray-300">海外渡航回数</label>
             <select id="travelFrequency" value={travelFrequency} onChange={(e) => setTravelFrequency(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
               <option>選択してください</option>
@@ -135,8 +133,13 @@ export const UserProfileCard = (props: UserProfileProps) => {
             </select>
           </div>
           <div>
-            <label htmlFor="visitedCountries" className="block text-sm font-medium text-gray-700 dark:text-gray-300">行ったことのある国（カンマ区切り）</label>
-            <Input id="visitedCountries" value={visitedCountries.join(', ')} onChange={(e) => setVisitedCountries(e.target.value.split(',').map(c => c.trim()))} />
+            <label htmlFor="visitedCountries" className="block text-sm font-medium text-gray-700 dark:text-gray-300">行ったことのある国</label>
+            <MultiSelect
+              options={countriesByContinent}
+              selected={visitedCountries}
+              onChange={setVisitedCountries}
+              className="w-full"
+            />
           </div>
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={onCancel}>キャンセル</Button>
@@ -163,10 +166,6 @@ export const UserProfileCard = (props: UserProfileProps) => {
       </div>
       <p className="text-gray-600 dark:text-gray-300 mt-2 whitespace-pre-wrap">{bio}</p>
       <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-        <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
-          <p className="font-semibold text-gray-500 dark:text-gray-400">居住地</p>
-          <p className="text-gray-800 dark:text-white">{residence || '未設定'}</p>
-        </div>
         <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
           <p className="font-semibold text-gray-500 dark:text-gray-400">海外渡航回数</p>
           <p className="text-gray-800 dark:text-white">{travelFrequency || '未設定'}</p>

@@ -317,7 +317,13 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
         setMessage('投稿を作成しました。');
       }
       
-      setNavigationUrl(`/mypage`);
+      if (isEditMode) {
+        // 編集モードの場合は、投稿詳細ページにリダイレクト
+        router.push(`/posts/${docId}`);
+      } else {
+        // 新規作成の場合は、マイページにリダイレクト
+        router.push('/mypage');
+      }
 
     } catch (error) {
       console.error('Error submitting post:', error);
@@ -397,18 +403,6 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
         </div>
       )}
 
-      <div className="bg-blue-100 dark:bg-blue-900/30 border-l-4 border-blue-500 dark:border-blue-400 text-blue-700 dark:text-blue-300 p-4 my-6 rounded-md text-sm" role="alert">
-        <p className="font-bold text-base mb-2">キャンペーン参加者様への投稿項目お知らせ</p>
-        <p>現在開催中の投稿キャンペーンでは、</p>
-        <div className="mt-2 pl-2 space-y-1">
-          <p className="font-semibold">基本情報、観戦試合、画像、カテゴリー</p>
-          <p className="font-semibold text-lg">+</p>
-          <p><span className="font-semibold">『プレシーズンマッチ/アンフィールド』</span>投稿の場合は上記に加えて<span className="font-semibold">2項目</span></p>
-          <p><span className="font-semibold">『ジャパンツアー』</span>投稿の場合は上記に加えて<span className="font-semibold">チケット情報、その他の情報</span></p>
-        </div>
-        <p className="mt-3">必須項目をご投稿前にご確認をお願いいたします。</p>
-        <p className="text-xs mt-1">(なお、項目ごと全ての内容を入力する必要はありません。)</p>
-      </div>
       <BasicInfoSection formData={formData} setFormData={setFormData} user={user} />
       <MatchInfoSection formData={formData} setFormData={setFormData} />
       <TicketInfoSection formData={formData} setFormData={setFormData} />
