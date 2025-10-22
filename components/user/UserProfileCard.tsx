@@ -21,7 +21,6 @@ export const UserProfileCard = (props: UserProfileProps) => {
     travelFrequency, setTravelFrequency,
     overseasMatchCount, setOverseasMatchCount,
     visitedCountries, setVisitedCountries,
-    residence, setResidence,
     xLink, setXLink,
     instagramLink, setInstagramLink,
     youtubeLink, setYoutubeLink,
