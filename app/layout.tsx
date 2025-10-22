@@ -1,9 +1,9 @@
 import './globals.css';
 import MenuDrawer from './components/MenuDrawer';
-
 import { Analytics } from '@vercel/analytics/react';
 import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { LoadingAnimationWrapper } from '@/components/ui/LoadingAnimationWrapper';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -20,14 +20,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           disableTransitionOnChange
         >
           <AuthProvider>
-            <div className="relative min-h-screen">
-              <MenuDrawer />
-              <main className="pt-16 pb-24">
-                {children}
-              </main>
-
-              <Analytics />
-            </div>
+            <LoadingAnimationWrapper>
+              <div className="relative min-h-screen">
+                <MenuDrawer />
+                <main className="pt-16 pb-24">
+                  {children}
+                </main>
+                <Analytics />
+              </div>
+            </LoadingAnimationWrapper>
           </AuthProvider>
         </ThemeProvider>
       </body>
