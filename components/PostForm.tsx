@@ -179,7 +179,7 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
       router.push('/login');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authLoading, postId]);
+  }, [user, authLoading, postId, collectionName]);
 
   const handlePostTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPostType = e.target.value as 'new' | 'additional';
@@ -438,26 +438,28 @@ export default function PostForm({ postId, collectionName }: PostFormProps) {
 }
 
 const normalizeOldPostToFormData = (oldData: DocumentData): Partial<PostFormData> => {
-  const oldMatch = (oldData.matches && oldData.matches[0]) || {};
+  // oldData.match が存在する場合、それを優先。なければ oldData 自体を試合情報のソースとして扱う
+  const matchDataSource = oldData.match || oldData;
+
   const matchInfo: MatchInfo = {
-    competition: oldMatch.competition || '',
-    season: oldData.season || oldMatch.season || '',
-    date: oldMatch.date || '',
-    kickoff: oldMatch.kickoff || '',
-    homeTeam: oldMatch.homeTeam || oldMatch.teamA || '',
-    awayTeam: oldMatch.awayTeam || oldMatch.teamB || '',
-    homeScore: String(oldMatch.homeScore ?? ''),
-    awayScore: String(oldMatch.awayScore ?? ''),
-    stadium: oldMatch.stadium || '',
-    ticketPrice: String(oldMatch.ticketPrice ?? ''),
-    ticketPurchaseRoute: oldMatch.ticketPurchaseRoute || '',
-    ticketPurchaseRouteUrl: oldMatch.ticketPurchaseRouteUrl || '',
-    ticketTeam: oldMatch.ticketTeam || '',
-    isTour: oldMatch.isTour || false,
-    isHospitality: oldMatch.isHospitality || false,
-    hospitalityDetail: oldMatch.hospitalityDetail || '',
-    seat: oldMatch.seat || '',
-    seatReview: oldMatch.seatReview || '',
+    competition: matchDataSource.competition || '',
+    season: matchDataSource.season || oldData.season || '',
+    date: matchDataSource.date || '',
+    kickoff: matchDataSource.kickoff || '',
+    homeTeam: matchDataSource.homeTeam || matchDataSource.teamA || '',
+    awayTeam: matchDataSource.awayTeam || matchDataSource.teamB || '',
+    homeScore: String(matchDataSource.homeScore ?? ''),
+    awayScore: String(matchDataSource.awayScore ?? ''),
+    stadium: matchDataSource.stadium || '',
+    ticketPrice: String(matchDataSource.ticketPrice ?? ''),
+    ticketPurchaseRoute: matchDataSource.ticketPurchaseRoute || '',
+    ticketPurchaseRouteUrl: matchDataSource.ticketPurchaseRouteUrl || '',
+    ticketTeam: matchDataSource.ticketTeam || '',
+    isTour: matchDataSource.isTour || false,
+    isHospitality: matchDataSource.isHospitality || false,
+    hospitalityDetail: matchDataSource.hospitalityDetail || '',
+    seat: matchDataSource.seat || '',
+    seatReview: matchDataSource.seatReview || '',
   };
 
   const imageUrls = oldData.imageUrls || (oldData.images ? (Array.isArray(oldData.images) ? oldData.images : [oldData.images]) : []);
