@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import nextDynamic from 'next/dynamic';
 import { 
   premierLeagueStadiums, 
@@ -16,6 +16,7 @@ import {
   segundaStadiums, 
   bundesligaStadiums, 
   bundesliga2Stadiums, 
+  belgianProLeagueStadiums,
   mapCategories, 
   MapCategory 
 } from '@/lib/stadiumData';
@@ -24,7 +25,7 @@ import { MapPin, Navigation, ChevronDown, ChevronUp, List, X, Hotel } from 'luci
 
 // Dynamically import the map component to avoid SSR issues
 const GoogleStadiumMap = nextDynamic(
-  () => import('@/components/GoogleStadiumMap'),
+  () => import('../../components/GoogleStadiumMap'),
   { 
     ssr: false,
     loading: () => (
@@ -54,9 +55,11 @@ export default function MapPage() {
   const [showSegunda, setShowSegunda] = useState(false);
   const [showBundesliga, setShowBundesliga] = useState(false);
   const [showBundesliga2, setShowBundesliga2] = useState(false);
+  const [showBelgianProLeague, setShowBelgianProLeague] = useState(true);
   const [isListOpen, setIsListOpen] = useState(false);
   const [isLeagueListOpen, setIsLeagueListOpen] = useState(false);
-
+  const [isStadiumListOpen, setIsStadiumListOpen] = useState(true);
+  const [isHotelListOpen, setIsHotelListOpen] = useState(true);
 
   const leagueStates = {
     'プレミアリーグ': { show: showPremierLeague, set: setShowPremierLeague },
@@ -70,6 +73,7 @@ export default function MapPage() {
     'セグンダ': { show: showSegunda, set: setShowSegunda },
     'ブンデスリーガ': { show: showBundesliga, set: setShowBundesliga },
     'ブンデスリーガ2部': { show: showBundesliga2, set: setShowBundesliga2 },
+    'ベルギー・プロ・リーグ': { show: showBelgianProLeague, set: setShowBelgianProLeague },
   };
 
   const { hotels, loading: hotelsLoading, error: hotelsError } = useHotelData();
@@ -87,11 +91,12 @@ export default function MapPage() {
     if (showSegunda) activeStadiums.push(...segundaStadiums);
     if (showBundesliga) activeStadiums.push(...bundesligaStadiums);
     if (showBundesliga2) activeStadiums.push(...bundesliga2Stadiums);
+    if (showBelgianProLeague) activeStadiums.push(...belgianProLeagueStadiums);
     return activeStadiums;
   }, [
     showPremierLeague, showChampionship, showLeagueOne,
     showSerieA, showSerieB, showLigue1, showLigue2,
-    showLaLiga, showSegunda, showBundesliga, showBundesliga2
+    showLaLiga, showSegunda, showBundesliga, showBundesliga2, showBelgianProLeague
   ]);
 
   const handleStadiumSelect = useCallback((stadiumName: string) => {
@@ -116,6 +121,7 @@ export default function MapPage() {
     setShowSegunda(show);
     setShowBundesliga(show);
     setShowBundesliga2(show);
+    setShowBelgianProLeague(show);
   };
 
   return (
@@ -180,8 +186,8 @@ export default function MapPage() {
                 {isLeagueListOpen && (
                   <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
                     <div className="flex justify-around mb-2">
-                      <button onClick={() => toggleAllLeagues(true)} className="text-xs px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600">全て選択</button>
-                      <button onClick={() => toggleAllLeagues(false)} className="text-xs px-2 py-1 rounded bg-gray-500 text-white hover:bg-gray-600">全て解除</button>
+                      <button onClick={() => toggleAllLeagues(true)} className="text-xs px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600\">全て選択</button>
+                      <button onClick={() => toggleAllLeagues(false)} className="text-xs px-2 py-1 rounded bg-gray-500 text-white hover:bg-gray-600\">全て解除</button>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       {Object.entries(leagueStates).map(([name, state]) => (
@@ -199,39 +205,68 @@ export default function MapPage() {
                   </div>
                 )}
               </div>
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {stadiums.map((stadium) => (
-                  <li
-                    key={stadium.name}
-                    onClick={() => handleStadiumSelect(stadium.name)}
-                    className={`p-4 cursor-pointer transition-colors duration-200 ${
-                      selectedStadium === stadium.name ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <p className="font-semibold text-gray-800 dark:text-white">{stadium.name}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{stadium.team}</p>
-                  </li>
-                ))}
-              </ul>
+
+              <div className="px-4 pt-2">
+                <button 
+                  onClick={() => setIsStadiumListOpen(!isStadiumListOpen)}
+                  className="w-full flex justify-between items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <span className="font-semibold">スタジアム ({stadiums.length})</span>
+                  {isStadiumListOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </button>
+              </div>
+              {isStadiumListOpen && (
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {stadiums.map((stadium) => (
+                    <li
+                      key={stadium.name}
+                      onClick={() => handleStadiumSelect(stadium.name)}
+                      className={`p-4 cursor-pointer transition-colors duration-200 ${
+                        selectedStadium === stadium.name ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <p className="font-semibold text-gray-800 dark:text-white">{stadium.name}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{stadium.team}</p>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center">
+                        <span className="mr-4">リーグ: {stadium.league || '不明'}</span>
+                        <span>収容人数: {stadium.capacity ? stadium.capacity.toLocaleString() : '不明'}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           ) : (
             <div>
-              {hotelsLoading && <p className="p-4 text-center">ホテル情報を読み込み中...</p>}
-              {hotelsError && <p className="p-4 text-center text-red-500">エラー: {hotelsError}</p>}
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {hotels.map((hotel) => (
-                  <li
-                    key={hotel.name}
-                    onClick={() => handleHotelSelect(hotel.name)}
-                    className={`p-4 cursor-pointer transition-colors duration-200 ${
-                      selectedHotel === hotel.name ? 'bg-purple-100 dark:bg-purple-900' : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <p className="font-semibold text-gray-800 dark:text-white">{hotel.name}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{hotel.city}</p>
-                  </li>
-                ))}
-              </ul>
+              <div className="p-4">
+                <button 
+                  onClick={() => setIsHotelListOpen(!isHotelListOpen)}
+                  className="w-full flex justify-between items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <span className="font-semibold">ホテル ({hotels.length})</span>
+                  {isHotelListOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </button>
+              </div>
+              {isHotelListOpen && (
+                <>
+                  {hotelsLoading && <p className="p-4 text-center">ホテル情報を読み込み中...</p>}
+                  {hotelsError && <p className="p-4 text-center text-red-500">エラー: {hotelsError}</p>}
+                  <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {hotels.map((hotel) => (
+                      <li
+                        key={hotel.name}
+                        onClick={() => handleHotelSelect(hotel.name)}
+                        className={`p-4 cursor-pointer transition-colors duration-200 ${
+                          selectedHotel === hotel.name ? 'bg-purple-100 dark:bg-purple-900' : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <p className="font-semibold text-gray-800 dark:text-white">{hotel.name}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{hotel.city}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -252,7 +287,6 @@ export default function MapPage() {
           onStadiumSelect={handleStadiumSelect}
           onHotelSelect={handleHotelSelect}
           selectedCategory={selectedCategory}
-
         />
       </main>
     </div>
