@@ -1,11 +1,13 @@
 "use client";
 
+import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Club = {
   id: string;
   name: string;
   nameEn: string;
+  logoSrc: string;
   fans: number;
   color: string;
   textColor: string;
@@ -26,6 +28,10 @@ type BubbleState = {
   r: number;
 };
 
+const formatSupporters = (n: number) => {
+  return n.toLocaleString('ja-JP');
+};
+
 export default function SupporterPage() {
   const clubs: Club[] = useMemo(
     () => [
@@ -33,6 +39,7 @@ export default function SupporterPage() {
         id: 'mu',
         name: 'マンチェスターU',
         nameEn: 'Manchester United',
+        logoSrc: '/チーム/マンチェスターユナイテッド.webp',
         fans: 1023202,
         color: 'bg-red-700',
         textColor: 'text-white',
@@ -48,6 +55,7 @@ export default function SupporterPage() {
         id: 'mc',
         name: 'マンチェスターC',
         nameEn: 'Manchester City',
+        logoSrc: '/チーム/マンチェスターシティ.webp',
         fans: 892234,
         color: 'bg-sky-400',
         textColor: 'text-slate-900',
@@ -63,6 +71,7 @@ export default function SupporterPage() {
         id: 'liv',
         name: 'リバプール',
         nameEn: 'Liverpool',
+        logoSrc: '/チーム/リバプール.webp',
         fans: 1021678,
         color: 'bg-red-800',
         textColor: 'text-white',
@@ -78,6 +87,7 @@ export default function SupporterPage() {
         id: 'ars',
         name: 'アーセナル',
         nameEn: 'Arsenal',
+        logoSrc: '/チーム/アーセナル.webp',
         fans: 983459,
         color: 'bg-red-600',
         textColor: 'text-white',
@@ -93,6 +103,7 @@ export default function SupporterPage() {
         id: 'che',
         name: 'チェルシー',
         nameEn: 'Chelsea',
+        logoSrc: '/チーム/チェルシー.webp',
         fans: 652004,
         color: 'bg-blue-600',
         textColor: 'text-white',
@@ -108,6 +119,7 @@ export default function SupporterPage() {
         id: 'tot',
         name: 'トッテナム',
         nameEn: 'Tottenham Hotspur',
+        logoSrc: '/チーム/トッテナム.webp',
         fans: 564009,
         color: 'bg-white',
         textColor: 'text-slate-900',
@@ -123,6 +135,7 @@ export default function SupporterPage() {
         id: 'bha',
         name: 'ブライトン',
         nameEn: 'Brighton & Hove Albion',
+        logoSrc: '/チーム/ブライトン.webp',
         fans: 13210,
         color: 'bg-blue-500',
         textColor: 'text-white',
@@ -138,6 +151,7 @@ export default function SupporterPage() {
         id: 'nfo',
         name: 'N.フォレスト',
         nameEn: 'Nottingham Forest',
+        logoSrc: '/チーム/N.フォレスト.png',
         fans: 14,
         color: 'bg-red-500',
         textColor: 'text-white',
@@ -153,6 +167,7 @@ export default function SupporterPage() {
         id: 'new',
         name: 'ニューカッスル',
         nameEn: 'Newcastle United',
+        logoSrc: '/チーム/ニューカッスル.webp',
         fans: 21889,
         color: 'bg-[repeating-linear-gradient(90deg,#111827_0px,#111827_12px,#ffffff_12px,#ffffff_24px)]',
         textColor: 'text-slate-900',
@@ -443,9 +458,20 @@ export default function SupporterPage() {
                   transition: 'transform 180ms ease, box-shadow 180ms ease',
                 }}
               >
-                <div className="w-full h-full flex flex-col items-center justify-center text-center px-2">
-                  <div className="text-xs sm:text-sm font-bold leading-tight">{club.name}</div>
-                  <div className="mt-1 text-[10px] sm:text-xs opacity-80">{club.fans}</div>
+                <div className="relative w-full h-full p-3">
+                  <div className="relative w-full h-full rounded-full bg-white/90 dark:bg-white">
+                    <Image
+                      src={club.logoSrc}
+                      alt={club.name}
+                      fill
+                      sizes="160px"
+                      className="object-contain p-3"
+                      priority={club.id === 'mu' || club.id === 'mc' || club.id === 'liv'}
+                    />
+                  </div>
+                  <div className="absolute inset-x-2 bottom-2 z-10 rounded-full bg-white/80 backdrop-blur px-1 py-[2px] leading-none text-center text-[8px] sm:text-[10px] font-semibold text-gray-900 shadow">
+                    {formatSupporters(club.fans)}
+                  </div>
                 </div>
               </div>
             );
@@ -472,8 +498,21 @@ export default function SupporterPage() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{selectedClub.name}</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">{selectedClub.nameEn}</div>
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-12 h-12 rounded-xl bg-white border border-gray-200 dark:border-gray-700 overflow-hidden">
+                      <Image
+                        src={selectedClub.logoSrc}
+                        alt={selectedClub.name}
+                        fill
+                        sizes="48px"
+                        className="object-contain p-1"
+                      />
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{selectedClub.name}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{selectedClub.nameEn}</div>
+                    </div>
+                  </div>
                 </div>
                 <button
                   type="button"
