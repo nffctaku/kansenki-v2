@@ -5,11 +5,17 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 type Club = {
   id: string;
   name: string;
+  nameEn: string;
   fans: number;
   color: string;
   textColor: string;
   xPct: number;
   yPct: number;
+  foundedYear: number;
+  country: string;
+  homeTown: string;
+  league: string;
+  leagueTitles: number;
 };
 
 type BubbleState = {
@@ -23,12 +29,141 @@ type BubbleState = {
 export default function SupporterPage() {
   const clubs: Club[] = useMemo(
     () => [
-      { id: 'mu', name: 'マンチェスターU', fans: 1023202, color: 'bg-red-700', textColor: 'text-white', xPct: 50, yPct: 45 },
-      { id: 'mc', name: 'マンチェスターC', fans: 892234, color: 'bg-sky-400', textColor: 'text-slate-900', xPct: 72, yPct: 30 },
-      { id: 'liv', name: 'リバプール', fans: 1021678, color: 'bg-red-800', textColor: 'text-white', xPct: 28, yPct: 30 },
-      { id: 'ars', name: 'アーセナル', fans: 983459, color: 'bg-red-600', textColor: 'text-white', xPct: 25, yPct: 62 },
-      { id: 'che', name: 'チェルシー', fans: 652004, color: 'bg-blue-600', textColor: 'text-white', xPct: 72, yPct: 62 },
-      { id: 'tot', name: 'トッテナム', fans: 564009, color: 'bg-white', textColor: 'text-slate-900', xPct: 50, yPct: 75 },
+      {
+        id: 'mu',
+        name: 'マンチェスターU',
+        nameEn: 'Manchester United',
+        fans: 1023202,
+        color: 'bg-red-700',
+        textColor: 'text-white',
+        xPct: 50,
+        yPct: 45,
+        foundedYear: 1878,
+        country: 'イングランド',
+        homeTown: 'マンチェスター',
+        league: 'プレミアリーグ',
+        leagueTitles: 20,
+      },
+      {
+        id: 'mc',
+        name: 'マンチェスターC',
+        nameEn: 'Manchester City',
+        fans: 892234,
+        color: 'bg-sky-400',
+        textColor: 'text-slate-900',
+        xPct: 72,
+        yPct: 30,
+        foundedYear: 1880,
+        country: 'イングランド',
+        homeTown: 'マンチェスター',
+        league: 'プレミアリーグ',
+        leagueTitles: 10,
+      },
+      {
+        id: 'liv',
+        name: 'リバプール',
+        nameEn: 'Liverpool',
+        fans: 1021678,
+        color: 'bg-red-800',
+        textColor: 'text-white',
+        xPct: 28,
+        yPct: 30,
+        foundedYear: 1892,
+        country: 'イングランド',
+        homeTown: 'リバプール',
+        league: 'プレミアリーグ',
+        leagueTitles: 19,
+      },
+      {
+        id: 'ars',
+        name: 'アーセナル',
+        nameEn: 'Arsenal',
+        fans: 983459,
+        color: 'bg-red-600',
+        textColor: 'text-white',
+        xPct: 25,
+        yPct: 62,
+        foundedYear: 1886,
+        country: 'イングランド',
+        homeTown: 'ロンドン',
+        league: 'プレミアリーグ',
+        leagueTitles: 13,
+      },
+      {
+        id: 'che',
+        name: 'チェルシー',
+        nameEn: 'Chelsea',
+        fans: 652004,
+        color: 'bg-blue-600',
+        textColor: 'text-white',
+        xPct: 72,
+        yPct: 62,
+        foundedYear: 1905,
+        country: 'イングランド',
+        homeTown: 'ロンドン',
+        league: 'プレミアリーグ',
+        leagueTitles: 6,
+      },
+      {
+        id: 'tot',
+        name: 'トッテナム',
+        nameEn: 'Tottenham Hotspur',
+        fans: 564009,
+        color: 'bg-white',
+        textColor: 'text-slate-900',
+        xPct: 50,
+        yPct: 75,
+        foundedYear: 1882,
+        country: 'イングランド',
+        homeTown: 'ロンドン',
+        league: 'プレミアリーグ',
+        leagueTitles: 2,
+      },
+      {
+        id: 'bha',
+        name: 'ブライトン',
+        nameEn: 'Brighton & Hove Albion',
+        fans: 13210,
+        color: 'bg-blue-500',
+        textColor: 'text-white',
+        xPct: 86,
+        yPct: 46,
+        foundedYear: 1901,
+        country: 'イングランド',
+        homeTown: 'ブライトン',
+        league: 'プレミアリーグ',
+        leagueTitles: 0,
+      },
+      {
+        id: 'nfo',
+        name: 'N.フォレスト',
+        nameEn: 'Nottingham Forest',
+        fans: 14,
+        color: 'bg-red-500',
+        textColor: 'text-white',
+        xPct: 14,
+        yPct: 46,
+        foundedYear: 1865,
+        country: 'イングランド',
+        homeTown: 'ノッティンガム',
+        league: 'プレミアリーグ',
+        leagueTitles: 1,
+      },
+      {
+        id: 'new',
+        name: 'ニューカッスル',
+        nameEn: 'Newcastle United',
+        fans: 21889,
+        color: 'bg-[repeating-linear-gradient(90deg,#111827_0px,#111827_12px,#ffffff_12px,#ffffff_24px)]',
+        textColor: 'text-slate-900',
+        xPct: 50,
+        yPct: 18,
+        foundedYear: 1892,
+        country: 'イングランド',
+        homeTown: 'ニューカッスル・アポン・タイン',
+        league: 'プレミアリーグ',
+        leagueTitles: 4,
+      },
     ],
     []
   );
@@ -51,6 +186,8 @@ export default function SupporterPage() {
   }>({ id: null, pointerId: null, dx: 0, dy: 0, lastX: 0, lastY: 0, lastT: 0 });
 
   const [, forceRender] = useState(0);
+  const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
+  const suppressClickRef = useRef<{ id: string | null; until: number }>({ id: null, until: 0 });
 
   const minSize = 64;
   const maxSize = 140;
@@ -222,6 +359,8 @@ export default function SupporterPage() {
       lastT: performance.now(),
     };
 
+    suppressClickRef.current = { id, until: 0 };
+
     s.vx = 0;
     s.vy = 0;
 
@@ -242,6 +381,10 @@ export default function SupporterPage() {
     const s = bubblesRef.current[d.id];
     if (!s) return;
 
+    if (Math.hypot(px - d.lastX, py - d.lastY) > 4) {
+      suppressClickRef.current = { id: d.id, until: performance.now() + 350 };
+    }
+
     s.x = px + d.dx;
     s.y = py + d.dy;
 
@@ -261,6 +404,8 @@ export default function SupporterPage() {
     dragRef.current = { id: null, pointerId: null, dx: 0, dy: 0, lastX: 0, lastY: 0, lastT: 0 };
   };
 
+  const selectedClub = selectedClubId ? clubs.find((c) => c.id === selectedClubId) ?? null : null;
+
   return (
     <div className="px-3 py-4" onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
       <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">サポーター可視化</h1>
@@ -276,17 +421,26 @@ export default function SupporterPage() {
             const left = s?.x ?? 0;
             const top = s?.y ?? 0;
 
+            const isSelected = selectedClubId === club.id;
+
             return (
               <div
                 key={club.id}
                 onPointerDown={(e) => onPointerDown(e, club.id)}
+                onClick={() => {
+                  const sup = suppressClickRef.current;
+                  if (sup.id === club.id && sup.until > performance.now()) return;
+                  setSelectedClubId(club.id);
+                }}
                 className={`absolute rounded-full ${club.color} ${club.textColor} shadow-md border border-black/5 dark:border-white/10 select-none cursor-grab active:cursor-grabbing`}
                 style={{
                   width: size,
                   height: size,
                   left,
                   top,
-                  transform: `translate(${-r}px, ${-r}px)`,
+                  transform: `translate(${-r}px, ${-r}px) scale(${isSelected ? 1.15 : 1})`,
+                  zIndex: isSelected ? 20 : 1,
+                  transition: 'transform 180ms ease, box-shadow 180ms ease',
                 }}
               >
                 <div className="w-full h-full flex flex-col items-center justify-center text-center px-2">
@@ -302,6 +456,60 @@ export default function SupporterPage() {
           数字は仮の値。丸同士は押し合い、境界で跳ね返ります（簡易物理）。ドラッグで動かせます。
         </div>
       </div>
+
+      {selectedClub && (
+        <div
+          className="fixed inset-0 z-50"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setSelectedClubId(null)}
+        >
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center p-3">
+            <div
+              className="w-full sm:max-w-lg bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{selectedClub.name}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">{selectedClub.nameEn}</div>
+                </div>
+                <button
+                  type="button"
+                  className="shrink-0 rounded-xl px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  onClick={() => setSelectedClubId(null)}
+                >
+                  閉じる
+                </button>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">設立年</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">{selectedClub.foundedYear}</div>
+                </div>
+                <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">国</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">{selectedClub.country}</div>
+                </div>
+                <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">ホームタウン</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">{selectedClub.homeTown}</div>
+                </div>
+                <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">所属リーグ</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">{selectedClub.league}</div>
+                </div>
+                <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3 col-span-2">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">リーグ優勝回数</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">{selectedClub.leagueTitles}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
