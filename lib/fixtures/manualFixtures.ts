@@ -8,6 +8,7 @@ export type ManualFixture = {
   homeClubId: string;
   awayClubId: string;
   sourceUrl?: string;
+  featured?: boolean;
 };
 
 export const manualFixtures: ManualFixture[] = [

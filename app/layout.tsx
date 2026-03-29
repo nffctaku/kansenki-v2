@@ -1,5 +1,6 @@
 import './globals.css';
 import MenuDrawer from './components/MenuDrawer';
+import BottomTabBar from './components/BottomTabBar';
 import { Analytics } from '@vercel/analytics/react';
 import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <main className="pt-16 pb-24">
                   {children}
                 </main>
+                <BottomTabBar />
                 <Analytics />
               </div>
             </LoadingAnimationWrapper>

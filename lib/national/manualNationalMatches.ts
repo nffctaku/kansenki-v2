@@ -10,6 +10,10 @@ export type ManualNationalMatch = {
   awayFlagSrc?: string;
   homeCountryCode?: string;
   awayCountryCode?: string;
+  featured?: boolean;
+  watchUrl?: string;
+  predictUrl?: string;
+  comment?: string;
 };
 
 export const manualNationalMatches: ManualNationalMatch[] = [
@@ -25,6 +29,10 @@ export const manualNationalMatches: ManualNationalMatch[] = [
     awayFlagSrc: '/国旗更新/JPN.png',
     homeCountryCode: 'ENG',
     awayCountryCode: 'JPN',
+    featured: true,
+    watchUrl: 'https://video.unext.jp/',
+    predictUrl: '/posts',
+    comment: 'W杯優勝候補のイングランドと16年ぶりの激突',
   },
   {
     id: 'kirin-jpn-isl-2026-05-31',
