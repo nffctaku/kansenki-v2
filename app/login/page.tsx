@@ -26,6 +26,8 @@ export default function LoginPage() {
         nickname: user.displayName || '名無しさん',
         avatarUrl: user.photoURL || '/default-avatar.png',
         bio: '',
+        favoriteClubIds: [],
+        favoritePlayerIds: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };

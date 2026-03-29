@@ -8,6 +8,8 @@ export interface UserProfile {
   nickname: string;
   bio?: string;
   favoriteTeam?: string;
+  favoriteClubIds?: string[];
+  favoritePlayerIds?: string[];
   bookmarks?: { collectionName: string; postId: string }[];
   createdAt: Timestamp;
   updatedAt: Timestamp;

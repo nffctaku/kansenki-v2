@@ -9,6 +9,8 @@ import { UserProfile } from '@/types/user';
 export const useUserProfile = (user: User | null) => {
   const [nickname, setNickname] = useState('');
   const [bio, setBio] = useState('');
+  const [favoriteClubIds, setFavoriteClubIds] = useState<string[]>([]);
+  const [favoritePlayerIds, setFavoritePlayerIds] = useState<string[]>([]);
   const [xLink, setXLink] = useState('');
   const [instagramLink, setInstagramLink] = useState('');
   const [youtubeLink, setYoutubeLink] = useState('');
@@ -35,6 +37,8 @@ export const useUserProfile = (user: User | null) => {
         const userData = userDocSnap.data();
         setNickname(userData.nickname || '');
         setBio(userData.bio || '');
+        setFavoriteClubIds(userData.favoriteClubIds || []);
+        setFavoritePlayerIds(userData.favoritePlayerIds || []);
         setXLink(userData.xLink || userData.twitter || '');
         setInstagramLink(userData.instagramLink || userData.instagram || '');
         setYoutubeLink(userData.youtubeLink || userData.youtube || '');
@@ -108,8 +112,8 @@ export const useUserProfile = (user: User | null) => {
       }
 
       // 他のプロフィール項目を更新データに含める
-      const fields: (keyof UserProfile)[] = ['nickname', 'bio', 'xLink', 'instagramLink', 'youtubeLink', 'noteLink', 'travelFrequency', 'overseasMatchCount', 'visitedCountries'];
-      const state: { [key: string]: any } = { nickname, bio, xLink, instagramLink, youtubeLink, noteLink, travelFrequency, overseasMatchCount, visitedCountries };
+      const fields: (keyof UserProfile)[] = ['nickname', 'bio', 'favoriteClubIds', 'favoritePlayerIds', 'xLink', 'instagramLink', 'youtubeLink', 'noteLink', 'travelFrequency', 'overseasMatchCount', 'visitedCountries'];
+      const state: { [key: string]: any } = { nickname, bio, favoriteClubIds, favoritePlayerIds, xLink, instagramLink, youtubeLink, noteLink, travelFrequency, overseasMatchCount, visitedCountries };
       
       fields.forEach(field => {
         // Firestoreのデータと比較し、変更があったフィールドのみを更新対象に追加
@@ -146,6 +150,8 @@ export const useUserProfile = (user: User | null) => {
   return {
     nickname, setNickname,
     bio, setBio,
+    favoriteClubIds, setFavoriteClubIds,
+    favoritePlayerIds, setFavoritePlayerIds,
     xLink, setXLink,
     instagramLink, setInstagramLink,
     youtubeLink, setYoutubeLink,
