@@ -3,18 +3,22 @@
 import Link from 'next/link';
 import AnnouncementBanner from '../components/AnnouncementBanner';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { getPremierLeagueClubById } from '@/lib/clubMaster';
 import { manualFixtures } from '@/lib/fixtures/manualFixtures';
 import { manualHighlights } from '@/lib/highlights/manualHighlights';
 import { manualNationalMatches } from '@/lib/national/manualNationalMatches';
-import { Megaphone, Tv } from 'lucide-react';
+import FeaturedNationalMatchHeroCarousel from './components/FeaturedNationalMatchHeroCarousel';
+import FavoriteUpcomingFixturesSection from './components/FavoriteUpcomingFixturesSection';
+import ManualHighlightsRow from './components/ManualHighlightsRow';
+import ManualNationalMatchesRow from './components/ManualNationalMatchesRow';
+import IdeaDrawer from './components/IdeaDrawer';
+import HomePinnedClubsSwitcher from './components/HomePinnedClubsSwitcher';
 export default function HomePage() {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, updateUserProfile } = useAuth();
 
   const favoriteClubIds = userProfile?.favoriteClubIds ?? [];
-  const favoritePlayerIds = userProfile?.favoritePlayerIds ?? [];
 
   const hasUclClub = favoriteClubIds.some((id) => ['mc', 'liv', 'tot', 'che', 'new', 'ars'].includes(id));
   const hasUelClub = favoriteClubIds.some((id) => ['avl', 'nfo'].includes(id));
@@ -37,14 +41,33 @@ export default function HomePage() {
 
   const now = new Date();
 
-  const featuredNationalMatch = manualNationalMatches.find((m) => m.featured) ?? null;
-  const nationalMatchesForList = featuredNationalMatch
-    ? manualNationalMatches.filter((m) => m.id !== featuredNationalMatch.id)
-    : manualNationalMatches;
+  const featuredNationalMatches = manualNationalMatches.filter((m) => m.featured).slice(0, 3);
+  const featuredNationalMatchIds = new Set(featuredNationalMatches.map((m) => m.id));
+  const nationalMatchesForList = manualNationalMatches.filter((m) => !featuredNationalMatchIds.has(m.id));
+
+  const homePinnedClubIds = (userProfile?.homePinnedClubIds ?? []).slice(0, 3);
+  const homeSelectedClubId = userProfile?.homeSelectedClubId ? userProfile.homeSelectedClubId : null;
+
+  const effectiveSelectedClubId = homeSelectedClubId ?? homePinnedClubIds[0] ?? favoriteClubIds[0] ?? null;
+
+  const [localSelectedClubId, setLocalSelectedClubId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLocalSelectedClubId(effectiveSelectedClubId);
+  }, [effectiveSelectedClubId]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!effectiveSelectedClubId) return;
+    if (homeSelectedClubId) return;
+    updateUserProfile({ homeSelectedClubId: effectiveSelectedClubId });
+  }, [user, effectiveSelectedClubId, homeSelectedClubId, updateUserProfile]);
+
+  const fixtureTargetClubIds = localSelectedClubId ? [localSelectedClubId] : [];
 
   const upcomingFixturesAll = manualFixtures
     .filter((f) =>
-      favoriteClubIds.includes(f.homeClubId) || favoriteClubIds.includes(f.awayClubId)
+      fixtureTargetClubIds.includes(f.homeClubId) || fixtureTargetClubIds.includes(f.awayClubId)
     )
     .map((f) => ({
       fixture: f,
@@ -164,113 +187,35 @@ export default function HomePage() {
 
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-blue-950 to-indigo-950">
         <div className="px-3 pt-4">
-          <div className="mb-3">
-            <h1 className="text-lg font-bold text-gray-100">ホーム</h1>
-            <div className="text-sm text-gray-300">目的別にコンテンツへショートカット</div>
-          </div>
+          <FeaturedNationalMatchHeroCarousel matches={featuredNationalMatches} intervalMs={4000} />
 
-          {featuredNationalMatch && (
-            <div className="mb-5">
-              <div className="mb-2 text-sm font-bold text-gray-100">運営の注目試合</div>
-              <div className="relative rounded-2xl border border-blue-200/20 bg-gradient-to-b from-blue-700/25 via-blue-800/20 to-indigo-900/20 px-4 py-4 shadow-sm">
-                <div className="absolute left-3 top-3 inline-flex rounded-full border border-amber-200/30 bg-amber-300/10 px-2 py-0.5 text-[10px] font-semibold text-amber-100">
-                  注目
-                </div>
-
-                <div className="pt-6 flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-white/70">{featuredNationalMatch.competitionLabel}</div>
-                    <div className="mt-1 text-sm font-bold text-gray-100">{featuredNationalMatch.kickoffLabel}</div>
-                    {featuredNationalMatch.comment && (
-                      <div className="mt-2 text-xs font-semibold text-white/80 truncate">
-                        {featuredNationalMatch.comment}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <div className="max-w-[200px] truncate rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/80">
-                      {featuredNationalMatch.venue}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/90">
-                      {featuredNationalMatch.homeFlagSrc ? (
-                        <Image
-                          src={featuredNationalMatch.homeFlagSrc}
-                          alt={featuredNationalMatch.homeCountryNameJa}
-                          fill
-                          sizes="48px"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center text-[10px] font-semibold text-slate-800">
-                          {(featuredNationalMatch.homeCountryCode ?? '').toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-sm font-semibold text-gray-100 truncate">{featuredNationalMatch.homeCountryNameJa}</div>
-                  </div>
-
-                  <div className="text-xs font-semibold text-white/60">vs</div>
-
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="text-sm font-semibold text-gray-100 truncate">{featuredNationalMatch.awayCountryNameJa}</div>
-                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/90">
-                      {featuredNationalMatch.awayFlagSrc ? (
-                        <Image
-                          src={featuredNationalMatch.awayFlagSrc}
-                          alt={featuredNationalMatch.awayCountryNameJa}
-                          fill
-                          sizes="48px"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center text-[10px] font-semibold text-slate-800">
-                          {(featuredNationalMatch.awayCountryCode ?? '').toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  {featuredNationalMatch.watchUrl ? (
-                    <Link
-                      href={featuredNationalMatch.watchUrl}
-                      target={featuredNationalMatch.watchUrl.startsWith('http') ? '_blank' : undefined}
-                      rel={featuredNationalMatch.watchUrl.startsWith('http') ? 'noreferrer' : undefined}
-                      className="inline-flex items-center gap-2 rounded-full bg-emerald-300/80 px-4 py-2 text-xs font-bold text-slate-900 hover:bg-emerald-300 transition-colors"
-                    >
-                      <Tv className="h-4 w-4" />
-                      U-NEXT
-                    </Link>
-                  ) : (
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-bold text-white/40 border border-white/10">
-                      <Tv className="h-4 w-4" />
-                      U-NEXT
-                    </div>
-                  )}
-
-                  {featuredNationalMatch.predictUrl ? (
-                    <Link
-                      href={featuredNationalMatch.predictUrl}
-                      className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-xs font-bold text-gray-100 border border-white/10 hover:bg-white/20 transition-colors"
-                    >
-                      <Megaphone className="h-4 w-4" />
-                      みんなでスコア予想
-                    </Link>
-                  ) : (
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-bold text-white/40 border border-white/10">
-                      <Megaphone className="h-4 w-4" />
-                      みんなでスコア予想
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+          {user && favoriteClubIds.length > 0 && (
+            <HomePinnedClubsSwitcher
+              favoriteClubIds={favoriteClubIds}
+              pinnedClubIds={homePinnedClubIds}
+              selectedClubId={localSelectedClubId}
+              onSelect={async (clubId) => {
+                if (!clubId) return;
+                setLocalSelectedClubId(clubId);
+                await updateUserProfile({ homeSelectedClubId: clubId });
+              }}
+              onPin={async (clubId) => {
+                if (homePinnedClubIds.includes(clubId)) return;
+                const next = [...homePinnedClubIds, clubId].slice(0, 3);
+                const shouldSelect = localSelectedClubId ? localSelectedClubId : clubId;
+                setLocalSelectedClubId(shouldSelect);
+                await updateUserProfile({
+                  homePinnedClubIds: next,
+                  homeSelectedClubId: shouldSelect,
+                });
+              }}
+              onUnpin={async (clubId) => {
+                const next = homePinnedClubIds.filter((id) => id !== clubId);
+                const nextSelected = localSelectedClubId === clubId ? (next[0] ?? favoriteClubIds[0] ?? '') : (localSelectedClubId ?? '');
+                setLocalSelectedClubId(nextSelected || null);
+                await updateUserProfile({ homePinnedClubIds: next, homeSelectedClubId: nextSelected });
+              }}
+            />
           )}
 
           <div className="mb-4">
@@ -295,10 +240,21 @@ export default function HomePage() {
                   {favoriteClubIds.slice(0, 8).map((id) => {
                     const club = getPremierLeagueClubById(id);
                     if (!club) return null;
+                    const active = localSelectedClubId === id;
                     return (
-                      <div
+                      <button
                         key={id}
-                        className="relative w-14 h-14 rounded-full bg-white/90 border border-white/15 shadow-sm shrink-0"
+                        type="button"
+                        onClick={async () => {
+                          setLocalSelectedClubId(id);
+                          await updateUserProfile({ homeSelectedClubId: id });
+                        }}
+                        className={
+                          `relative w-14 h-14 rounded-full shadow-sm shrink-0 transition-colors ` +
+                          (active
+                            ? 'bg-white/95 border-amber-300/60 border-2'
+                            : 'bg-white/90 border border-white/15 hover:bg-white')
+                        }
                         title={club.nameJa}
                       >
                         <Image
@@ -308,7 +264,7 @@ export default function HomePage() {
                           sizes="56px"
                           className="object-contain p-2.5"
                         />
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -325,322 +281,31 @@ export default function HomePage() {
             )}
           </div>
 
-          <div className="mb-4">
-            <div className="mb-2 text-sm font-bold text-gray-100">参加中の大会</div>
-            <div className="flex items-center gap-3 overflow-x-auto max-w-full py-1">
-              <div className="relative w-12 h-12 rounded-full bg-white/90 border border-white/15 shadow-sm shrink-0">
-                <Image src="/大会ロゴ/PL.png" alt="Premier League" fill sizes="48px" className="object-contain p-2" />
-              </div>
-              <div className="relative w-12 h-12 rounded-full bg-white/90 border border-white/15 shadow-sm shrink-0">
-                <Image src="/大会ロゴ/FA_Cup_logo_(2020).svg.png" alt="FA Cup" fill sizes="48px" className="object-contain p-2" />
-              </div>
-              {hasUclClub && (
-                <div className="relative w-12 h-12 rounded-full bg-white/90 border border-white/15 shadow-sm shrink-0">
-                  <Image src="/大会ロゴ/CL.png" alt="UEFA Champions League" fill sizes="48px" className="object-contain p-2" />
-                </div>
-              )}
-              {hasUelClub && (
-                <div className="relative w-12 h-12 rounded-full bg-white/90 border border-white/15 shadow-sm shrink-0">
-                  <Image src="/大会ロゴ/EL.png" alt="UEFA Europa League" fill sizes="48px" className="object-contain p-2" />
-                </div>
-              )}
-              <div className="relative w-12 h-12 rounded-full bg-white/90 border border-white/15 shadow-sm shrink-0">
-                <Image src="/大会ロゴ/Carabao.png" alt="Carabao Cup" fill sizes="48px" className="object-contain p-2" />
-              </div>
-            </div>
-          </div>
-
           {user && favoriteClubIds.length > 0 && (
-            <div className="mb-5">
-              <div className="mb-2 text-sm font-bold text-gray-100">お気に入りの今後の試合（手入力）</div>
-
-              {!featuredUpcomingFixture ? (
-                <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white/70">
-                  手入力データがまだ無いか、直近の試合が登録されていません
-                </div>
-              ) : (
-                <>
-                  <div className="mb-3">
-                    {(() => {
-                      const { fixture, kickoffDate } = featuredUpcomingFixture;
-                      const home = getPremierLeagueClubById(fixture.homeClubId);
-                      const away = getPremierLeagueClubById(fixture.awayClubId);
-                      const logoSrc = competitionLogoSrc[fixture.competitionId];
-                      const broadcaster = broadcasterByCompetition[fixture.competitionId] ?? '';
-                      const homeLabel = home?.nameJa ?? fixture.homeClubId.toUpperCase();
-                      const awayLabel = away?.nameJa ?? fixture.awayClubId.toUpperCase();
-
-                      return (
-                        <div className="relative rounded-2xl border border-white/20 bg-white/10 px-4 py-4 shadow-sm">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2 min-w-0">
-                              {logoSrc ? (
-                                <div className="relative h-10 w-10 shrink-0 rounded-full bg-white/90 border border-white/15">
-                                  <Image src={logoSrc} alt={fixture.competitionId} fill sizes="40px" className="object-contain p-1.5" />
-                                </div>
-                              ) : (
-                                <div className="h-10 w-10 shrink-0 rounded-full bg-white/10 border border-white/10" />
-                              )}
-                              <div className="min-w-0">
-                                <div className="text-sm font-semibold text-gray-100 truncate">{fixture.roundLabel ?? fixture.competitionId}</div>
-                                <div className="text-xs text-white/60">{kickoffDate ? formatKickoff(kickoffDate) : '未定'}</div>
-                              </div>
-                            </div>
-
-                            {broadcaster && (
-                              <div className="inline-flex rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/80">
-                                {broadcaster}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="mt-4 flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <div className="relative h-12 w-12 shrink-0 rounded-full bg-white/90 border border-white/15">
-                                {home ? (
-                                  <Image src={home.logoSrc} alt={home.nameJa} fill sizes="48px" className="object-contain p-2" />
-                                ) : (
-                                  <div className="h-full w-full flex items-center justify-center text-[10px] text-white/70">{fixture.homeClubId.toUpperCase()}</div>
-                                )}
-                              </div>
-                              <div className="text-sm font-semibold text-gray-100 truncate">{homeLabel}</div>
-                            </div>
-
-                            <div className="text-xs font-semibold text-white/60">vs</div>
-
-                            <div className="flex items-center gap-2 min-w-0">
-                              <div className="text-sm font-semibold text-gray-100 truncate">{awayLabel}</div>
-                              <div className="relative h-12 w-12 shrink-0 rounded-full bg-white/90 border border-white/15">
-                                {away ? (
-                                  <Image src={away.logoSrc} alt={away.nameJa} fill sizes="48px" className="object-contain p-2" />
-                                ) : (
-                                  <div className="h-full w-full flex items-center justify-center text-[10px] text-white/70">{fixture.awayClubId.toUpperCase()}</div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {upcomingFixtures.length > 0 && (
-                    <div className="flex items-stretch gap-3 overflow-x-auto max-w-full pb-1">
-                      {upcomingFixtures.map(({ fixture, kickoffDate }) => {
-                        const home = getPremierLeagueClubById(fixture.homeClubId);
-                        const away = getPremierLeagueClubById(fixture.awayClubId);
-                        const logoSrc = competitionLogoSrc[fixture.competitionId];
-                        const broadcaster = broadcasterByCompetition[fixture.competitionId] ?? '';
-                        const homeLabel = home?.nameJa ?? fixture.homeClubId.toUpperCase();
-                        const awayLabel = away?.nameJa ?? fixture.awayClubId.toUpperCase();
-
-                        return (
-                          <div
-                            key={fixture.id}
-                            className="relative w-[260px] shrink-0 rounded-2xl border border-white/10 bg-white/10 px-3 py-3"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 min-w-0">
-                                {logoSrc ? (
-                                  <div className="relative h-9 w-9 shrink-0 rounded-full bg-white/90 border border-white/15">
-                                    <Image src={logoSrc} alt={fixture.competitionId} fill sizes="36px" className="object-contain p-1.5" />
-                                  </div>
-                                ) : (
-                                  <div className="h-9 w-9 shrink-0 rounded-full bg-white/10 border border-white/10" />
-                                )}
-                                <div className="min-w-0">
-                                  <div className="text-xs font-semibold text-gray-100 truncate">{fixture.roundLabel ?? fixture.competitionId}</div>
-                                  <div className="text-xs text-white/60">{kickoffDate ? formatKickoff(kickoffDate) : '未定'}</div>
-                                  {broadcaster && (
-                                    <div className="mt-1 inline-flex rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/80">
-                                      {broadcaster}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="mt-3 flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <div className="relative h-10 w-10 shrink-0 rounded-full bg-white/90 border border-white/15">
-                                  {home ? (
-                                    <Image src={home.logoSrc} alt={home.nameJa} fill sizes="40px" className="object-contain p-2" />
-                                  ) : (
-                                    <div className="h-full w-full flex items-center justify-center text-[10px] text-white/70">{fixture.homeClubId.toUpperCase()}</div>
-                                  )}
-                                </div>
-                                <div className="text-xs text-gray-100 truncate">{homeLabel}</div>
-                              </div>
-
-                              <div className="text-xs text-white/60">vs</div>
-
-                              <div className="flex items-center gap-2 min-w-0">
-                                <div className="text-xs text-gray-100 truncate">{awayLabel}</div>
-                                <div className="relative h-10 w-10 shrink-0 rounded-full bg-white/90 border border-white/15">
-                                  {away ? (
-                                    <Image src={away.logoSrc} alt={away.nameJa} fill sizes="40px" className="object-contain p-2" />
-                                  ) : (
-                                    <div className="h-full w-full flex items-center justify-center text-[10px] text-white/70">{fixture.awayClubId.toUpperCase()}</div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+            !featuredUpcomingFixture ? (
+              <div className="mb-5 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white/70">
+                手入力データがまだ無いか、直近の試合が登録されていません
+              </div>
+            ) : (
+              <FavoriteUpcomingFixturesSection
+                featured={featuredUpcomingFixture}
+                others={upcomingFixtures}
+                formatKickoff={formatKickoff}
+                competitionLogoSrc={competitionLogoSrc}
+                broadcasterByCompetition={broadcasterByCompetition}
+              />
+            )
           )}
 
-          <div className="mb-6">
-            <div className="mb-2 text-sm font-bold text-gray-100">MATCH HIGHLIGHT</div>
-            <div className="flex items-stretch gap-3 overflow-x-auto max-w-full pb-1">
-              {manualHighlights.map((h) => (
-                <Link
-                  key={h.id}
-                  href={`https://www.youtube.com/watch?v=${h.youtubeVideoId}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block shrink-0"
-                >
-                  <div className="w-[190px] shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-white/10">
-                    <div className="relative aspect-video w-full">
-                      <Image
-                        src={`https://i.ytimg.com/vi/${h.youtubeVideoId}/hqdefault.jpg`}
-                        alt={h.label}
-                        fill
-                        sizes="190px"
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between gap-2 px-2 py-2">
-                      <div className="text-xs font-semibold text-gray-100 truncate">{h.label}</div>
-                      {h.competitionId && (
-                        <div className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/80">
-                          {h.competitionId}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
+          <ManualHighlightsRow highlights={manualHighlights} />
 
-          <div className="mb-6">
-            <div className="mb-2 text-sm font-bold text-gray-100">対戦カード</div>
-            <div className="flex items-stretch gap-3 overflow-x-auto max-w-full pb-1">
-              {nationalMatchesForList.map((m) => (
-                <div
-                  key={m.id}
-                  className="w-[320px] shrink-0 rounded-2xl border border-white/10 bg-white/10 px-4 py-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-xs font-semibold text-white/70">{m.competitionLabel}</div>
-                      <div className="mt-1 text-sm font-bold text-gray-100">{m.kickoffLabel}</div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <div className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/80">
-                        {m.broadcasterLabel}
-                      </div>
-                      <div className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/80">
-                        {m.venue}
-                      </div>
-                    </div>
-                  </div>
+          <ManualNationalMatchesRow matches={nationalMatchesForList} />
 
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/90">
-                        {m.homeFlagSrc ? (
-                          <Image src={m.homeFlagSrc} alt={m.homeCountryNameJa} fill sizes="40px" className="object-cover" />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center text-[10px] font-semibold text-slate-800">
-                            {(m.homeCountryCode ?? '').toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-sm font-semibold text-gray-100 truncate">{m.homeCountryNameJa}</div>
-                    </div>
-
-                    <div className="text-xs font-semibold text-white/60">vs</div>
-
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="text-sm font-semibold text-gray-100 truncate">{m.awayCountryNameJa}</div>
-                      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/90">
-                        {m.awayFlagSrc ? (
-                          <Image src={m.awayFlagSrc} alt={m.awayCountryNameJa} fill sizes="40px" className="object-cover" />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center text-[10px] font-semibold text-slate-800">
-                            {(m.awayCountryCode ?? '').toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/10">
-            <button
-              type="button"
-              onClick={() => setIsIdeaDrawerOpen((v) => !v)}
-              className="w-full px-4 py-3 flex items-center justify-between text-left"
-            >
-              <div className="text-sm font-bold text-gray-100">構想案（時事ネタなど）</div>
-              <div className="text-xs font-semibold text-white/70">{isIdeaDrawerOpen ? '閉じる' : '開く'}</div>
-            </button>
-
-            {isIdeaDrawerOpen && (
-              <div className="px-3 pb-3">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {widgets.map((widget) => (
-                    <div
-                      key={widget.title}
-                      className="bg-white/10 rounded-2xl shadow p-4 border border-white/10"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="text-sm font-bold text-gray-100">{widget.title}</div>
-                        <div className="text-xs text-white/60">MENU</div>
-                      </div>
-
-                      {widget.items.length > 0 ? (
-                        <div className="space-y-2">
-                          {widget.items.map((item) => (
-                            item.href ? (
-                              <Link
-                                key={item.label}
-                                href={item.href}
-                                className="block rounded-xl px-3 py-2 text-sm bg-white/10 text-gray-100 hover:bg-white/15 transition-colors"
-                              >
-                                {item.label}
-                              </Link>
-                            ) : (
-                              <div
-                                key={item.label}
-                                className="flex items-center justify-between rounded-xl px-3 py-2 text-sm bg-white/10 text-gray-200"
-                              >
-                                <span className="truncate">{item.label}</span>
-                                <span className="ml-2 text-xs text-white/60">準備中</span>
-                              </div>
-                            )
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="rounded-xl px-3 py-2 text-sm bg-white/10 text-white/70">準備中</div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <IdeaDrawer
+            widgets={widgets}
+            isOpen={isIdeaDrawerOpen}
+            onToggle={() => setIsIdeaDrawerOpen((v) => !v)}
+          />
         </div>
       </div>
     </>
