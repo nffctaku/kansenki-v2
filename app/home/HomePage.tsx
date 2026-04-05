@@ -3,11 +3,10 @@
 import Link from 'next/link';
 import AnnouncementBanner from '../components/AnnouncementBanner';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { getPremierLeagueClubById } from '@/lib/clubMaster';
 import { manualFixtures } from '@/lib/fixtures/manualFixtures';
-import { manualHighlights } from '@/lib/highlights/manualHighlights';
 import { manualNationalMatches } from '@/lib/national/manualNationalMatches';
 import FeaturedNationalMatchHeroCarousel from './components/FeaturedNationalMatchHeroCarousel';
 import FavoriteUpcomingFixturesSection from './components/FavoriteUpcomingFixturesSection';
@@ -15,6 +14,7 @@ import ManualHighlightsRow from './components/ManualHighlightsRow';
 import ManualNationalMatchesRow from './components/ManualNationalMatchesRow';
 import IdeaDrawer from './components/IdeaDrawer';
 import HomePinnedClubsSwitcher from './components/HomePinnedClubsSwitcher';
+import type { ManualHighlight } from '@/lib/highlights/manualHighlights';
 export default function HomePage() {
   const { user, userProfile, loading, updateUserProfile } = useAuth();
 
@@ -22,6 +22,16 @@ export default function HomePage() {
 
   const hasUclClub = favoriteClubIds.some((id) => ['mc', 'liv', 'tot', 'che', 'new', 'ars'].includes(id));
   const hasUelClub = favoriteClubIds.some((id) => ['avl', 'nfo'].includes(id));
+
+  const uclClubIds = ['mc', 'liv', 'tot', 'che', 'new', 'ars'];
+  const uelClubIds = ['avl', 'nfo'];
+  const ueclClubIds: string[] = ['cry'];
+
+  const clubNameAliasesJa: Record<string, string[]> = {
+    mc: ['マンチェスターC', 'マンチェスター・シティ'],
+    liv: ['リヴァプール', 'リバプール'],
+    ful: ['フラム', 'フルハム'],
+  };
 
   const competitionLogoSrc: Record<string, string> = {
     PL: '/大会ロゴ/PL.png',
@@ -52,9 +62,109 @@ export default function HomePage() {
 
   const [localSelectedClubId, setLocalSelectedClubId] = useState<string | null>(null);
 
+  const [autoHighlights, setAutoHighlights] = useState<ManualHighlight[] | null>(null);
+
+  const filteredAutoHighlights = useMemo(() => {
+    if (!autoHighlights) return null;
+    if (!localSelectedClubId) return autoHighlights;
+    const club = getPremierLeagueClubById(localSelectedClubId);
+    if (!club) return autoHighlights;
+
+    const normalize = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .replace(/[・･·\-‐‑–—ー－＿_.,/\\|:;!?()\[\]{}'"”“’‘＆&]/g, '');
+
+    const aliasesJa = clubNameAliasesJa[localSelectedClubId] ?? [];
+    const keywords = [club.nameJa, club.nameEn, ...aliasesJa]
+      .filter(Boolean)
+      .flatMap((name) => {
+        const base = normalize(name);
+        const parts = base.split(/(?<=.)(?=[a-z])|(?<=[a-z])(?=\d)/i);
+        return [base, ...parts].filter(Boolean);
+      })
+      .filter((k) => k.length >= 2);
+    if (keywords.length === 0) return autoHighlights;
+
+    const matched = autoHighlights.filter((h: any) => {
+      const title = normalize(h.label ?? '');
+      const desc = normalize(typeof h.description === 'string' ? h.description : '');
+      return keywords.some((k) => k && (title.includes(k) || desc.includes(k)));
+    });
+
+    return matched.slice(0, 5);
+  }, [autoHighlights, localSelectedClubId]);
+
   useEffect(() => {
     setLocalSelectedClubId(effectiveSelectedClubId);
   }, [effectiveSelectedClubId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const club = localSelectedClubId ? getPremierLeagueClubById(localSelectedClubId) : null;
+        const clubNameJa = club?.nameJa ?? '';
+        const aliasesJa = localSelectedClubId ? (clubNameAliasesJa[localSelectedClubId] ?? []) : [];
+        const clubQueryJa = clubNameJa.replace(/[・･·]/g, '');
+        const clubQueryJaCandidates = [clubQueryJa, ...aliasesJa.map((s) => s.replace(/[・･·]/g, ''))].filter(Boolean);
+        const clubQueryJaPrimary = clubQueryJaCandidates[0] ?? '';
+
+        const qsUnext = new URLSearchParams({
+          limit: '10',
+          fetchMax: '25',
+          handle: 'UNEXT_football',
+        });
+        if (clubQueryJaPrimary) qsUnext.set('q', `プレミアリーグ ショートハイライト ${clubQueryJaPrimary}`);
+
+        const qsWowow = new URLSearchParams({
+          limit: '10',
+          fetchMax: '25',
+          handle: 'wowowsoccer',
+        });
+        const wowowQuery = (() => {
+          if (!localSelectedClubId) return '';
+          if (!clubQueryJaPrimary) return '';
+          if (uclClubIds.includes(localSelectedClubId)) {
+            return `UEFAチャンピオンズリーグ MATCH HIGHLIGHT ${clubQueryJaPrimary}`;
+          }
+          if (uelClubIds.includes(localSelectedClubId)) {
+            return `UEFAヨーロッパリーグ MATCH HIGHLIGHT ${clubQueryJaPrimary}`;
+          }
+          if (ueclClubIds.includes(localSelectedClubId)) {
+            return `UEFAカンファレンスリーグ MATCH HIGHLIGHT ${clubQueryJaPrimary}`;
+          }
+          return '';
+        })();
+        if (wowowQuery) qsWowow.set('q', wowowQuery);
+
+        const [resUnext, resWowow] = await Promise.all([
+          fetch(`/api/unext-football-highlights?${qsUnext.toString()}`),
+          wowowQuery ? fetch(`/api/unext-football-highlights?${qsWowow.toString()}`) : Promise.resolve(null),
+        ]);
+
+        const items: any[] = [];
+
+        if (resUnext.ok) {
+          const json = await resUnext.json();
+          items.push(...(json?.items ?? []));
+        }
+        if (resWowow && resWowow.ok) {
+          const json = await resWowow.json();
+          items.push(...(json?.items ?? []));
+        }
+
+        if (!cancelled) setAutoHighlights(items);
+      } catch {
+        if (!cancelled) setAutoHighlights([]);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [localSelectedClubId]);
 
   useEffect(() => {
     if (!user) return;
@@ -297,7 +407,10 @@ export default function HomePage() {
             )
           )}
 
-          <ManualHighlightsRow highlights={manualHighlights} />
+          <ManualHighlightsRow
+            highlights={(filteredAutoHighlights ?? [])}
+            loading={autoHighlights === null}
+          />
 
           <ManualNationalMatchesRow matches={nationalMatchesForList} />
 

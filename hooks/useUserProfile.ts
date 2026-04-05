@@ -37,7 +37,7 @@ export const useUserProfile = (user: User | null) => {
         const userData = userDocSnap.data();
         setNickname(userData.nickname || '');
         setBio(userData.bio || '');
-        setFavoriteClubIds(userData.favoriteClubIds || []);
+        setFavoriteClubIds((userData.favoriteClubIds || []).slice(0, 5));
         setFavoritePlayerIds(userData.favoritePlayerIds || []);
         setXLink(userData.xLink || userData.twitter || '');
         setInstagramLink(userData.instagramLink || userData.instagram || '');
@@ -113,7 +113,19 @@ export const useUserProfile = (user: User | null) => {
 
       // 他のプロフィール項目を更新データに含める
       const fields: (keyof UserProfile)[] = ['nickname', 'bio', 'favoriteClubIds', 'favoritePlayerIds', 'xLink', 'instagramLink', 'youtubeLink', 'noteLink', 'travelFrequency', 'overseasMatchCount', 'visitedCountries'];
-      const state: { [key: string]: any } = { nickname, bio, favoriteClubIds, favoritePlayerIds, xLink, instagramLink, youtubeLink, noteLink, travelFrequency, overseasMatchCount, visitedCountries };
+      const state: { [key: string]: any } = {
+        nickname,
+        bio,
+        favoriteClubIds: favoriteClubIds.slice(0, 5),
+        favoritePlayerIds,
+        xLink,
+        instagramLink,
+        youtubeLink,
+        noteLink,
+        travelFrequency,
+        overseasMatchCount,
+        visitedCountries,
+      };
       
       fields.forEach(field => {
         // Firestoreのデータと比較し、変更があったフィールドのみを更新対象に追加

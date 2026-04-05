@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import Image from 'next/image';
-import { Plus, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { premierLeagueClubs } from '@/lib/clubMaster';
 
 type Props = {
@@ -19,17 +19,11 @@ export default function HomePinnedClubsSwitcher({
   pinnedClubIds,
   selectedClubId,
   onSelect,
-  onPin,
+  onPin: _onPin,
   onUnpin,
 }: Props) {
-  const pinnedClubs = useMemo(() => {
-    return pinnedClubIds
-      .map((id) => (premierLeagueClubs as Record<string, any>)[id])
-      .filter(Boolean);
-  }, [pinnedClubIds]);
-
-  const canPinMore = pinnedClubIds.length < 3;
-  const pinCandidates = favoriteClubIds.filter((id) => !pinnedClubIds.includes(id));
+  const pinnedClubs = useMemo(() => pinnedClubIds.map((id) => premierLeagueClubs[id]).filter(Boolean), [pinnedClubIds]);
+  void _onPin;
 
   if (favoriteClubIds.length === 0) return null;
 
@@ -61,13 +55,12 @@ export default function HomePinnedClubsSwitcher({
                     onUnpin(club.id);
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onUnpin(club.id);
-                    }
+                    if (e.key !== 'Enter' && e.key !== ' ') return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onUnpin(club.id);
                   }}
-                  className="h-5 w-5 rounded-full bg-black/60 border border-white/20 flex items-center justify-center"
+                  className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-black/70 border border-white/10 hover:bg-black/80"
                   aria-label="ピン留め解除"
                 >
                   <X className="h-3 w-3 text-white/90" />
@@ -76,17 +69,6 @@ export default function HomePinnedClubsSwitcher({
             </button>
           );
         })}
-
-        {canPinMore && pinCandidates.length > 0 && (
-          <button
-            type="button"
-            onClick={() => onPin(pinCandidates[0])}
-            className="w-12 h-12 shrink-0 rounded-full bg-white/10 border border-white/10 flex items-center justify-center hover:bg-white/15"
-            title="ピン留めを追加"
-          >
-            <Plus className="h-5 w-5 text-white/70" />
-          </button>
-        )}
       </div>
     </div>
   );

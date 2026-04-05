@@ -16,10 +16,12 @@ type Props = {
 
 export function FavoriteClubSelect({ open, setOpen, favoriteClubIds, setFavoriteClubIds }: Props) {
   const premierClubs = Object.values(premierLeagueClubs);
+  const maxFavorites = 5;
 
   const toggleFavoriteClub = (clubId: string) => {
     setFavoriteClubIds((prev) => {
       if (prev.includes(clubId)) return prev.filter((id) => id !== clubId);
+      if (prev.length >= maxFavorites) return prev;
       return [...prev, clubId];
     });
   };
@@ -47,12 +49,14 @@ export function FavoriteClubSelect({ open, setOpen, favoriteClubIds, setFavorite
             <div className="max-h-[320px] overflow-y-auto p-1">
               {premierClubs.map((club) => {
                 const checked = favoriteClubIds.includes(club.id);
+                const disabled = !checked && favoriteClubIds.length >= maxFavorites;
                 return (
                   <button
                     type="button"
                     key={club.id}
                     onClick={() => toggleFavoriteClub(club.id)}
-                    className={`w-full flex items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700/50 ${
+                    disabled={disabled}
+                    className={`w-full flex items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:hover:bg-transparent dark:disabled:hover:bg-transparent ${
                       checked ? 'bg-gray-100 dark:bg-gray-700/60' : ''
                     }`}
                   >
