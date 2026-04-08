@@ -10,9 +10,7 @@ export const getPostStats = onCall({
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3007',
-    'https://kansenki-v2.web.app',
-    'https://kansenki-v2.firebaseapp.com',
-    'https://www.footballtop.net'
+    'https://footballtop.spocale.com',
   ],
 }, async (request) => {
   try {

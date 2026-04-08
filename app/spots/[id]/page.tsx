@@ -227,7 +227,7 @@ const SpotDetailPage = () => {
             </div>
           </div>
           <div className="mt-6 flex justify-center">
-            <ShareButton title={spot.spotName} url={`https://kansenki.footballtop.net/spots/${id}`} />
+            <ShareButton title={spot.spotName} url={`${process.env.NEXT_PUBLIC_SITE_URL}/spots/${id}`} />
           </div>
         </div>
 
