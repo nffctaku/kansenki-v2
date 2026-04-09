@@ -34,7 +34,7 @@ export async function generateMetadata(
     }
 
     const imageUrls = postData.images || postData.imageUrls || postData.existingImageUrls || [];
-    const firstImage = imageUrls.length > 0 ? imageUrls[0] : 'https://kansenki.footballtop.net/default-og-image.png';
+    const firstImage = imageUrls.length > 0 ? imageUrls[0] : `${process.env.NEXT_PUBLIC_SITE_URL}/default-og-image.png`;
 
     const title = postData.title || '無題の投稿';
     const description = (postData.content || postData.memories || postData.text || '').substring(0, 150);
@@ -54,7 +54,7 @@ export async function generateMetadata(
           },
         ],
         type: 'article',
-        url: `https://kansenki.footballtop.net/posts/${id}`,
+        url: `${process.env.NEXT_PUBLIC_SITE_URL}/posts/${id}`,
       },
       twitter: {
         card: 'summary_large_image',

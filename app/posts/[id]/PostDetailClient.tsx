@@ -80,7 +80,7 @@ export default function PostDetailClient({ post, id, collectionName }: { post: P
       <div className="my-8 py-6 border-y border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-center gap-4">
         {collectionName && <LikeButton postId={id} collectionName={collectionName} size="md" />}
 
-        <ShareButton title={post.title} url={`https://kansenki.footballtop.net/posts/${id}`} />
+        <ShareButton title={post.title} url={`${process.env.NEXT_PUBLIC_SITE_URL}/posts/${id}`} />
       </div>
 
       <div className="mt-6">

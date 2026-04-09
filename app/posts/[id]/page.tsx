@@ -599,7 +599,7 @@ export default function PostDetailPage() {
           )}
         </div>
         <div className="mt-6 flex justify-center">
-          {post && <ShareButton title={post.title} url={`https://kansenki.footballtop.net/posts/${id}`} />}
+          {post && <ShareButton title={post.title} url={`${process.env.NEXT_PUBLIC_SITE_URL}/posts/${id}`} />}
         </div>
       </div>
 
