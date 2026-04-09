@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import Image from 'next/image';
 import { X } from 'lucide-react';
-import { premierLeagueClubs } from '@/lib/clubMaster';
+import { premierLeagueClubs, type ClubMasterEntry } from '@/lib/clubMaster';
 
 type Props = {
   favoriteClubIds: string[];
@@ -22,7 +22,7 @@ export default function HomePinnedClubsSwitcher({
   onPin: _onPin,
   onUnpin,
 }: Props) {
-  const pinnedClubs = useMemo(() => pinnedClubIds.map((id) => premierLeagueClubs[id]).filter(Boolean), [pinnedClubIds]);
+  const pinnedClubs = useMemo(() => pinnedClubIds.map((id) => (premierLeagueClubs as Record<string, ClubMasterEntry>)[id]).filter(Boolean), [pinnedClubIds]);
   void _onPin;
 
   if (favoriteClubIds.length === 0) return null;
