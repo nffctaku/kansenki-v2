@@ -60,6 +60,7 @@ export default function Wc2026CountryPage() {
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [shareLink, setShareLink] = useState<string | null>(null);
 
   const [candidateStatusById, setCandidateStatusById] = useState<Record<string, PickStatus>>({});
 
@@ -164,6 +165,11 @@ export default function Wc2026CountryPage() {
 
   const share = async () => {
     if (!user || !countrySlug || !country) return;
+    setShareLink(null);
+
+    const canNativeShare = typeof navigator !== 'undefined' && 'share' in navigator;
+    const popup = canNativeShare ? null : window.open('about:blank', '_blank', 'noopener,noreferrer');
+
     setSharing(true);
     setStatusMessage(null);
     try {
@@ -188,9 +194,25 @@ export default function Wc2026CountryPage() {
       const title = `${country.nameJa}：W杯2026 予想`;
       const text = encodeURIComponent(title);
       const hashtags = encodeURIComponent('みんなの現地観戦記,footballtop');
-      const shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(url)}&hashtags=${hashtags}`;
-      window.open(shareUrl, '_blank', 'noopener,noreferrer');
+      const shareUrl = `https://x.com/intent/tweet?text=${text}&url=${encodeURIComponent(url)}&hashtags=${hashtags}`;
+
+      if (canNativeShare) {
+        try {
+          await (navigator as any).share({ title, text: title, url });
+          return;
+        } catch {
+          // fallback
+        }
+      }
+
+      if (popup) {
+        popup.location.href = shareUrl;
+      } else {
+        setShareLink(url);
+        setStatusMessage('共有リンクをコピーしてXで貼り付けてください');
+      }
     } catch {
+      if (popup) popup.close();
       setStatusMessage('共有リンクの作成に失敗しました');
     } finally {
       setSharing(false);
@@ -299,6 +321,28 @@ export default function Wc2026CountryPage() {
             </div>
 
             {statusMessage ? <div className="mt-2 text-xs text-white/70">{statusMessage}</div> : null}
+
+            {shareLink ? (
+              <div className="mt-3 flex items-center gap-2">
+                <div className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[11px] text-white/80 truncate">
+                  {shareLink}
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(shareLink);
+                      setStatusMessage('共有リンクをコピーしました');
+                    } catch {
+                      setStatusMessage('コピーできませんでした');
+                    }
+                  }}
+                  className="rounded-xl px-3 py-2 text-xs bg-white/10 text-gray-100 border border-white/10 hover:bg-white/15 transition-colors"
+                >
+                  コピー
+                </button>
+              </div>
+            ) : null}
 
             <div className="mt-4 space-y-5">
               {squadRows.map((row) => (
