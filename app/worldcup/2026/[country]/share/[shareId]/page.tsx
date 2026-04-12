@@ -28,7 +28,7 @@ export default async function Wc2026SharePage({ params }: Props) {
 
   const db = getServerDb();
   const baseUrl = getBaseUrlFromHeaders();
-  const imageUrl = `${baseUrl}/worldcup/2026/${countrySlug}/share/${shareId}/opengraph-image`;
+  const imageUrl = `${baseUrl}/worldcup/2026/${countrySlug}/share/${shareId}/opengraph-image?v=${shareId}`;
 
   const snap = db ? await getDoc(doc(db, 'wc2026PredictionShares', shareId)) : null;
 

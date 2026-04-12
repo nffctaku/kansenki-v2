@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: Props, parent: ResolvingMetad
   if (!db) {
     const baseUrl = getBaseUrlFromHeaders();
     const pageUrl = `${baseUrl}/worldcup/2026/${countrySlug}/share/${shareId}`;
-    const imageUrl = `${baseUrl}/worldcup/2026/${countrySlug}/share/${shareId}/opengraph-image?v=2`;
+    const imageUrl = `${baseUrl}/worldcup/2026/${countrySlug}/share/${shareId}/opengraph-image?v=${shareId}`;
     return {
       title: fallbackTitle,
       openGraph: { title: fallbackTitle, images: [{ url: imageUrl, width: 1200, height: 630 }], url: pageUrl },
@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: Props, parent: ResolvingMetad
     const description = 'W杯2026 予想メンバー';
     const baseUrl = getBaseUrlFromHeaders();
     const pageUrl = `${baseUrl}/worldcup/2026/${countrySlug}/share/${shareId}`;
-    const imageUrl = `${baseUrl}/worldcup/2026/${countrySlug}/share/${shareId}/opengraph-image?v=2`;
+    const imageUrl = `${baseUrl}/worldcup/2026/${countrySlug}/share/${shareId}/opengraph-image?v=${shareId}`;
 
     return {
       title,
