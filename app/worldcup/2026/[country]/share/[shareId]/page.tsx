@@ -1,9 +1,22 @@
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getServerDb } from '@/lib/firebaseServer';
 import { getWc2026CountryBySlug } from '@/lib/worldcup/wc2026Countries';
 
 export const runtime = 'nodejs';
+
+function getBaseUrlFromHeaders() {
+  try {
+    const h = headers();
+    const host = h.get('x-forwarded-host') ?? h.get('host');
+    const proto = h.get('x-forwarded-proto') ?? 'https';
+    if (host) return `${proto}://${host}`;
+  } catch {
+    // ignore
+  }
+  return 'https://kansenki.footballtop.net';
+}
 
 type Props = {
   params: { country: string; shareId: string };
@@ -13,10 +26,13 @@ export default async function Wc2026SharePage({ params }: Props) {
   const { country: countrySlug, shareId } = params;
   const country = getWc2026CountryBySlug(countrySlug);
 
-  const ref = doc(db, 'wc2026PredictionShares', shareId);
-  const snap = await getDoc(ref);
+  const db = getServerDb();
+  const baseUrl = getBaseUrlFromHeaders();
+  const imageUrl = `${baseUrl}/worldcup/2026/${countrySlug}/share/${shareId}/opengraph-image`;
 
-  if (!snap.exists()) {
+  const snap = db ? await getDoc(doc(db, 'wc2026PredictionShares', shareId)) : null;
+
+  if (!snap || !snap.exists()) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-blue-950 to-indigo-950">
         <div className="px-3 pt-4 pb-24">
@@ -51,7 +67,7 @@ export default async function Wc2026SharePage({ params }: Props) {
               {/* OGPと同じ画像を表示 */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`/worldcup/2026/${countrySlug}/share/${shareId}/opengraph-image`}
+                src={imageUrl}
                 alt="予想画像"
                 className="w-full h-auto"
               />

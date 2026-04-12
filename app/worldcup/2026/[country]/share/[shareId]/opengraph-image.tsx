@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getServerDb } from '@/lib/firebaseServer';
 import { getWc2026CountryBySlug } from '@/lib/worldcup/wc2026Countries';
 import type { SquadPlayerPrediction, SquadStatus } from '@/types/worldcup';
 
@@ -23,6 +23,36 @@ function statusMark(status: SquadStatus) {
 export default async function Image({ params }: { params: { country: string; shareId: string } }) {
   const { country: countrySlug, shareId } = params;
   const country = getWc2026CountryBySlug(countrySlug);
+
+  const db = getServerDb();
+  if (!db) {
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            background: 'linear-gradient(180deg, #020617 0%, #0b1533 50%, #070d1f 100%)',
+            color: 'white',
+            padding: 48,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 44, fontWeight: 800, letterSpacing: -0.5 }}>
+              {country ? `${country.nameJa}：W杯2026 予想` : 'W杯2026 予想'}
+            </div>
+            <div style={{ marginTop: 10, fontSize: 24, opacity: 0.8 }}>共有用（固定）</div>
+          </div>
+          <div style={{ fontSize: 28, opacity: 0.85 }}>画像生成の準備中です</div>
+          <div style={{ fontSize: 22, opacity: 0.8 }}>kansenki.footballtop.net</div>
+        </div>
+      ),
+      { width: size.width, height: size.height }
+    );
+  }
 
   let players: SquadPlayerPrediction[] = [];
 
