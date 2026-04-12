@@ -61,20 +61,18 @@ export default async function Wc2026SharePage({ params }: Props) {
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/10 overflow-hidden">
-          <div className="p-4">
-            <div className="text-sm text-gray-100 font-semibold">予想画像</div>
-            <ShareImage imageUrl={imageUrl} />
+        <div className="px-1">
+          <div className="text-sm text-gray-100 font-semibold">予想画像</div>
+          <ShareImage imageUrl={imageUrl} />
+        </div>
 
-            <div className="mt-4">
-              <Link
-                href={`/worldcup/2026/${countrySlug}`}
-                className="inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm bg-white text-slate-950 font-semibold"
-              >
-                予想する
-              </Link>
-            </div>
-          </div>
+        <div className="mt-5 px-1">
+          <Link
+            href={`/worldcup/2026/${countrySlug}`}
+            className="flex w-full items-center justify-center rounded-2xl px-4 py-4 text-base bg-white text-slate-950 font-semibold"
+          >
+            予想する
+          </Link>
         </div>
       </div>
     </div>
