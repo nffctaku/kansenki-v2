@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { getWc2026CountryBySlug } from '@/lib/worldcup/wc2026Countries';
 import type { SquadPlayerPrediction, SquadStatus } from '@/types/worldcup';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
