@@ -10,12 +10,65 @@ type Context = {
   params: { country: string; shareId: string };
 };
 
+type SharePlayer = {
+  id?: string;
+  name?: string;
+  position?: string;
+  status?: string;
+};
+
+function statusMark(status: string | undefined) {
+  if (status === 'S') return '◎';
+  if (status === 'A') return '○';
+  if (status === 'B') return '△';
+  return '★';
+}
+
+function safeName(v: unknown) {
+  return typeof v === 'string' ? v.trim() : '';
+}
+
 export async function GET(_req: Request, context: Context) {
   try {
     const { country: countrySlug, shareId } = context.params;
     const country = getWc2026CountryBySlug(countrySlug);
     const title = country ? `${country.nameEn.toUpperCase()} WC2026` : 'WC2026';
     const sub = `share:${shareId.slice(0, 8)}`;
+
+    const origin = (() => {
+      try {
+        return new URL(_req.url).origin;
+      } catch {
+        return 'https://www.footballtop.net';
+      }
+    })();
+
+    let players: SharePlayer[] = [];
+    try {
+      const res = await fetch(`${origin}/api/wc2026-share/${encodeURIComponent(shareId)}`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = (await res.json()) as any;
+        players = Array.isArray(data?.players) ? data.players : [];
+      }
+    } catch {
+      players = [];
+    }
+
+    const picked = players
+      .map((p) => ({
+        name: safeName(p?.name),
+        status: typeof p?.status === 'string' ? p.status : undefined,
+      }))
+      .filter((p) => p.name);
+
+    const rank = (s: string | undefined) => (s === 'S' ? 0 : s === 'A' ? 1 : s === 'B' ? 2 : 3);
+    const ordered = [...picked]
+      .sort((a, b) => {
+        const r = rank(a.status) - rank(b.status);
+        if (r !== 0) return r;
+        return a.name.localeCompare(b.name, 'ja');
+      })
+      .slice(0, 18);
 
     const root = React.createElement(
       'div',
@@ -43,7 +96,54 @@ export async function GET(_req: Request, context: Context) {
         React.createElement('div', { style: { marginTop: 12, fontSize: 28, opacity: 0.85 } }, 'Squad Prediction'),
         React.createElement('div', { style: { marginTop: 10, fontSize: 22, opacity: 0.65 } }, sub)
       ),
-      React.createElement('div', { style: { fontSize: 22, opacity: 0.8 } }, 'footballtop.net')
+      React.createElement(
+        'div',
+        {
+          style: {
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 16,
+            padding: 24,
+            borderRadius: 24,
+            border: '1px solid rgba(255,255,255,0.12)',
+            background: 'rgba(255,255,255,0.06)',
+          },
+        },
+        ordered.length === 0
+          ? React.createElement('div', { style: { fontSize: 28, opacity: 0.85, display: 'flex' } }, 'No picks yet')
+          : ordered.map((p, idx) =>
+              React.createElement(
+                'div',
+                {
+                  key: `${idx}-${p.name}`,
+                  style: {
+                    width: 350,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 14px',
+                    borderRadius: 16,
+                    background: 'rgba(0,0,0,0.22)',
+                    border: '1px solid rgba(255,255,255,0.10)',
+                  },
+                },
+                React.createElement('div', { style: { fontSize: 26, fontWeight: 800, display: 'flex' } }, p.name),
+                React.createElement('div', { style: { fontSize: 26, fontWeight: 800, opacity: 0.9, display: 'flex' } }, statusMark(p.status))
+              )
+            )
+      ),
+      React.createElement(
+        'div',
+        {
+          style: {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          },
+        },
+        React.createElement('div', { style: { fontSize: 22, opacity: 0.8, display: 'flex' } }, 'footballtop.net'),
+        React.createElement('div', { style: { fontSize: 22, opacity: 0.8, display: 'flex' } }, 'S:◎ A:○ B:△ ?:★')
+      )
     );
 
     const image = new ImageResponse(root, {
