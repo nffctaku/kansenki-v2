@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 import React from 'react';
 import { getWc2026CountryBySlug } from '@/lib/worldcup/wc2026Countries';
+import { WC2026_CANDIDATES_BY_COUNTRY } from '@/lib/worldcup/wc2026Candidates';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -17,6 +18,15 @@ type SharePlayer = {
   status?: string;
 };
 
+type Candidate = {
+  id: string;
+  name: string;
+  position: 'GK' | 'DF' | 'MF' | 'FW';
+  age?: number;
+  club?: string;
+  stats?: { appearances?: number; goals?: number };
+};
+
 function statusMark(status: string | undefined) {
   if (status === 'S') return '◎';
   if (status === 'A') return '○';
@@ -26,6 +36,27 @@ function statusMark(status: string | undefined) {
 
 function safeName(v: unknown) {
   return typeof v === 'string' ? v.trim() : '';
+}
+
+function statLineFromCandidate(c: Candidate | undefined) {
+  const apps = c?.stats?.appearances;
+  const goals = c?.stats?.goals;
+  const hasApps = typeof apps === 'number';
+  const hasGoals = typeof goals === 'number';
+  if (!hasApps && !hasGoals) return '';
+  const left = hasApps ? `${apps} cap` : '';
+  const mid = hasApps && hasGoals ? ' / ' : '';
+  const right = hasGoals ? `${goals}G` : '';
+  return `${left}${mid}${right}`;
+}
+
+function groupByPosition(players: Array<{ id?: string; name: string; status?: string; position?: string }>) {
+  const out = { GK: [] as typeof players, DF: [] as typeof players, MF: [] as typeof players, FW: [] as typeof players };
+  for (const p of players) {
+    const pos = p.position;
+    if (pos === 'GK' || pos === 'DF' || pos === 'MF' || pos === 'FW') out[pos].push(p);
+  }
+  return out;
 }
 
 export async function GET(_req: Request, context: Context) {
@@ -56,8 +87,10 @@ export async function GET(_req: Request, context: Context) {
 
     const picked = players
       .map((p) => ({
+        id: typeof p?.id === 'string' ? p.id : undefined,
         name: safeName(p?.name),
         status: typeof p?.status === 'string' ? p.status : undefined,
+        position: typeof p?.position === 'string' ? p.position : undefined,
       }))
       .filter((p) => p.name);
 
@@ -68,7 +101,79 @@ export async function GET(_req: Request, context: Context) {
         if (r !== 0) return r;
         return a.name.localeCompare(b.name, 'ja');
       })
-      .slice(0, 18);
+      .slice(0, 23);
+
+    const grouped = groupByPosition(ordered);
+    const isJapan = countrySlug === 'japan';
+    const rows = isJapan
+      ? [
+          { title: '-GK-', key: 'GK', players: grouped.GK },
+          { title: '-DF-', key: 'DF', players: grouped.DF },
+          { title: '-MF/FW-', key: 'MFFW', players: [...grouped.MF, ...grouped.FW] },
+        ]
+      : [
+          { title: '-GK-', key: 'GK', players: grouped.GK },
+          { title: '-DF-', key: 'DF', players: grouped.DF },
+          { title: '-MF-', key: 'MF', players: grouped.MF },
+          { title: '-FW-', key: 'FW', players: grouped.FW },
+        ];
+
+    const candidates = country?.code ? (WC2026_CANDIDATES_BY_COUNTRY[country.code] as Candidate[]) : ([] as Candidate[]);
+    const candById = new Map<string, Candidate>();
+    for (const c of candidates) candById.set(c.id, c);
+
+    const renderPlayerCell = (p: (typeof ordered)[number], idx: number) => {
+      const c = p.id ? candById.get(p.id) : undefined;
+      const statLine = statLineFromCandidate(c);
+
+      const nameLineChildren: any[] = [p.name];
+      if (typeof c?.age === 'number') {
+        nameLineChildren.push(
+          React.createElement('span', { style: { marginLeft: 6, fontSize: 16, fontWeight: 700, opacity: 0.8 } }, `(${c.age})`)
+        );
+      }
+      nameLineChildren.push(
+        React.createElement('span', { style: { marginLeft: 6, fontSize: 16, opacity: 0.7 } }, statusMark(p.status))
+      );
+
+      return React.createElement(
+        'div',
+        {
+          key: `${idx}-${p.id ?? p.name}`,
+          style: {
+            minWidth: 0,
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          },
+        },
+        React.createElement(
+          'div',
+          {
+            style: {
+              fontSize: 22,
+              fontWeight: 900,
+              opacity: 0.98,
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+              lineHeight: 1.2,
+            },
+          },
+          ...nameLineChildren
+        ),
+        React.createElement(
+          'div',
+          { style: { marginTop: 4, fontSize: 14, opacity: 0.7, display: 'flex' } },
+          c?.club ?? ''
+        ),
+        statLine
+          ? React.createElement('div', { style: { marginTop: 4, fontSize: 14, opacity: 0.65, display: 'flex' } }, statLine)
+          : null
+      );
+    };
 
     const root = React.createElement(
       'div',
@@ -101,34 +206,59 @@ export async function GET(_req: Request, context: Context) {
         {
           style: {
             display: 'flex',
-            flexWrap: 'wrap',
-            gap: 16,
-            padding: 24,
+            flexDirection: 'column',
+            gap: 18,
+            padding: 22,
             borderRadius: 24,
             border: '1px solid rgba(255,255,255,0.12)',
             background: 'rgba(255,255,255,0.06)',
           },
         },
-        ordered.length === 0
+        rows.length === 0
           ? React.createElement('div', { style: { fontSize: 28, opacity: 0.85, display: 'flex' } }, 'No picks yet')
-          : ordered.map((p, idx) =>
+          : rows.map((row) =>
               React.createElement(
                 'div',
                 {
-                  key: `${idx}-${p.name}`,
+                  key: row.key,
                   style: {
-                    width: 350,
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '10px 14px',
-                    borderRadius: 16,
-                    background: 'rgba(0,0,0,0.22)',
-                    border: '1px solid rgba(255,255,255,0.10)',
+                    flexDirection: 'column',
+                    gap: 10,
                   },
                 },
-                React.createElement('div', { style: { fontSize: 26, fontWeight: 800, display: 'flex' } }, p.name),
-                React.createElement('div', { style: { fontSize: 26, fontWeight: 800, opacity: 0.9, display: 'flex' } }, statusMark(p.status))
+                React.createElement(
+                  'div',
+                  {
+                    style: {
+                      display: 'flex',
+                      justifyContent: 'center',
+                      fontSize: 16,
+                      fontWeight: 800,
+                      letterSpacing: 4,
+                      color: 'rgba(254, 240, 138, 0.92)',
+                    },
+                  },
+                  row.title
+                ),
+                React.createElement(
+                  'div',
+                  {
+                    style: {
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                    },
+                  },
+                  row.players.length === 0
+                    ? React.createElement(
+                        'div',
+                        { style: { display: 'flex', justifyContent: 'center', width: '100%', fontSize: 14, opacity: 0.55 } },
+                        '未選出'
+                      )
+                    : row.players.map(renderPlayerCell)
+                )
               )
             )
       ),
