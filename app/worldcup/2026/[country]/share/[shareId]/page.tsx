@@ -63,6 +63,8 @@ export default async function Wc2026SharePage({ params }: Props) {
 
         <div className="px-1">
           <div className="text-sm text-gray-100 font-semibold">予想画像</div>
+        </div>
+        <div className="-mx-3">
           <ShareImage imageUrl={imageUrl} />
         </div>
 

@@ -48,7 +48,7 @@ export default function ShareImage({ imageUrl }: { imageUrl: string }) {
   }, [failed, src]);
 
   return (
-    <div className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-black/30">
+    <div className="mt-3">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
@@ -58,7 +58,7 @@ export default function ShareImage({ imageUrl }: { imageUrl: string }) {
         loading="eager"
       />
       {failed ? (
-        <div className="p-3 text-[11px] text-white/70">
+        <div className="mt-2 text-[11px] text-white/70">
           <div>画像の読み込みに失敗しました</div>
           <div className="mt-1 break-all">{src}</div>
           {diag ? (
