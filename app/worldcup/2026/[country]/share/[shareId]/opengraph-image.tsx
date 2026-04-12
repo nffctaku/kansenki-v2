@@ -1,10 +1,9 @@
 import { ImageResponse } from 'next/og';
-import { doc, getDoc } from 'firebase/firestore';
-import { getServerDb } from '@/lib/firebaseServer';
+import { headers } from 'next/headers';
 import { getWc2026CountryBySlug } from '@/lib/worldcup/wc2026Countries';
 import type { SquadPlayerPrediction, SquadStatus } from '@/types/worldcup';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 
 export const size = {
   width: 1200,
@@ -12,6 +11,18 @@ export const size = {
 };
 
 export const contentType = 'image/png';
+
+function getBaseUrlFromHeaders() {
+  try {
+    const h = headers();
+    const host = h.get('x-forwarded-host') ?? h.get('host');
+    const proto = h.get('x-forwarded-proto') ?? 'https';
+    if (host) return `${proto}://${host}`;
+  } catch {
+    // ignore
+  }
+  return 'https://www.footballtop.net';
+}
 
 function statusMark(status: SquadStatus) {
   if (status === 'S') return '◎';
@@ -24,9 +35,8 @@ export default async function Image({ params }: { params: { country: string; sha
   const { country: countrySlug, shareId } = params;
   const country = getWc2026CountryBySlug(countrySlug);
 
-  const db = getServerDb();
-  if (!db) {
-    return new ImageResponse(
+  const fallback = () =>
+    new ImageResponse(
       (
         <div
           style={{
@@ -46,36 +56,32 @@ export default async function Image({ params }: { params: { country: string; sha
             </div>
             <div style={{ marginTop: 10, fontSize: 24, opacity: 0.8 }}>共有用（固定）</div>
           </div>
-          <div style={{ fontSize: 28, opacity: 0.85 }}>画像生成の準備中です</div>
+          <div style={{ fontSize: 28, opacity: 0.85 }}>予想画像</div>
           <div style={{ fontSize: 22, opacity: 0.8 }}>kansenki.footballtop.net</div>
         </div>
       ),
       { width: size.width, height: size.height }
     );
-  }
 
   let players: SquadPlayerPrediction[] = [];
 
   try {
-    const ref = doc(db, 'wc2026PredictionShares', shareId);
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      const data = snap.data() as any;
-      const raw = typeof data?.snapshotJson === 'string' ? data.snapshotJson : '';
-      const parsed = raw ? JSON.parse(raw) : null;
-      const loaded = Array.isArray(parsed?.players) ? parsed.players : [];
-      players = loaded
-        .filter((p: any) => p && typeof p.name === 'string' && typeof p.status === 'string')
-        .map((p: any) => ({
-          id: typeof p.id === 'string' ? p.id : '',
-          name: p.name,
-          position: p.position,
-          status: p.status,
-          note: typeof p.note === 'string' ? p.note : undefined,
-        }));
-    }
+    const baseUrl = getBaseUrlFromHeaders();
+    const res = await fetch(`${baseUrl}/api/wc2026-share/${shareId}`, { cache: 'no-store' });
+    if (!res.ok) return fallback();
+    const data = (await res.json()) as any;
+    const loaded = Array.isArray(data?.players) ? data.players : [];
+    players = loaded
+      .filter((p: any) => p && typeof p.name === 'string' && typeof p.status === 'string')
+      .map((p: any) => ({
+        id: typeof p.id === 'string' ? p.id : '',
+        name: p.name,
+        position: p.position,
+        status: p.status,
+        note: typeof p.note === 'string' ? p.note : undefined,
+      }));
   } catch {
-    players = [];
+    return fallback();
   }
 
   const picked = players.filter((p) => p.status === 'S' || p.status === 'A' || p.status === 'B' || p.status === '!?');
