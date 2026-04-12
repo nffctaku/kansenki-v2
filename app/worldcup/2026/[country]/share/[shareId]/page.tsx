@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { doc, getDoc } from 'firebase/firestore';
 import { getServerDb } from '@/lib/firebaseServer';
 import { getWc2026CountryBySlug } from '@/lib/worldcup/wc2026Countries';
+import ShareImage from './ShareImage';
 
 export const runtime = 'nodejs';
 
@@ -63,15 +64,7 @@ export default async function Wc2026SharePage({ params }: Props) {
         <div className="rounded-2xl border border-white/10 bg-white/10 overflow-hidden">
           <div className="p-4">
             <div className="text-sm text-gray-100 font-semibold">予想画像</div>
-            <div className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-black/30">
-              {/* OGPと同じ画像を表示 */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={imageUrl}
-                alt="予想画像"
-                className="w-full h-auto"
-              />
-            </div>
+            <ShareImage imageUrl={imageUrl} />
 
             <div className="mt-4">
               <Link

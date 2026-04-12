@@ -5,6 +5,9 @@ import type { SquadPlayerPrediction, SquadStatus } from '@/types/worldcup';
 
 export const runtime = 'edge';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const size = {
   width: 1200,
   height: 630,
@@ -60,7 +63,13 @@ export default async function Image({ params }: { params: { country: string; sha
           <div style={{ fontSize: 22, opacity: 0.8 }}>kansenki.footballtop.net</div>
         </div>
       ),
-      { width: size.width, height: size.height }
+      {
+        width: size.width,
+        height: size.height,
+        headers: {
+          'Cache-Control': 'no-store, max-age=0',
+        },
+      }
     );
 
   let players: SquadPlayerPrediction[] = [];
@@ -159,6 +168,9 @@ export default async function Image({ params }: { params: { country: string; sha
     {
       width: size.width,
       height: size.height,
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      },
     }
   );
 }
