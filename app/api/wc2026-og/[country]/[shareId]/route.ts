@@ -41,11 +41,18 @@ export async function GET(_req: Request, context: Context) {
       React.createElement('div', { style: { fontSize: 22, opacity: 0.8 } }, 'footballtop.net')
     );
 
-    return new ImageResponse(root, {
+    const image = new ImageResponse(root, {
       width: 1200,
       height: 630,
+    });
+
+    const buf = await image.arrayBuffer();
+    return new Response(buf, {
+      status: 200,
       headers: {
+        'Content-Type': 'image/png',
         'Cache-Control': 'no-store, max-age=0',
+        'Content-Length': String(buf.byteLength),
       },
     });
   } catch (e: any) {
