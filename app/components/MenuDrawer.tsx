@@ -67,6 +67,13 @@ const menuConfig: MenuSection[] = [
     ],
   },
   {
+    title: 'W杯',
+    items: [
+      { label: '関連記事', href: '/worldcup/2026' },
+      { label: '予想', href: '/worldcup/2026' },
+    ],
+  },
+  {
     title: 'アップデート情報',
     items: [{ label: '更新履歴', href: '/updates' }],
   },
@@ -95,7 +102,7 @@ export default function MenuDrawer() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-white dark:bg-black flex items-center justify-center px-4 border-b dark:border-gray-800">
+      <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-white dark:bg-black flex items-center justify-center px-4 border-b dark:border-gray-800">
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <Link href="/" className="cursor-pointer">
             <div className="dark:hidden">

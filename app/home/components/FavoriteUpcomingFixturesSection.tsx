@@ -58,7 +58,9 @@ export default function FavoriteUpcomingFixturesSection({
             )}
             <div className="min-w-0">
               <div className="text-sm font-semibold text-gray-100 truncate">{fixture.roundLabel ?? fixture.competitionId}</div>
-              <div className="text-xs text-white/60">{kickoffDate ? formatKickoff(kickoffDate) : '未定'}</div>
+              <div className="text-xs text-white/60">
+                {kickoffDate && !fixture.kickoffTbd ? formatKickoff(kickoffDate) : '未定'}
+              </div>
             </div>
           </div>
 
@@ -119,7 +121,9 @@ export default function FavoriteUpcomingFixturesSection({
             )}
             <div className="min-w-0">
               <div className="text-xs font-semibold text-gray-100 truncate">{fixture.roundLabel ?? fixture.competitionId}</div>
-              <div className="text-xs text-white/60">{kickoffDate ? formatKickoff(kickoffDate) : '未定'}</div>
+              <div className="text-xs text-white/60">
+                {kickoffDate && !fixture.kickoffTbd ? formatKickoff(kickoffDate) : '未定'}
+              </div>
               {broadcaster && (
                 <div className="mt-1 inline-flex rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/80">
                   {broadcaster}

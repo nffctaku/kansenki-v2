@@ -5,6 +5,7 @@ export type ManualFixture = {
   competitionId: ManualCompetitionId;
   roundLabel?: string;
   kickoffAt: string | null;
+  kickoffTbd?: boolean;
   homeClubId: string;
   awayClubId: string;
   sourceUrl?: string;

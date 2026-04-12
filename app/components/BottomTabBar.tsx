@@ -14,7 +14,7 @@ type TabItem = {
 const tabs: TabItem[] = [
   { label: 'ホーム', href: '/home', icon: Home },
   { label: 'タイムライン', href: '/timeline', icon: LayoutGrid },
-  { label: '選手情報', href: '/players', icon: Users },
+  { label: '日本代表', href: '/players', icon: Users },
   { label: 'イベント', href: '/events', icon: CalendarDays },
   { label: 'プロフィール', href: '/mypage', icon: User },
 ];

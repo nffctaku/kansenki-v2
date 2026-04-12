@@ -7,9 +7,10 @@ import type { ManualHighlight } from '@/lib/highlights/manualHighlights';
 type Props = {
   highlights: ManualHighlight[];
   loading?: boolean;
+  emptyMessage?: string;
 };
 
-export default function ManualHighlightsRow({ highlights, loading = false }: Props) {
+export default function ManualHighlightsRow({ highlights, loading = false, emptyMessage }: Props) {
   return (
     <div className="mb-6">
       <div className="mb-2 text-sm font-bold text-gray-100">MATCH HIGHLIGHT</div>
@@ -19,7 +20,7 @@ export default function ManualHighlightsRow({ highlights, loading = false }: Pro
         </div>
       ) : highlights.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white/70">
-          選択中のチームに該当するハイライトが見つかりませんでした
+          {emptyMessage ?? '選択中のチームに該当するハイライトが見つかりませんでした'}
         </div>
       ) : (
         <div className="flex items-stretch gap-3 overflow-x-auto max-w-full pb-1">

@@ -11,14 +11,15 @@ import { manualNationalMatches } from '@/lib/national/manualNationalMatches';
 import FeaturedNationalMatchHeroCarousel from './components/FeaturedNationalMatchHeroCarousel';
 import FavoriteUpcomingFixturesSection from './components/FavoriteUpcomingFixturesSection';
 import ManualHighlightsRow from './components/ManualHighlightsRow';
-import ManualNationalMatchesRow from './components/ManualNationalMatchesRow';
 import IdeaDrawer from './components/IdeaDrawer';
 import HomePinnedClubsSwitcher from './components/HomePinnedClubsSwitcher';
 import type { ManualHighlight } from '@/lib/highlights/manualHighlights';
+import type { ManualFixture } from '@/lib/fixtures/manualFixtures';
 export default function HomePage() {
   const { user, userProfile, loading, updateUserProfile } = useAuth();
 
   const favoriteClubIds = userProfile?.favoriteClubIds ?? [];
+  const hasFavorites = favoriteClubIds.length > 0;
 
   const hasUclClub = favoriteClubIds.some((id) => ['mc', 'liv', 'tot', 'che', 'new', 'ars'].includes(id));
   const hasUelClub = favoriteClubIds.some((id) => ['avl', 'nfo'].includes(id));
@@ -28,9 +29,12 @@ export default function HomePage() {
   const ueclClubIds: string[] = ['cry'];
 
   const clubNameAliasesJa: Record<string, string[]> = {
-    mc: ['マンチェスターC', 'マンチェスター・シティ'],
+    mc: ['マンC', 'マンチェスターC', 'マンチェスター・シティ'],
+    mu: ['マンU', 'マンチェスターユナイテッド', 'マンチェスター・ユナイテッド'],
     liv: ['リヴァプール', 'リバプール'],
     ful: ['フラム', 'フルハム'],
+    lee: ['リーズ', 'リーズU', 'リーズ・ユナイテッド', 'Leeds', 'Leeds United', 'LUFC'],
+    cry: ['クリスタルパレス', 'クリスタル・パレス', 'パレス', 'Crystal Palace', 'CPFC'],
   };
 
   const competitionLogoSrc: Record<string, string> = {
@@ -63,9 +67,11 @@ export default function HomePage() {
   const [localSelectedClubId, setLocalSelectedClubId] = useState<string | null>(null);
 
   const [autoHighlights, setAutoHighlights] = useState<ManualHighlight[] | null>(null);
+  const [plFixtures, setPlFixtures] = useState<ManualFixture[] | null>(null);
 
   const filteredAutoHighlights = useMemo(() => {
     if (!autoHighlights) return null;
+    if (!hasFavorites) return [];
     if (!localSelectedClubId) return autoHighlights;
     const club = getPremierLeagueClubById(localSelectedClubId);
     if (!club) return autoHighlights;
@@ -94,7 +100,7 @@ export default function HomePage() {
     });
 
     return matched.slice(0, 5);
-  }, [autoHighlights, localSelectedClubId]);
+  }, [autoHighlights, localSelectedClubId, hasFavorites]);
 
   useEffect(() => {
     setLocalSelectedClubId(effectiveSelectedClubId);
@@ -104,6 +110,10 @@ export default function HomePage() {
     let cancelled = false;
     const run = async () => {
       try {
+        if (!hasFavorites) {
+          if (!cancelled) setAutoHighlights([]);
+          return;
+        }
         const club = localSelectedClubId ? getPremierLeagueClubById(localSelectedClubId) : null;
         const clubNameJa = club?.nameJa ?? '';
         const aliasesJa = localSelectedClubId ? (clubNameAliasesJa[localSelectedClubId] ?? []) : [];
@@ -111,12 +121,41 @@ export default function HomePage() {
         const clubQueryJaCandidates = [clubQueryJa, ...aliasesJa.map((s) => s.replace(/[・･·]/g, ''))].filter(Boolean);
         const clubQueryJaPrimary = clubQueryJaCandidates[0] ?? '';
 
-        const qsUnext = new URLSearchParams({
-          limit: '10',
-          fetchMax: '25',
-          handle: 'UNEXT_football',
+        const unextQueryCandidates = Array.from(
+          new Set([clubQueryJaPrimary, ...clubQueryJaCandidates, club?.nameEn ?? ''].filter(Boolean))
+        );
+
+        const unextQueries = unextQueryCandidates.flatMap((name) => {
+          const cleaned = String(name).trim();
+          if (!cleaned) return [];
+          return [`ショートハイライト ${cleaned}`, `プレミアリーグ ショートハイライト ${cleaned}`];
         });
-        if (clubQueryJaPrimary) qsUnext.set('q', `プレミアリーグ ショートハイライト ${clubQueryJaPrimary}`);
+
+        const fetchUnext = async () => {
+          const base = new URLSearchParams({
+            limit: '10',
+            fetchMax: '25',
+            handle: 'UNEXT_football',
+          });
+
+          if (unextQueries.length === 0) {
+            const res = await fetch(`/api/unext-football-highlights?${base.toString()}`);
+            return res;
+          }
+
+          for (const qStr of unextQueries) {
+            const qs = new URLSearchParams(base);
+            qs.set('q', qStr);
+            const res = await fetch(`/api/unext-football-highlights?${qs.toString()}`);
+            if (!res.ok) continue;
+            const json = await res.clone().json().catch(() => null);
+            const count = Array.isArray(json?.items) ? json.items.length : 0;
+            if (count > 0) return res;
+          }
+
+          const res = await fetch(`/api/unext-football-highlights?${base.toString()}`);
+          return res;
+        };
 
         const qsWowow = new URLSearchParams({
           limit: '10',
@@ -140,7 +179,7 @@ export default function HomePage() {
         if (wowowQuery) qsWowow.set('q', wowowQuery);
 
         const [resUnext, resWowow] = await Promise.all([
-          fetch(`/api/unext-football-highlights?${qsUnext.toString()}`),
+          fetchUnext(),
           wowowQuery ? fetch(`/api/unext-football-highlights?${qsWowow.toString()}`) : Promise.resolve(null),
         ]);
 
@@ -164,7 +203,26 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [localSelectedClubId]);
+  }, [localSelectedClubId, hasFavorites]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const res = await fetch('/api/pl-fixtures?v=2');
+        if (!res.ok) throw new Error('failed');
+        const json = await res.json();
+        const items = (json?.items ?? []) as ManualFixture[];
+        if (!cancelled) setPlFixtures(items);
+      } catch {
+        if (!cancelled) setPlFixtures([]);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -175,16 +233,125 @@ export default function HomePage() {
 
   const fixtureTargetClubIds = localSelectedClubId ? [localSelectedClubId] : [];
 
-  const upcomingFixturesAll = manualFixtures
-    .filter((f) =>
-      fixtureTargetClubIds.includes(f.homeClubId) || fixtureTargetClubIds.includes(f.awayClubId)
-    )
-    .map((f) => ({
-      fixture: f,
-      kickoffDate: f.kickoffAt ? new Date(f.kickoffAt) : null,
-    }))
-    .filter(({ kickoffDate }) => kickoffDate && kickoffDate.getTime() > now.getTime())
-    .sort((a, b) => (a.kickoffDate!.getTime() - b.kickoffDate!.getTime()));
+  const normalizeFixtureClubId = (id: string) => {
+    if (id === 'mci') return 'mc';
+    if (id === 'mun') return 'mu';
+    return id;
+  };
+
+  const fixturesForUpcoming = (() => {
+    const merged = [...manualFixtures, ...((plFixtures ?? []).filter((f) => f.kickoffAt !== null))];
+    const seen = new Set<string>();
+    const out: typeof merged = [];
+
+    for (const f of merged) {
+      const homeId = normalizeFixtureClubId(f.homeClubId);
+      const awayId = normalizeFixtureClubId(f.awayClubId);
+      const kickoffKey = f.kickoffAt ? String(f.kickoffAt) : 'tbd';
+      const key = `${f.competitionId}|${homeId}|${awayId}|${kickoffKey}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(f);
+    }
+
+    return out;
+  })();
+
+  const getMatchdayNumber = (fixture: any): number | null => {
+    const label: string | undefined = fixture?.roundLabel;
+    if (label) {
+      const m = label.match(/第(\d+)節/);
+      if (m) return Number(m[1]);
+    }
+    const id: string | undefined = fixture?.id;
+    if (id) {
+      const m = id.match(/Matchday\s*(\d+)/i);
+      if (m) return Number(m[1]);
+    }
+    return null;
+  };
+
+  const lastKnownPlayedMatchday = (() => {
+    if (!localSelectedClubId) return null;
+    let max = -1;
+    for (const f of fixturesForUpcoming) {
+      const homeId = normalizeFixtureClubId(f.homeClubId);
+      const awayId = normalizeFixtureClubId(f.awayClubId);
+      if (homeId !== localSelectedClubId && awayId !== localSelectedClubId) continue;
+      if (!f.kickoffAt) continue;
+      const d = new Date(f.kickoffAt);
+      if (Number.isNaN(d.getTime())) continue;
+      if (d.getTime() >= now.getTime()) continue;
+      const md = getMatchdayNumber(f);
+      if (md !== null) max = Math.max(max, md);
+    }
+    return max >= 0 ? max : null;
+  })();
+
+  const tbdFixturesForUpcoming = (plFixtures ?? [])
+    .filter((f) => f.kickoffAt === null)
+    .filter((f) => {
+      const homeId = normalizeFixtureClubId(f.homeClubId);
+      const awayId = normalizeFixtureClubId(f.awayClubId);
+      if (!fixtureTargetClubIds.includes(homeId) && !fixtureTargetClubIds.includes(awayId)) return false;
+      const md = getMatchdayNumber(f);
+      if (md === null) return false;
+      if (lastKnownPlayedMatchday === null) return true;
+      return md > lastKnownPlayedMatchday;
+    });
+
+  const upcomingFixturesAll = (() => {
+    const filtered = [...fixturesForUpcoming, ...tbdFixturesForUpcoming].filter((f) => {
+      const homeId = normalizeFixtureClubId(f.homeClubId);
+      const awayId = normalizeFixtureClubId(f.awayClubId);
+      return fixtureTargetClubIds.includes(homeId) || fixtureTargetClubIds.includes(awayId);
+    });
+
+    const byKey = new Map<string, (typeof filtered)[number]>();
+    for (const f of filtered) {
+      const homeId = normalizeFixtureClubId(f.homeClubId);
+      const awayId = normalizeFixtureClubId(f.awayClubId);
+      const md = getMatchdayNumber(f);
+      const key = `${f.competitionId}|${homeId}|${awayId}|${md ?? 'na'}`;
+      const existing = byKey.get(key);
+      if (!existing) {
+        byKey.set(key, f);
+        continue;
+      }
+      const existingHasKickoff = Boolean(existing.kickoffAt);
+      const nextHasKickoff = Boolean(f.kickoffAt);
+      if (!existingHasKickoff && nextHasKickoff) {
+        byKey.set(key, f);
+      }
+    }
+
+    return Array.from(byKey.values())
+      .map((f) => {
+        const normalizedFixture = {
+          ...f,
+          homeClubId: normalizeFixtureClubId(f.homeClubId),
+          awayClubId: normalizeFixtureClubId(f.awayClubId),
+        };
+        return {
+          fixture: normalizedFixture,
+          kickoffDate: normalizedFixture.kickoffAt ? new Date(normalizedFixture.kickoffAt) : null,
+        };
+      })
+      .filter(({ kickoffDate }) => {
+        if (!kickoffDate) return true;
+        if (Number.isNaN(kickoffDate.getTime())) return false;
+        if (kickoffDate.getTime() <= now.getTime()) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        if (a.kickoffDate && b.kickoffDate) return a.kickoffDate.getTime() - b.kickoffDate.getTime();
+        if (a.kickoffDate && !b.kickoffDate) return -1;
+        if (!a.kickoffDate && b.kickoffDate) return 1;
+        const amd = getMatchdayNumber(a.fixture) ?? 999;
+        const bmd = getMatchdayNumber(b.fixture) ?? 999;
+        return amd - bmd;
+      });
+  })();
 
   const featuredUpcomingFixture =
     upcomingFixturesAll.find(({ fixture }) => fixture.featured) ?? upcomingFixturesAll[0] ?? null;
@@ -411,8 +578,6 @@ export default function HomePage() {
             highlights={(filteredAutoHighlights ?? [])}
             loading={autoHighlights === null}
           />
-
-          <ManualNationalMatchesRow matches={nationalMatchesForList} />
 
           <IdeaDrawer
             widgets={widgets}

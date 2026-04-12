@@ -1,0 +1,146 @@
+'use client';
+
+import Link from 'next/link';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination, Autoplay } from 'swiper/modules';
+
+type VideoItem = { youtubeVideoId: string; label: string; description?: string };
+
+export default function SoccerKingVideosSection() {
+  const [soccerKingVideos, setSoccerKingVideos] = useState<VideoItem[]>([]);
+  const [soccerKingVideosLoading, setSoccerKingVideosLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      setSoccerKingVideosLoading(true);
+      try {
+        const res = await fetch('/api/unext-football-highlights?handle=SoccerKingJP&limit=5&fetchMax=5');
+        if (!res.ok) throw new Error('failed');
+        const json = await res.json();
+        const items = (json?.items ?? []) as Array<{ youtubeVideoId?: string; label?: string; description?: string }>;
+        const normalized = items
+          .map((it) => {
+            if (!it.youtubeVideoId || !it.label) return null;
+            return {
+              youtubeVideoId: it.youtubeVideoId,
+              label: it.label,
+              description: it.description,
+            };
+          })
+          .filter(Boolean) as VideoItem[];
+
+        if (!cancelled) setSoccerKingVideos(normalized.slice(0, 5));
+      } catch {
+        if (!cancelled) setSoccerKingVideos([]);
+      } finally {
+        if (!cancelled) setSoccerKingVideosLoading(false);
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/10 overflow-hidden mb-4">
+      <div className="p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-sm text-gray-100">サッカーキング 最新動画</div>
+            <div className="text-xs text-gray-300">@SoccerKingJP</div>
+          </div>
+          <Link
+            href="https://www.youtube.com/@SoccerKingJP"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full px-3 py-2 text-xs bg-white/10 text-gray-100 border border-white/10 hover:bg-white/15 transition-colors shrink-0"
+          >
+            チャンネル
+          </Link>
+        </div>
+
+        <div className="mt-3">
+          {soccerKingVideosLoading ? (
+            <div className="text-xs text-gray-300">読み込み中...</div>
+          ) : soccerKingVideos.length === 0 ? (
+            <div className="text-xs text-gray-300">動画が見つかりませんでした</div>
+          ) : (
+            <div className="space-y-3">
+              {(() => {
+                const [first, ...rest] = soccerKingVideos;
+                return (
+                  <>
+                    <Link
+                      href={`https://www.youtube.com/watch?v=${first.youtubeVideoId}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block rounded-xl border border-white/10 bg-white/5 overflow-hidden hover:bg-white/10 transition-colors"
+                    >
+                      <div className="relative aspect-video w-full">
+                        <Image
+                          src={`https://i.ytimg.com/vi/${first.youtubeVideoId}/hqdefault.jpg`}
+                          alt={first.label}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 640px"
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="p-3">
+                        <div className="text-sm text-gray-100 font-semibold line-clamp-2">{first.label}</div>
+                        {first.description ? (
+                          <div className="mt-1 text-xs text-gray-300 line-clamp-2">{first.description}</div>
+                        ) : null}
+                      </div>
+                    </Link>
+
+                    {rest.length > 0 ? (
+                      <Swiper
+                        modules={[Navigation, Pagination, Autoplay]}
+                        spaceBetween={12}
+                        slidesPerView={'auto'}
+                        navigation
+                        pagination={{ clickable: true }}
+                        autoplay={{ delay: 4500, disableOnInteraction: false }}
+                        loop={rest.length > 1}
+                        className="pb-8"
+                      >
+                        {rest.slice(0, 4).map((v) => (
+                          <SwiperSlide key={v.youtubeVideoId} style={{ width: '240px' }}>
+                            <Link
+                              href={`https://www.youtube.com/watch?v=${v.youtubeVideoId}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block rounded-xl border border-white/10 bg-white/5 overflow-hidden hover:bg-white/10 transition-colors"
+                            >
+                              <div className="relative aspect-video w-full">
+                                <Image
+                                  src={`https://i.ytimg.com/vi/${v.youtubeVideoId}/hqdefault.jpg`}
+                                  alt={v.label}
+                                  fill
+                                  sizes="240px"
+                                  className="object-cover"
+                                />
+                              </div>
+                              <div className="p-3">
+                                <div className="text-xs text-gray-100 font-semibold line-clamp-2">{v.label}</div>
+                              </div>
+                            </Link>
+                          </SwiperSlide>
+                        ))}
+                      </Swiper>
+                    ) : null}
+                  </>
+                );
+              })()}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
