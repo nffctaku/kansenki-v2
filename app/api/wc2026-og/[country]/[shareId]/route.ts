@@ -33,7 +33,12 @@ export async function GET(_req: Request, context: Context) {
       },
       React.createElement(
         'div',
-        null,
+        {
+          style: {
+            display: 'flex',
+            flexDirection: 'column',
+          },
+        },
         React.createElement('div', { style: { fontSize: 54, fontWeight: 800, letterSpacing: -0.5 } }, title),
         React.createElement('div', { style: { marginTop: 12, fontSize: 28, opacity: 0.85 } }, 'Squad Prediction'),
         React.createElement('div', { style: { marginTop: 10, fontSize: 22, opacity: 0.65 } }, sub)
