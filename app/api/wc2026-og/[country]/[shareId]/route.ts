@@ -27,6 +27,13 @@ type Candidate = {
   stats?: { appearances?: number; goals?: number };
 };
 
+type PickedPlayer = {
+  id?: string;
+  name: string;
+  status?: string;
+  position?: string;
+};
+
 function statusMark(status: string | undefined) {
   if (status === 'S') return '◎';
   if (status === 'A') return '○';
@@ -85,7 +92,7 @@ export async function GET(_req: Request, context: Context) {
       players = [];
     }
 
-    const picked = players
+    const picked: PickedPlayer[] = players
       .map((p) => ({
         id: typeof p?.id === 'string' ? p.id : undefined,
         name: safeName(p?.name),
@@ -122,7 +129,7 @@ export async function GET(_req: Request, context: Context) {
     const candById = new Map<string, Candidate>();
     for (const c of candidates) candById.set(c.id, c);
 
-    const renderPlayerCell = (p: (typeof ordered)[number], idx: number) => {
+    const renderPlayerCell = (p: PickedPlayer, idx: number) => {
       const c = p.id ? candById.get(p.id) : undefined;
       const statLine = statLineFromCandidate(c);
 
