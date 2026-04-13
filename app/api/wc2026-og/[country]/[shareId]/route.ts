@@ -108,7 +108,7 @@ export async function GET(_req: Request, context: Context) {
         if (r !== 0) return r;
         return a.name.localeCompare(b.name, 'ja');
       })
-      .slice(0, 23);
+      .slice(0, 18);
 
     const grouped = groupByPosition(ordered);
     const isJapan = countrySlug === 'japan';
@@ -149,6 +149,9 @@ export async function GET(_req: Request, context: Context) {
           key: `${idx}-${p.id ?? p.name}`,
           style: {
             minWidth: 0,
+            width: '33.3333%',
+            boxSizing: 'border-box',
+            padding: '2px 4px',
             textAlign: 'center',
             display: 'flex',
             flexDirection: 'column',
@@ -159,7 +162,7 @@ export async function GET(_req: Request, context: Context) {
           'div',
           {
             style: {
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: 900,
               opacity: 0.98,
               display: 'flex',
@@ -173,11 +176,11 @@ export async function GET(_req: Request, context: Context) {
         ),
         React.createElement(
           'div',
-          { style: { marginTop: 4, fontSize: 14, opacity: 0.7, display: 'flex' } },
+          { style: { marginTop: 2, fontSize: 12, opacity: 0.7, display: 'flex' } },
           c?.club ?? ''
         ),
         statLine
-          ? React.createElement('div', { style: { marginTop: 4, fontSize: 14, opacity: 0.65, display: 'flex' } }, statLine)
+          ? React.createElement('div', { style: { marginTop: 2, fontSize: 12, opacity: 0.65, display: 'flex' } }, statLine)
           : null
       );
     };
@@ -190,7 +193,7 @@ export async function GET(_req: Request, context: Context) {
           height: '100%',
           background: 'linear-gradient(180deg, #020617 0%, #0b1533 50%, #070d1f 100%)',
           color: 'white',
-          padding: 48,
+          padding: 34,
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
@@ -204,9 +207,9 @@ export async function GET(_req: Request, context: Context) {
             flexDirection: 'column',
           },
         },
-        React.createElement('div', { style: { fontSize: 54, fontWeight: 800, letterSpacing: -0.5 } }, title),
-        React.createElement('div', { style: { marginTop: 12, fontSize: 28, opacity: 0.85 } }, 'Squad Prediction'),
-        React.createElement('div', { style: { marginTop: 10, fontSize: 22, opacity: 0.65 } }, sub)
+        React.createElement('div', { style: { fontSize: 46, fontWeight: 800, letterSpacing: -0.5 } }, title),
+        React.createElement('div', { style: { marginTop: 8, fontSize: 22, opacity: 0.85 } }, 'Squad Prediction'),
+        React.createElement('div', { style: { marginTop: 6, fontSize: 18, opacity: 0.65 } }, sub)
       ),
       React.createElement(
         'div',
@@ -214,8 +217,8 @@ export async function GET(_req: Request, context: Context) {
           style: {
             display: 'flex',
             flexDirection: 'column',
-            gap: 18,
-            padding: 22,
+            gap: 12,
+            padding: 14,
             borderRadius: 24,
             border: '1px solid rgba(255,255,255,0.12)',
             background: 'rgba(255,255,255,0.06)',
@@ -240,7 +243,7 @@ export async function GET(_req: Request, context: Context) {
                     style: {
                       display: 'flex',
                       justifyContent: 'center',
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: 800,
                       letterSpacing: 4,
                       color: 'rgba(254, 240, 138, 0.92)',
@@ -254,8 +257,8 @@ export async function GET(_req: Request, context: Context) {
                     style: {
                       display: 'flex',
                       flexWrap: 'wrap',
-                      justifyContent: 'space-between',
-                      gap: 12,
+                      justifyContent: 'flex-start',
+                      gap: 0,
                     },
                   },
                   row.players.length === 0
@@ -278,8 +281,8 @@ export async function GET(_req: Request, context: Context) {
             alignItems: 'center',
           },
         },
-        React.createElement('div', { style: { fontSize: 22, opacity: 0.8, display: 'flex' } }, 'footballtop.net'),
-        React.createElement('div', { style: { fontSize: 22, opacity: 0.8, display: 'flex' } }, 'S:◎ A:○ B:△ ?:★')
+        React.createElement('div', { style: { fontSize: 16, opacity: 0.8, display: 'flex' } }, 'footballtop.net'),
+        React.createElement('div', { style: { fontSize: 16, opacity: 0.8, display: 'flex' } }, 'S:◎ A:○ B:△ ?:★')
       )
     );
 
